@@ -1,0 +1,16 @@
+volumes:
+  classroom_data:
+
+services:
+  db:
+    container_name: classroom-database
+    image: postgres:17-alpine
+    restart: on-failure
+    ports:
+      - 5435:5432
+    environment:
+      - POSTGRES_DB=classroom
+      - POSTGRES_USER=local
+      - POSTGRES_PASSWORD=local
+    volumes:
+      - classroom_data:/var/lib/postgresql/data

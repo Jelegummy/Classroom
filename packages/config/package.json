@@ -1,0 +1,11 @@
+{
+  "name": "@app/config",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc --build"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0"
+  }
+}

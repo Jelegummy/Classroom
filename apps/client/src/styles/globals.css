@@ -1,0 +1,259 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+.potree_annotation .annotation-title {
+    font-size: 10px;
+}
+
+.potree_annotation .annotation-description {
+    font-size: 8px;
+}
+.annotation-titlebar {
+    color: white;
+    background-color: black;
+    border-radius: 1.5em;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    font-size: 12px !important;
+    opacity: 1;
+    margin: auto;
+    display: table;
+    padding: 1px 8px;
+    cursor: pointer;
+}
+
+@keyframes bounce {
+  0% { transform: translateY(-10px);}
+  50% { transform: translateY(0);}
+  100% { transform: translateY(-10px);}
+}
+
+.custom-annotation {
+  z-index: 999 !important;
+}
+
+.custom-marker {
+  position: absolute;
+  pointer-events: auto;
+  z-index: 999;
+  transform: translate(-50%, -100%);
+  text-align: center;
+  transition: transform 0.2s cubic-bezier(.4,0,.2,1);
+}
+.custom-label {
+  background: #fff;
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-top: 2px;
+  font-weight: bold;
+  font-size: 1.1em;
+  box-shadow: 0 2px 12px #0002;
+  display: inline-block;
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Regular'), url('/fonts/BaiJamjuree-Regular.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Italic'), url('/fonts/BaiJamjuree-Italic.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Bold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Bold'), url('/fonts/BaiJamjuree-Bold.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Bold Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Bold Italic'), url('/fonts/BaiJamjuree-BoldItalic.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree ExtraLight Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree ExtraLight Regular'), url('/fonts/BaiJamjuree-ExtraLight.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Light Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Light Regular'), url('/fonts/BaiJamjuree-Light.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Medium Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Medium Regular'), url('/fonts/BaiJamjuree-Medium.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree SemiBold Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree SemiBold Regular'), url('/fonts/BaiJamjuree-SemiBold.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree ExtraLight Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree ExtraLight Italic'), url('/fonts/BaiJamjuree-ExtraLightItalic.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Light Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Light Italic'), url('/fonts/BaiJamjuree-LightItalic.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree Medium Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree Medium Italic'), url('/fonts/BaiJamjuree-MediumItalic.woff') format('woff');
+}
+
+
+@font-face {
+    font-family: 'Bai Jamjuree SemiBold Italic';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Bai Jamjuree SemiBold Italic'), url('/fonts/BaiJamjuree-SemiBoldItalic.woff') format('woff');
+}
+
+body {
+    font-family: 'Bai Jamjuree Regular', sans-serif;
+}
+.link-1 {
+    color: #fff !important;
+    font-size: 15px;
+    text-decoration: none;
+    position: relative;
+    @apply self-center;
+    transition: color 0.3s cubic-bezier(.4,0,.2,1), transform 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+.link-1::after {
+    content: '';
+    display: block;
+    position: absolute;
+    left: 0;
+    bottom: -2px;
+    width: 0;
+    height: 2px;
+    background: #91C8E4;
+    transition: width 0.3s cubic-bezier(.4,0,.2,1), left 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+.link-1:hover {
+    color: #91C8E4 !important;
+    transform: translateX(6px);
+}
+
+.link-1:hover::after {
+    width: 100%;
+}
+.link-1.active {
+    color: #91C8E4 !important;
+}
+.link-1.active::after {
+    width: 100%;
+    left: 0;
+}
+
+
+.btn-register {
+    background: linear-gradient(to right, #91C8E4 50%, #91c8e462 50%);
+    background-size: 200% 100%;
+    background-position: left bottom;
+    color: #0c5b53 !important;
+    padding: 12px 30px;
+    border-radius: 25px;
+    font-size: 15px;
+    font-weight: 500;
+    border: #91C8E4 1px solid;
+    transition: background-position 0.4s ease;
+}
+
+.btn-register:hover {
+    background-position: right bottom;
+    color: #91C8E4 !important;
+    border: #91C8E4 1px solid;
+}
+
+.btn-1 {
+    background: linear-gradient(to right, #ffffff49 50%, #ffffff22 50%);
+    background-size: 200% 100%;
+    background-position: left bottom;
+    color: #fff;
+    padding: 0.95rem 3.5rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 500;
+    border: 1px solid #fff;
+    cursor: pointer;
+    transition: background-position 0.4s ease, color 0.3s ease, border 0.3s ease;
+}
+.btn-1:hover {
+    background-position: right bottom;
+    color: #fff !important;
+    border: #fff 1px solid;
+}
+.btn-2 {
+    background: linear-gradient(to right, #91c8e45e 50%, #91c8e496 50%);
+    background-size: 200% 100%;
+    background-position: left bottom;
+    color: #fff;
+    padding: 0.95rem 3.5rem;
+    font-size: 1rem;
+    background-color: #1ce4d038;
+    border: 1px solid #91C8E4;
+    color: #fff;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background-position 0.4s ease, color 0.3s ease, border 0.3s ease;
+}
+
+.btn-2:hover {
+    background-position: right bottom;
+    color: #fff !important;
+    border: #91C8E4 1px solid;
+}
+
+/* .btn-register {
+    background: linear-gradient(to right, #1ce4d0 50%, #33a5ff 50%);
+    background-size: 200% 100%;
+    background-position: left bottom;
+} */

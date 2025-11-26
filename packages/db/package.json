@@ -1,0 +1,22 @@
+{
+  "name": "@app/db",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && pnpm generate && tsc --build",
+    "push": "prisma db push",
+    "seed": "tsx ./prisma/seeds/index.ts",
+    "studio": "prisma studio",
+    "generate": "prisma generate",
+    "migrate:dev": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.0.12",
+    "@prisma/client": "6.5.0"
+  },
+  "devDependencies": {
+    "prisma": "6.5.0"
+  }
+}

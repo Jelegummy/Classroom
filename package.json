@@ -1,0 +1,59 @@
+{
+  "name": "@app/monorepo",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "dotenvx run -- turbo dev",
+    "dev:client": "dotenvx run -- turbo dev --filter=\"./apps/client\"",
+    "dev:server": "dotenvx run -- turbo dev --filter=\"./apps/server\"",
+    "build": "dotenvx run -- turbo build",
+    "build:package": "dotenvx run -- turbo build --filter=\"./packages/*\"",
+    "start": "dotenvx run -- turbo start",
+    "test": "dotenvx run -- turbo test",
+    "coverage": "dotenvx run -- turbo coverage",
+    "lint": "eslint .",
+    "fmt": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:push": "dotenvx run -- pnpm --filter=@app/db push",
+    "db:studio": "dotenvx run -- pnpm --filter=@app/db studio",
+    "db:generate": "dotenvx run -- pnpm --filter=@app/db generate",
+    "db:migrate:dev": "dotenvx run -- pnpm --filter=@app/db migrate:dev",
+    "db:migrate:draft": "dotenvx run -- pnpm --filter=@app/db migrate:draft",
+    "db:migrate:deploy": "dotenvx run -- pnpm --filter=@app/db migrate:deploy",
+    "db:migrate:reset": "dotenvx run -- pnpm --filter=@app/db migrate:reset",
+    "maps:execute": "dotenvx run -- pnpm --filter=@app/maps-service execute"
+  },
+  "dependencies": {
+    "@dotenvx/dotenvx": "1.39.0",
+    "button": "link:@/components/ui/button",
+    "csv-parser": "^3.2.0",
+    "lucide-react": "^0.525.0"
+  },
+  "devDependencies": {
+    "@swc/cli": "0.6.0",
+    "@swc/core": "1.11.13",
+    "@types/node": "22.13.14",
+    "@vitest/coverage-v8": "3.0.9",
+    "eslint": "8.57.1",
+    "eslint-config-next": "15.2.4",
+    "eslint-config-prettier": "10.1.1",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "prettier": "3.5.3",
+    "prettier-plugin-tailwindcss": "0.6.11",
+    "rimraf": "6.0.1",
+    "turbo": "2.4.4",
+    "typescript": "5.8.2",
+    "unplugin-swc": "1.5.1",
+    "vitest": "3.0.9"
+  },
+  "packageManager": "pnpm@10.12.4",
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 80,
+    "tabWidth": 2,
+    "semi": false,
+    "arrowParens": "avoid",
+    "plugins": [
+      "prettier-plugin-tailwindcss"
+    ]
+  }
+}

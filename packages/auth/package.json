@@ -1,0 +1,15 @@
+{
+  "name": "@app/auth",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc --build"
+  },
+  "dependencies": {
+    "@app/config": "workspace:*",
+    "@nestjs/common": "11.0.12",
+    "@nestjs/core": "11.0.12",
+    "argon2": "0.41.1",
+    "fast-jwt": "6.0.0"
+  }
+}

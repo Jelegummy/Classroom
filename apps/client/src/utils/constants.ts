@@ -1,0 +1,17 @@
+export const HttpStatus = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+  FAILED_TO_FETCH: 1000,
+}
+
+export const ENDPOINT =
+  process.env.NEXT_PUBLIC_ENDPOINT || 'http://127.0.0.1:4000'
+
+export const FILE_ENDPOINT =
+  process.env.NEXT_PUBLIC_FILE_ENDPOINT || 'http://127.0.0.1:3001'

@@ -1,0 +1,11 @@
+.turbo
+.next
+coverage
+dist
+node_modules
+.env
+next-env.d.ts
+.DS_Store
+deployment
+
+/bin/**
