@@ -11,7 +11,6 @@ import {
   RegisterArgs as BaseRegisterArgs,
   register as registerFn,
 } from '@/services/user'
-import { Waves } from 'lucide-react'
 import { FaLock } from 'react-icons/fa6'
 
 type RegisterArgs = BaseRegisterArgs & { confirmPassword: string }
@@ -70,7 +69,6 @@ const Register = () => {
       <div className="relative z-10 flex h-[650px] w-full max-w-[700px] flex-col justify-between rounded-lg bg-white p-8 sm:mt-5 md:mt-10">
         <div className="mt-14 flex flex-col justify-center px-10">
           <div className="flex flex-col items-center justify-center gap-5">
-            <Waves className="h-auto w-14 text-[#6b92df]" />
             <h1 className="text-center text-2xl font-bold text-black">
               ยินดีต้อนรับเข้าสู่ระบบ
             </h1>

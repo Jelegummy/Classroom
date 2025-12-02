@@ -22,28 +22,28 @@
     "maps:execute": "dotenvx run -- pnpm --filter=@app/maps-service execute"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "1.39.0",
+    "@dotenvx/dotenvx": "1.51.1",
     "button": "link:@/components/ui/button",
     "csv-parser": "^3.2.0",
-    "lucide-react": "^0.525.0"
+    "lucide-react": "^0.555.0"
   },
   "devDependencies": {
-    "@swc/cli": "0.6.0",
-    "@swc/core": "1.11.13",
-    "@types/node": "22.13.14",
-    "@vitest/coverage-v8": "3.0.9",
-    "eslint": "8.57.1",
-    "eslint-config-next": "15.2.4",
-    "eslint-config-prettier": "10.1.1",
-    "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-unused-imports": "4.1.4",
-    "prettier": "3.5.3",
-    "prettier-plugin-tailwindcss": "0.6.11",
-    "rimraf": "6.0.1",
-    "turbo": "2.4.4",
-    "typescript": "5.8.2",
-    "unplugin-swc": "1.5.1",
-    "vitest": "3.0.9"
+    "@swc/cli": "0.7.9",
+    "@swc/core": "1.15.3",
+    "@types/node": "24.10.1",
+    "@vitest/coverage-v8": "4.0.14",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.0.6",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-unused-imports": "4.3.0",
+    "prettier": "3.7.3",
+    "prettier-plugin-tailwindcss": "0.7.2",
+    "rimraf": "6.1.2",
+    "turbo": "2.6.1",
+    "typescript": "5.9.3",
+    "unplugin-swc": "1.5.9",
+    "vitest": "4.0.14"
   },
   "packageManager": "pnpm@10.12.4",
   "prettier": {
@@ -55,5 +55,8 @@
     "plugins": [
       "prettier-plugin-tailwindcss"
     ]
+  },
+  "pnpm": {
+    "neverBuiltDependencies": []
   }
 }

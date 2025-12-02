@@ -7,5 +7,6 @@ node_modules
 next-env.d.ts
 .DS_Store
 deployment
+generated
 
 /bin/**

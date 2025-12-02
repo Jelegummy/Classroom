@@ -14,9 +14,13 @@
   },
   "dependencies": {
     "@nestjs/common": "11.0.12",
-    "@prisma/client": "6.5.0"
+    "@prisma/client": "7.0.1",
+    "@prisma/adapter-pg": "7.0.1",
+    "@prisma/client-runtime-utils": "7.0.1",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
-    "prisma": "6.5.0"
+    "@types/pg": "^8.15.6",
+    "prisma": "7.0.1"
   }
 }
