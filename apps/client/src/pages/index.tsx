@@ -1,5 +1,6 @@
 import Navbar from '@/components/Navbar'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function Home() {
   return (
@@ -32,13 +33,16 @@ export default function Home() {
           </div>
         </div>
         <div className="flex w-full flex-row items-center justify-center gap-2">
-          <button className="btn btn-md w-48 rounded-full bg-[#2460E3] text-white">
-            เริ่มต้นใช้งาน
-          </button>
-
-          <button className="btn btn-md w-48 rounded-full bg-white text-[#2460E3]">
-            ลงชื่อเข้าใช้
-          </button>
+          <Link href="/register">
+            <button className="btn btn-md w-48 rounded-full bg-primary text-white">
+              เริ่มต้นใช้งาน
+            </button>
+          </Link>
+          <Link href="/login">
+            <button className="btn btn-md w-48 rounded-full bg-white text-primary">
+              ลงชื่อเข้าใช้
+            </button>
+          </Link>
         </div>
       </div>
     </>

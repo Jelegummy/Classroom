@@ -63,7 +63,7 @@ const Navbar = () => {
                   </button>
                 </>
               ) : (
-                <Link href="/login">
+                <Link href="/register">
                   <button className="btn btn-sm rounded-2xl bg-[#2460E3] text-white placeholder:bg-[#854C2F]">
                     <Phone className="h-4 w-4" />
                     ติดต่อเรา

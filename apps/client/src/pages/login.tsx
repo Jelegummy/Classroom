@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { LoginArgs } from '@/services/user'
 import { IoChevronBackSharp } from 'react-icons/io5'
 import { Waves } from 'lucide-react'
+import Image from 'next/image'
 // import Wave from '@/components/Wave'
 
 const Login = () => {
@@ -43,74 +44,91 @@ const Login = () => {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-between overflow-hidden bg-white">
-      <div className="absolute inset-0 z-0 m-10">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="absolute left-6 top-6">
         <Link
           href="/"
-          className="flex flex-row items-center gap-1 text-center text-sm text-gray-600 hover:text-black"
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-black"
         >
-          {/* <span className="text-black text-2xl">FloodSim</span> */}
-          <IoChevronBackSharp className="h-auto w-4" />
-          <span className="text-base">กลับ</span>
+          <IoChevronBackSharp className="w-4" />
+          กลับ
         </Link>
       </div>
-      <div className="relative z-10 mt-20 flex h-[650px] w-full max-w-[700px] flex-col justify-between rounded-lg bg-white p-8">
-        <div className="mt-14 flex flex-col justify-center px-10">
-          <div className="flex flex-col items-center justify-center gap-5">
-            <Waves className="h-auto w-14 text-[#6b92df]" />
-            <h1 className="text-center text-2xl font-bold text-black">
+      <div className="grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
+        <div className="flex flex-col justify-center px-8 py-12 md:px-12">
+          <div className="flex flex-col items-center gap-4">
+            <Image
+              src="/learnify-logo.png"
+              alt="Learnify Logo"
+              width={56}
+              height={56}
+            />
+            <h1 className="text-2xl font-bold text-black">
               ยินดีต้อนรับเข้าสู่ระบบ
             </h1>
+            <p className="text-center text-sm text-gray-500">
+              กรุณากรอกอีเมลและรหัสผ่านเพื่อเริ่มต้นใช้งาน
+            </p>
           </div>
 
-          <h1 className="mt-2 text-center text-lg font-bold text-black/70">
-            โปรดกรอก อีเมล และ รหัสผ่าน ในการเริ่มต้นใช้งาน
-          </h1>
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="mt-10 flex flex-col gap-3"
+            className="mt-10 flex flex-col gap-4"
           >
-            <p className="text-sm text-black">อีเมล</p>
-            <label className="input input-bordered flex items-center gap-2 rounded-xl">
-              <FaUser />
-              <input
-                type="email"
-                className="grow"
-                placeholder="กรุณากรอกอีเมล"
-                {...register('email', { required: true })}
-              />
-            </label>
-
-            <p className="text-sm text-black">รหัสผ่าน</p>
-            <label className="input input-bordered flex items-center gap-2 rounded-xl">
-              <FaLock />
-              <input
-                type="password"
-                className="grow"
-                placeholder="กรุณากรอกรหัสผ่าน"
-                {...register('password', { required: true })}
-              />
-            </label>
-            <div className="flex justify-center">
-              <button
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                className={`mt-6 w-7/12 rounded-full border px-4 py-2 font-semibold text-white transition-[background-position] duration-700 ease-in-out ${
-                  !isValid || isSubmitting
-                    ? 'cursor-not-allowed border-white/20 bg-gray-400'
-                    : 'border-white/20 bg-[linear-gradient(to_right,_#8CCDEB_50%,_#60a5fa_50%)] bg-[length:200%_100%] bg-left hover:bg-right'
-                }`}
-              >
-                เข้าสู่ระบบ
-              </button>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-black">อีเมล</label>
+              <label className="input input-bordered flex items-center gap-2 rounded-xl">
+                <FaUser className="text-gray-400" />
+                <input
+                  type="email"
+                  className="grow"
+                  placeholder="example@email.com"
+                  {...register('email', { required: true })}
+                />
+              </label>
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-black">รหัสผ่าน</label>
+              <label className="input input-bordered flex items-center gap-2 rounded-xl">
+                <FaLock className="text-gray-400" />
+                <input
+                  type="password"
+                  className="grow"
+                  placeholder="••••••••"
+                  {...register('password', { required: true })}
+                />
+              </label>
+            </div>
+            <button
+              type="submit"
+              disabled={!isValid || isSubmitting}
+              className={`mt-6 rounded-full py-3 text-sm font-semibold text-white transition ${
+                !isValid || isSubmitting
+                  ? 'cursor-not-allowed bg-gray-400'
+                  : 'bg-primary hover:opacity-90'
+              }`}
+            >
+              เข้าสู่ระบบ
+            </button>
           </form>
+          <div className="mt-6 flex justify-center gap-2 text-sm">
+            <span className="text-gray-600">ยังไม่มีบัญชี?</span>
+            <Link
+              href="/register"
+              className="font-semibold text-[#1F57CF] hover:underline"
+            >
+              สมัครเลย
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center justify-center gap-3 px-10">
-          <p>ยังไม่มีบัญชีใช่มั้ย ?</p>
-          <Link href="/register" className="text-center text-sm text-black">
-            <span className="text-blue-400 hover:underline">สมัครเลย!</span>
-          </Link>
+        <div className="relative hidden items-center justify-center md:flex">
+          <Image
+            src="/loginImage.jpg"
+            alt="Login Illustration"
+            width={800}
+            height={800}
+            className="rounded-3xl object-cover"
+          />
         </div>
       </div>
     </div>

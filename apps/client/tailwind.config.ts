@@ -23,9 +23,9 @@ const config = {
   daisyui: {
     themes: [
       {
-        floodsim: {
+        classroom: {
           ...defaultTheme.light,
-          primary: '#1c1d54',
+          primary: '#2460E3',
           '.btn': {
             animation: 0,
           },
