@@ -12,10 +12,6 @@ declare module 'next-auth' {
     firstName: string
     lastName: string
     phoneNumber: string | null
-    address: string | null
-    province: string | null
-    district: string | null
-    country: string | null
     accessToken: string
   }
 

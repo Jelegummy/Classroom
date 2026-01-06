@@ -9,10 +9,10 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async register(args: RegisterArgs) {
-    const { email, password, ...rest } = args
+    const { email, password, schoolId, schoolName, ...rest } = args
 
     const exist = await this.db.user.findUnique({ where: { email } })
     if (exist) {
@@ -20,15 +20,34 @@ export class UserPublicService {
     }
 
     const hashedPassword = await this.authService.hashPassword(password)
-    const user = await this.db.user.create({
-      data: {
-        ...rest,
-        email,
-        password: hashedPassword,
-      },
-    })
 
-    return user
+    return this.db.$transaction(async (tx) => {
+      let finalSchoolId = schoolId
+
+      if (!finalSchoolId) {
+        if (!schoolName) {
+          throw new BadRequestException('School name is required')
+        }
+
+        const school = await tx.school.create({
+          data: { name: schoolName },
+        })
+
+        finalSchoolId = school.id
+      }
+
+      const user = await tx.user.create({
+        data: {
+          ...rest,
+          email,
+          password: hashedPassword,
+          role: 'ADMIN',
+          schoolId: finalSchoolId,
+        },
+      })
+
+      return { userId: user.id, schoolId: finalSchoolId }
+    })
   }
 
   async login(args: LoginArgs) {

@@ -3,11 +3,8 @@ export type RegisterArgs = {
   lastName: string
   email: string
   password: string
-  address?: string
-  province?: string
-  district?: string
-  country?: string
   phoneNumber?: string
+  schoolName: string
 }
 
 export type LoginArgs = {
@@ -22,10 +19,6 @@ export type User = {
   firstName: string
   lastName: string
   phoneNumber: string | null
-  address: string | null
-  province: string
-  district: string
-  country: string
 }
 
 export type UpdateUserArgs = {
@@ -33,9 +26,6 @@ export type UpdateUserArgs = {
   lastName?: string
   address?: string
   phoneNumber?: string
-  province: string
-  district: string
-  country: string
 }
 export type UpdatePasswordArgs = {
   oldpassword: string

@@ -29,7 +29,7 @@ model User {
     lastName    String  @map("last_name")
     phoneNumber String? @map("phone_number")
     studentId   String? @map("student_id")
-    points      Int     @default(0)
+    points      Int?    @default(0)
 
     schoolId String @map("school_id")
     school   School @relation(fields: [schoolId], references: [id])

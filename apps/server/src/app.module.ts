@@ -10,10 +10,12 @@ import { MailerModule } from '@nestjs-modules/mailer'
 import { ZodValidationPipe } from 'nestjs-zod'
 
 import { UserModule } from './api/user/user.module'
+import { SchoolModule } from './api/school/school.module'
 
 @Module({
   imports: [
     UserModule,
+    SchoolModule, //Not used yet
     AuthModule,
     PrismaModule,
     MailerModule.forRoot(mailerConfig),
