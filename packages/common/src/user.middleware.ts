@@ -12,7 +12,7 @@ export class UserMiddleware implements NestMiddleware {
   constructor(
     private readonly authService: AuthService,
     private readonly db: PrismaService,
-  ) {}
+  ) { }
 
   async use(req: Request, _res: FastifyReply, next: () => void) {
     try {
@@ -31,10 +31,6 @@ export class UserMiddleware implements NestMiddleware {
           lastName: true,
           role: true,
           phoneNumber: true,
-          address: true,
-          province: true,
-          district: true,
-          country: true,
         },
       })
       req.user = user

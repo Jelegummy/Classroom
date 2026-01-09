@@ -8,12 +8,8 @@ export type Context = FastifyRequest & {
       email: string
       firstName: string
       lastName: string
-      role: 'USER' | 'ADMIN'
+      role: 'STUDENT' | 'ADMIN' | 'TEACHER'
       phoneNumber: string | null
-      address: string | null
-      province: string | null
-      district: string | null
-      country: string | null
     } | null
   }
 }

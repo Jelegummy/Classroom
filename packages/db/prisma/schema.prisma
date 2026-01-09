@@ -8,9 +8,11 @@ generator client {
 }
 
 model School {
-    id         String      @id @default(uuid())
-    name       String      @unique
-    address    String?
+    id          String  @id @default(uuid())
+    name        String  @unique
+    address     String?
+    phoneNumber String? @map("phone_number")
+
     users      User[]
     classrooms Classroom[]
 
@@ -21,49 +23,57 @@ model School {
 }
 
 model User {
-    id          String  @id @default(uuid())
-    email       String  @unique
-    password    String
-    role        Role    @default(STUDENT)
+    id       String @id @default(uuid())
+    email    String @unique
+    password String
+
+    role Role @default(STUDENT)
+
     firstName   String  @map("first_name")
     lastName    String  @map("last_name")
     phoneNumber String? @map("phone_number")
     studentId   String? @map("student_id")
-    points      Int?    @default(0)
+    teacherId   String? @map("teacher_id")
+
+    points         Int     @default(0)
+    major          String?
+    graduationYear Int?    @map("graduation_year")
 
     schoolId String @map("school_id")
     school   School @relation(fields: [schoolId], references: [id])
 
-    enrollments ClassroomOnUser[]
-    inventory   UserItem[]
+    inventory         UserItem[]
+    enrollments       ClassroomOnUser[]
+    createAssignments Assignment[]      @relation("AssignmentCreator")
 
-    createdGames GameSession[]
-    hostedTutors TutorSession[]
+    createdGames GameSession[]        @relation("GameCreator")
+    hostedTutors TutorSession[]       @relation("TutorHost")
+    submissions  HomeworkSubmission[]
 
     attendances Attendance[]
 
-    createdAt        DateTime             @default(now()) @map("created_at")
-    updatedAt        DateTime             @updatedAt @map("updated_at")
-    homeworkSessions HomeworkSubmission[]
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
 
     @@map("users")
 }
 
 model Classroom {
-    id       String @id @default(uuid())
-    name     String
-    code     String @unique
-    schoolId String @map("school_id")
-    school   School @relation(fields: [schoolId], references: [id])
+    id         String  @id @default(uuid())
+    name       String
+    code       String  @unique
+    hoverImage String? @map("hover_image")
+    schoolId   String  @map("school_id")
+    school     School  @relation(fields: [schoolId], references: [id])
 
-    users  ClassroomOnUser[]
-    games  GameSession[]
-    tutors TutorSession[]
+    users ClassroomOnUser[]
 
-    createdAt        DateTime             @default(now()) @map("created_at")
-    updatedAt        DateTime             @updatedAt @map("updated_at")
-    homeworkSessions HomeworkSubmission[]
-    assignments      Assignment[]
+    games       GameSession[]
+    tutors      TutorSession[]
+    assignments Assignment[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
 
     @@map("classrooms")
 }
@@ -79,19 +89,21 @@ model ClassroomOnUser {
 }
 
 model GameSession {
-    id        String  @id @default(uuid())
-    name      String
-    bossName  String  @map("boss_name")
-    maxHp     Int     @map("max_hp")
-    currentHp Int     @map("current_hp")
-    timeLimit Int     @map("time_limit")
-    isActive  Boolean @default(true)
+    id          String  @id @default(uuid())
+    name        String
+    bossName    String  @map("boss_name")
+    imageUrl    String? @map("image_url")
+    maxHp       Int     @map("max_hp")
+    currentHp   Int     @map("current_hp")
+    timeLimit   Int     @map("time_limit")
+    description String?
+    isActive    Boolean @default(true)
 
     classroomId String    @map("classroom_id")
     classroom   Classroom @relation(fields: [classroomId], references: [id])
 
     creatorId String? @map("creator_id")
-    creator   User?   @relation(fields: [creatorId], references: [id])
+    creator   User?   @relation("GameCreator", fields: [creatorId], references: [id])
 
     attendances Attendance[]
 
@@ -105,11 +117,13 @@ model TutorSession {
     id               String   @id @default(uuid())
     topic            String?
     summary          String?
+    dataContent      Json     @map("data_content")
     discordChannelId String   @map("discord_channel_id")
-    timeStamp        DateTime
+    botLink          String?  @map("bot_link")
+    startTime        DateTime @default(now()) @map("start_time")
 
     hostId String @map("host_id")
-    host   User   @relation(fields: [hostId], references: [id])
+    host   User   @relation("TutorHost", fields: [hostId], references: [id])
 
     classroomId String    @map("classroom_id")
     classroom   Classroom @relation(fields: [classroomId], references: [id])
@@ -122,14 +136,24 @@ model TutorSession {
 }
 
 model Assignment {
-    id          String   @id @default(uuid())
-    title       String
-    description String?
-    prompt      String   @map("prompt")
-    dueDate     DateTime @map("due_date")
+    id    String @id @default(uuid())
+    title String @default("Untitled Assignment")
+
+    chatHistory Json?   @map("chat_history")
+    filePdf     String? @map("file_pdf")
+    textContent String? @map("text_content")
+
+    generatedContent String? @map("generated_content")
+    generatedFileTxt String? @map("generated_file_txt")
+
+    gradingCriteria String? @map("grading_criteria")
+
+    status AssignmentStatus @default(DRAFT)
 
     classroomId String    @map("classroom_id")
     classroom   Classroom @relation(fields: [classroomId], references: [id])
+    creatorId   String?   @map("creator_id")
+    creator     User?     @relation("AssignmentCreator", fields: [creatorId], references: [id])
 
     submissions HomeworkSubmission[]
 
@@ -140,10 +164,15 @@ model Assignment {
 }
 
 model HomeworkSubmission {
-    id            String  @id @default(uuid())
+    id String @id @default(uuid())
+
+    isApproved  Boolean  @default(false) @map("is_approved")
+    submittedAt DateTime @default(now()) @map("submitted_at")
+
     transcription String?
-    aiFeedback    String? @map("ai_feedback")
-    isApproved    Boolean @default(false) @map("is_approved")
+
+    aiFeedback String? @map("ai_feedback")
+    score      Int?    @default(0)
 
     assignmentId String     @map("assignment_id")
     assignment   Assignment @relation(fields: [assignmentId], references: [id])
@@ -153,26 +182,22 @@ model HomeworkSubmission {
 
     attendances Attendance[]
 
-    createdAt   DateTime   @default(now()) @map("created_at")
-    updatedAt   DateTime   @updatedAt @map("updated_at")
-    classroom   Classroom? @relation(fields: [classroomId], references: [id])
-    classroomId String?
+    updatedAt DateTime @updatedAt @map("updated_at")
 
     @@map("homework_submissions")
 }
 
 model Attendance {
-    id          String   @id @default(uuid())
-    scoreEarned Int      @default(0)
-    createdAt   DateTime @default(now()) @map("created_at")
+    id          String      @id @default(uuid())
+    scoreEarned Int         @default(0)
+    status      CheckStatus @default(PRESENT)
+    createdAt   DateTime    @default(now()) @map("created_at")
 
     userId String @map("user_id")
     user   User   @relation(fields: [userId], references: [id])
 
     gameSessionId String?      @map("game_session_id")
     gameSession   GameSession? @relation(fields: [gameSessionId], references: [id])
-    damageDealt   Int?         @default(0)
-    status        CheckStatus? @default(ABSENT)
 
     tutorSessionId String?       @map("tutor_session_id")
     tutorSession   TutorSession? @relation(fields: [tutorSessionId], references: [id])
@@ -187,13 +212,13 @@ model Attendance {
 }
 
 model Item {
-    id          String   @id @default(uuid())
+    id          String  @id @default(uuid())
     name        String
     description String?
     price       Int
-    effectValue Int      @map("effect_value")
-    type        ItemType
+    effectValue Int     @map("effect_value")
 
+    type      ItemType
     userItems UserItem[]
 
     @@map("items")
@@ -216,6 +241,12 @@ enum Role {
     ADMIN
     TEACHER
     STUDENT
+}
+
+enum AssignmentStatus {
+    DRAFT
+    PUBLISHED
+    ARCHIVED
 }
 
 enum CheckStatus {

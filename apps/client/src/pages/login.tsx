@@ -6,9 +6,7 @@ import { FaLock, FaUser } from 'react-icons/fa6'
 import { toast } from 'sonner'
 import { LoginArgs } from '@/services/user'
 import { IoChevronBackSharp } from 'react-icons/io5'
-import { Waves } from 'lucide-react'
 import Image from 'next/image'
-// import Wave from '@/components/Wave'
 
 const Login = () => {
   const router = useRouter()
