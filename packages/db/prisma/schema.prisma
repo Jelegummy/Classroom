@@ -190,6 +190,7 @@ model HomeworkSubmission {
 model Attendance {
     id          String      @id @default(uuid())
     scoreEarned Int         @default(0)
+    damageDealt Int         @default(0)
     status      CheckStatus @default(PRESENT)
     createdAt   DateTime    @default(now()) @map("created_at")
 
