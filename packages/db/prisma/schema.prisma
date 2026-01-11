@@ -35,9 +35,8 @@ model User {
     studentId   String? @map("student_id")
     teacherId   String? @map("teacher_id")
 
-    points         Int     @default(0)
-    major          String?
-    graduationYear Int?    @map("graduation_year")
+    points Int     @default(0)
+    major  String?
 
     schoolId String @map("school_id")
     school   School @relation(fields: [schoolId], references: [id])
@@ -46,8 +45,8 @@ model User {
     enrollments       ClassroomOnUser[]
     createAssignments Assignment[]      @relation("AssignmentCreator")
 
-    createdGames GameSession[]        @relation("GameCreator")
-    hostedTutors TutorSession[]       @relation("TutorHost")
+    createdGames Game[]               @relation("GameCreator")
+    hostedTutors Tutor[]              @relation("TutorHost")
     submissions  HomeworkSubmission[]
 
     attendances Attendance[]
@@ -63,14 +62,17 @@ model Classroom {
     name       String
     code       String  @unique
     hoverImage String? @map("hover_image")
+    filePdf    String? @map("file_pdf")
+    announce   String?
+    title      String?
     schoolId   String  @map("school_id")
     school     School  @relation(fields: [schoolId], references: [id])
 
     users ClassroomOnUser[]
 
-    games       GameSession[]
-    tutors      TutorSession[]
-    assignments Assignment[]
+    activeGames       ClassroomOnGame[]
+    activeTutors      ClassroomOnTutor[]
+    activeAssignments ClassroomOnAssignment[]
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
@@ -88,24 +90,21 @@ model ClassroomOnUser {
     @@map("classroom_users")
 }
 
-model GameSession {
+model Game {
     id          String  @id @default(uuid())
     name        String
     bossName    String  @map("boss_name")
     imageUrl    String? @map("image_url")
     maxHp       Int     @map("max_hp")
-    currentHp   Int     @map("current_hp")
     timeLimit   Int     @map("time_limit")
     description String?
     isActive    Boolean @default(true)
 
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
-
     creatorId String? @map("creator_id")
     creator   User?   @relation("GameCreator", fields: [creatorId], references: [id])
 
-    attendances Attendance[]
+    items      GameOnItem[]
+    classrooms ClassroomOnGame[]
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
@@ -113,7 +112,24 @@ model GameSession {
     @@map("game_sessions")
 }
 
-model TutorSession {
+model ClassroomOnGame {
+    id        String  @id @default(uuid())
+    isActive  Boolean @default(true)
+    currentHp Int     @map("current_hp")
+
+    classroomId String    @map("classroom_id")
+    classroom   Classroom @relation(fields: [classroomId], references: [id])
+
+    gameId String @map("game_id")
+    game   Game   @relation(fields: [gameId], references: [id])
+
+    attendances Attendance[]
+
+    @@unique([classroomId, gameId])
+    @@map("classroom_games")
+}
+
+model Tutor {
     id               String   @id @default(uuid())
     topic            String?
     summary          String?
@@ -125,14 +141,25 @@ model TutorSession {
     hostId String @map("host_id")
     host   User   @relation("TutorHost", fields: [hostId], references: [id])
 
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
-
-    attendances Attendance[]
+    classroomSessions ClassroomOnTutor[]
 
     createdAt DateTime @default(now()) @map("created_at")
 
     @@map("tutor_sessions")
+}
+
+model ClassroomOnTutor {
+    id          String    @id @default(uuid())
+    classroomId String    @map("classroom_id")
+    classroom   Classroom @relation(fields: [classroomId], references: [id])
+    tutorId     String    @map("tutor_id")
+    tutor       Tutor     @relation(fields: [tutorId], references: [id])
+
+    startTime DateTime @default(now()) @map("start_time")
+
+    attendances Attendance[]
+
+    @@map("classroom_tutors")
 }
 
 model Assignment {
@@ -150,17 +177,28 @@ model Assignment {
 
     status AssignmentStatus @default(DRAFT)
 
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
-    creatorId   String?   @map("creator_id")
-    creator     User?     @relation("AssignmentCreator", fields: [creatorId], references: [id])
-
-    submissions HomeworkSubmission[]
+    classrooms ClassroomOnAssignment[]
+    creatorId  String?                 @map("creator_id")
+    creator    User?                   @relation("AssignmentCreator", fields: [creatorId], references: [id])
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
 
     @@map("assignments")
+}
+
+model ClassroomOnAssignment {
+    id      String   @id @default(uuid())
+    dueDate DateTime @map("due_date")
+
+    classroomId  String     @map("classroom_id")
+    classroom    Classroom  @relation(fields: [classroomId], references: [id])
+    assignmentId String     @map("assignment_id")
+    assignment   Assignment @relation(fields: [assignmentId], references: [id])
+
+    submissions HomeworkSubmission[]
+
+    @@map("classroom_assignments")
 }
 
 model HomeworkSubmission {
@@ -174,8 +212,8 @@ model HomeworkSubmission {
     aiFeedback String? @map("ai_feedback")
     score      Int?    @default(0)
 
-    assignmentId String     @map("assignment_id")
-    assignment   Assignment @relation(fields: [assignmentId], references: [id])
+    classroomAssignmentId String                @map("assignment_id")
+    classroomAssignment   ClassroomOnAssignment @relation(fields: [classroomAssignmentId], references: [id])
 
     userId String @map("user_id")
     user   User   @relation(fields: [userId], references: [id])
@@ -187,42 +225,28 @@ model HomeworkSubmission {
     @@map("homework_submissions")
 }
 
-model Attendance {
-    id          String      @id @default(uuid())
-    scoreEarned Int         @default(0)
-    damageDealt Int         @default(0)
-    status      CheckStatus @default(PRESENT)
-    createdAt   DateTime    @default(now()) @map("created_at")
-
-    userId String @map("user_id")
-    user   User   @relation(fields: [userId], references: [id])
-
-    gameSessionId String?      @map("game_session_id")
-    gameSession   GameSession? @relation(fields: [gameSessionId], references: [id])
-
-    tutorSessionId String?       @map("tutor_session_id")
-    tutorSession   TutorSession? @relation(fields: [tutorSessionId], references: [id])
-
-    homeworkSubmissionId String?             @map("homework_submission_id")
-    homeworkSubmission   HomeworkSubmission? @relation(fields: [homeworkSubmissionId], references: [id])
-
-    @@unique([userId, gameSessionId])
-    @@unique([userId, tutorSessionId])
-    @@unique([userId, homeworkSubmissionId])
-    @@map("attendances")
-}
-
 model Item {
-    id          String  @id @default(uuid())
+    id          String   @id @default(uuid())
     name        String
     description String?
     price       Int
-    effectValue Int     @map("effect_value")
+    effectValue Int      @map("effect_value")
+    type        ItemType
 
-    type      ItemType
+    games     GameOnItem[]
     userItems UserItem[]
 
     @@map("items")
+}
+
+model GameOnItem {
+    gameId String @map("game_id")
+    itemId String @map("item_id")
+    game   Game   @relation(fields: [gameId], references: [id])
+    item   Item   @relation(fields: [itemId], references: [id])
+
+    @@id([gameId, itemId])
+    @@map("game_items")
 }
 
 model UserItem {
@@ -236,6 +260,31 @@ model UserItem {
     item   Item   @relation(fields: [itemId], references: [id])
 
     @@map("user_items")
+}
+
+model Attendance {
+    id          String      @id @default(uuid())
+    scoreEarned Int         @default(0)
+    damageDealt Int         @default(0) @map("damage_dealt")
+    status      CheckStatus @default(PRESENT)
+    createdAt   DateTime    @default(now()) @map("created_at")
+
+    userId String @map("user_id")
+    user   User   @relation(fields: [userId], references: [id])
+
+    activeGameId String?          @map("active_game_id")
+    activeGame   ClassroomOnGame? @relation(fields: [activeGameId], references: [id])
+
+    activeTutorId String?           @map("active_tutor_id")
+    activeTutor   ClassroomOnTutor? @relation(fields: [activeTutorId], references: [id])
+
+    homeworkSubmissionId String?             @map("homework_submission_id")
+    homeworkSubmission   HomeworkSubmission? @relation(fields: [homeworkSubmissionId], references: [id])
+
+    @@unique([userId, activeGameId])
+    @@unique([userId, activeTutorId])
+    @@unique([userId, homeworkSubmissionId])
+    @@map("attendances")
 }
 
 enum Role {
