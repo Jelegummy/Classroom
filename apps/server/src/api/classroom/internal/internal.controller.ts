@@ -1,7 +1,7 @@
 import { Context } from "@app/common";
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
-import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dt";
+import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dto";
 import { ClassroomInternalService } from "./internal.service";
 
 @ApiTags('Classroom - Internal')

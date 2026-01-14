@@ -1,6 +1,6 @@
 import { PrismaService } from "@app/db";
 import { Injectable } from "@nestjs/common";
-import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dt";
+import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dto";
 import { Context, getUserFromContext } from "@app/common";
 import { nanoid } from 'nanoid';
 

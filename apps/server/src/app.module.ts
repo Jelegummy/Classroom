@@ -12,12 +12,14 @@ import { ZodValidationPipe } from 'nestjs-zod'
 import { UserModule } from './api/user/user.module'
 import { SchoolModule } from './api/school/school.module'
 import { ClassroomModule } from './api/classroom/classroom.module'
+import { ItemsModule } from './api/items/items.module'
 
 @Module({
   imports: [
     UserModule,
     SchoolModule, //Not used yet
     ClassroomModule,
+    ItemsModule,
     AuthModule,
     PrismaModule,
     MailerModule.forRoot(mailerConfig),
