@@ -8,7 +8,7 @@ import { UserInternalService } from './internal.service'
 @ApiTags('User - Internal')
 @Controller('user/internal')
 export class UserInternalController {
-  constructor(private readonly service: UserInternalService) {}
+  constructor(private readonly service: UserInternalService) { }
 
   @Get('/me')
   getMe(@Req() ctx: Context) {

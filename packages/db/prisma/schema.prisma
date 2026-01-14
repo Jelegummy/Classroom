@@ -84,7 +84,7 @@ model ClassroomOnUser {
     userId      String
     classroomId String
     user        User      @relation(fields: [userId], references: [id])
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
+    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
     @@id([userId, classroomId])
     @@map("classroom_users")
@@ -118,7 +118,7 @@ model ClassroomOnGame {
     currentHp Int     @map("current_hp")
 
     classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
+    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
     gameId String @map("game_id")
     game   Game   @relation(fields: [gameId], references: [id])
@@ -151,7 +151,7 @@ model Tutor {
 model ClassroomOnTutor {
     id          String    @id @default(uuid())
     classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id])
+    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
     tutorId     String    @map("tutor_id")
     tutor       Tutor     @relation(fields: [tutorId], references: [id])
 
@@ -192,7 +192,7 @@ model ClassroomOnAssignment {
     dueDate DateTime @map("due_date")
 
     classroomId  String     @map("classroom_id")
-    classroom    Classroom  @relation(fields: [classroomId], references: [id])
+    classroom    Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
     assignmentId String     @map("assignment_id")
     assignment   Assignment @relation(fields: [assignmentId], references: [id])
 
