@@ -10,7 +10,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
