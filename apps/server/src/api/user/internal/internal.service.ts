@@ -52,4 +52,42 @@ export class UserInternalService {
       data: { password: newHashedPassword },
     })
   }
+
+  async getAllUsers(ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (user.role !== 'ADMIN') {
+      throw new Error('Only admins can access all users')
+    }
+
+    const users = await this.db.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        studentId: true,
+        teacherId: true,
+        major: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+
+    return users
+  }
+
+  async deleteUser(args: { id: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (user.role !== 'ADMIN') {
+      throw new Error('Only admins can delete users')
+    }
+
+    await this.db.user.delete({
+      where: { id: args.id },
+    })
+  }
 }

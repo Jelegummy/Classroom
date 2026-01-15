@@ -1,5 +1,5 @@
 import { Context } from '@app/common'
-import { Body, Controller, Get, HttpStatus, Patch, Req } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Req } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
@@ -27,6 +27,20 @@ export class UserInternalController {
   @Patch('/password')
   async updatePassword(@Body() args: UpdatePasswordArgs, @Req() ctx: Context) {
     await this.service.updatePassword(args, ctx)
+
+    return { statusCode: HttpStatus.OK }
+  }
+
+  @Get('/all')
+  async getAllUsers(@Req() ctx: Context) {
+    const res = await this.service.getAllUsers(ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Delete('/:id')
+  async deleteUser(@Param('id') id: string, @Req() ctx: Context) {
+    await this.service.deleteUser({ id }, ctx)
 
     return { statusCode: HttpStatus.OK }
   }
