@@ -1,6 +1,6 @@
 import { PrismaService } from "@app/db";
 import { Injectable } from "@nestjs/common";
-import { ItemsArgs, UpdateItemsArgs } from "./internal.dto";
+import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from "./internal.dto";
 import { Context, getUserFromContext } from "@app/common";
 
 @Injectable()
@@ -96,5 +96,36 @@ export class ItemsInternalService {
         const items = await this.db.item.findMany();
 
         return items;
+    }
+
+    async createSpacialItems(args: SpacialItemsArgs, ctx: Context, userId: string, itemId: string) {
+        const user = getUserFromContext(ctx);
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+            throw new Error('Only teachers and admins can create spacial items');
+        }
+
+        return await this.db.userItem.upsert({
+            where: {
+                user_item_unique: {
+                    userId,
+                    itemId
+                }
+            },
+            update: {
+                amount: {
+                    increment: args.amount
+                }
+            },
+            create: {
+                userId: userId,
+                itemId: itemId,
+                amount: args.amount
+            }
+        })
     }
 }

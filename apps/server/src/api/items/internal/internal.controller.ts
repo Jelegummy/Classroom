@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { ItemsInternalService } from "./internal.service";
-import { ItemsArgs, UpdateItemsArgs } from "./internal.dto";
+import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from "./internal.dto";
 import { Context } from "@app/common";
 
 @ApiTags('Items - Internal')
@@ -40,6 +40,13 @@ export class ItemsInternalController {
     @Get('/all')
     async getAllItems(@Req() ctx: Context) {
         const res = await this.service.getAllItems(ctx);
+
+        return { statusCode: HttpStatus.OK, data: res }
+    }
+
+    @Post('/spacial-items/:userId/:itemId')
+    async createSpacialItems(@Body() args: SpacialItemsArgs, @Req() ctx: Context, @Param('userId') userId: string, @Param('itemId') itemId: string) {
+        const res = await this.service.createSpacialItems(args, ctx, userId, itemId);
 
         return { statusCode: HttpStatus.OK, data: res }
     }

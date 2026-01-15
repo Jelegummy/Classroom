@@ -259,7 +259,7 @@ model UserItem {
     itemId String @map("item_id")
     item   Item   @relation(fields: [itemId], references: [id])
 
-    @@unique([userId, itemId])
+    @@unique([userId, itemId], name: "user_item_unique")
     @@map("user_items")
 }
 

@@ -22,4 +22,10 @@ export class UpdateItemsArgs extends createZodDto(
     })
 ) { }
 
+export class SpacialItemsArgs extends createZodDto(
+    z.object({
+        amount: z.number().min(1),
+    })
+) { }
+
 patchNestJsSwagger();
