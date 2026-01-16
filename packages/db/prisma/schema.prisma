@@ -245,6 +245,9 @@ model GameOnItem {
     game   Game   @relation(fields: [gameId], references: [id])
     item   Item   @relation(fields: [itemId], references: [id])
 
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
     @@id([gameId, itemId])
     @@map("game_items")
 }

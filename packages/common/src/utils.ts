@@ -10,6 +10,7 @@ export type Context = FastifyRequest & {
       lastName: string
       role: 'STUDENT' | 'ADMIN' | 'TEACHER'
       phoneNumber: string | null
+      schoolId?: string
     } | null
   }
 }

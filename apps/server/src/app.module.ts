@@ -13,12 +13,14 @@ import { UserModule } from './api/user/user.module'
 import { SchoolModule } from './api/school/school.module'
 import { ClassroomModule } from './api/classroom/classroom.module'
 import { ItemsModule } from './api/items/items.module'
+import { GameModule } from './api/game/game.module'
 
 @Module({
   imports: [
     UserModule,
     SchoolModule, //Not used yet
     ClassroomModule,
+    GameModule,
     ItemsModule,
     AuthModule,
     PrismaModule,
