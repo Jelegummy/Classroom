@@ -31,7 +31,7 @@ export class UserPublicService {
 
         const school = await tx.school.create({
           data: { name: schoolName },
-        })
+        }) // wait mail to be sent before creating user (and fix this api)
 
         finalSchoolId = school.id
       }

@@ -8,12 +8,12 @@ import { SchoolPublicDto } from "./public.dto";
 export class SchoolPublicController {
     constructor(private readonly service: SchoolPublicService) { }
 
-    @Post('/')
-    async createSchool(@Body() args: SchoolPublicDto) {
-        await this.service.createSchool(args);
+    // @Post('/')
+    // async createSchool(@Body() args: SchoolPublicDto) {
+    //     await this.service.createSchool(args);
 
-        return { statusCode: HttpStatus.CREATED }
-    }
+    //     return { statusCode: HttpStatus.CREATED }
+    // }
 }
 
 //Not used yet
