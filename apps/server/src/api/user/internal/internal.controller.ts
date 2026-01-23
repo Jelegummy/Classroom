@@ -11,10 +11,10 @@ export class UserInternalController {
   constructor(private readonly service: UserInternalService) { }
 
   @Get('/me')
-  getMe(@Req() ctx: Context) {
-    const res = this.service.getMe(ctx)
+  async getMe(@Req() ctx: Context) {
+    const res = await this.service.getMe(ctx)
 
-    return { statussCode: HttpStatus.OK, data: res }
+    return { statusCode: HttpStatus.OK, data: res }
   }
 
   @Patch('/')

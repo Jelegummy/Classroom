@@ -12,10 +12,35 @@ export class UserInternalService {
     private readonly authService: AuthService,
   ) { }
 
-  getMe(ctx: Context) {
+  async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new Error('User not found')
+    }
 
-    return user
+    const users = await this.db.user.findUnique({
+      where: { id: user.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        studentId: true,
+        teacherId: true,
+        major: true,
+        role: true,
+
+        school: {
+          select: {
+            id: true,
+            name: true,
+          },
+        }
+
+      },
+    })
+    return users
   }
 
   async updateUser(args: UpdateUserArgs, ctx: Context) {
@@ -73,6 +98,12 @@ export class UserInternalService {
         role: true,
         createdAt: true,
         updatedAt: true,
+        school: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 
