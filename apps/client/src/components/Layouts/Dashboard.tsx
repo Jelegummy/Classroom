@@ -10,7 +10,7 @@ const DashboardLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
         <h2 className="flex items-center gap-2 text-2xl font-bold">
           <Link href="/" className="flex flex-row items-center gap-2">
             <p className="mt-1 border-l border-gray-300 pl-2 text-sm font-bold md:text-sm">
-              Floodsim
+              Leanify
             </p>
           </Link>
         </h2>

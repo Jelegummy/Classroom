@@ -35,7 +35,7 @@ const Login = () => {
 
       localStorage.setItem('accessToken', session?.user.accessToken ?? '')
 
-      router.push('/dashboard/account')
+      router.push('/dashboard')
     } catch (e) {
       toast.error((e as Error).message)
     }

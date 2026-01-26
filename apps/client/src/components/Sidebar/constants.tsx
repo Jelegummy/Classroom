@@ -1,34 +1,27 @@
-import { FaUserCog, FaCloudRain } from 'react-icons/fa'
-import { FaFileArrowDown } from 'react-icons/fa6'
-import { LuSchool } from 'react-icons/lu'
-// import { TbLockPassword } from 'react-icons/tb'
-// import { TbBoxModel2, TbLockPassword } from 'react-icons/tb'
+import { GoBook, GoHome } from 'react-icons/go'
+import { SiGoogleclassroom } from 'react-icons/si'
+import { IoMdPaper } from 'react-icons/io'
 
 export const USER_ROUTES = [
   {
-    title: 'อัปโหลดไฟล์',
+    title: 'หน้าแรก',
     route: '/dashboard/place',
-    icon: <FaFileArrowDown />,
+    icon: <GoHome className="h-6 w-6" />,
   },
   {
-    title: 'ปริมาณน้ำฝน',
-    route: '/dashboard/spatialrain',
-    icon: <FaCloudRain />,
-  },
-  // {
-  //   title: 'โมเดล',
-  //   route: '/dashboard/model',
-  //   icon: <TbBoxModel2 />,
-  // },
-  {
-    title: 'ข้อมูลสถานที่',
-    route: '/dashboard/object',
-    icon: <LuSchool />,
+    title: 'ห้องเรียน',
+    route: '/dashboard/classroom',
+    icon: <SiGoogleclassroom className="h-6 w-6" />,
   },
   {
-    title: 'จัดการบัญชี',
-    route: '/dashboard/account',
-    icon: <FaUserCog />,
+    title: 'การบ้าน',
+    route: '/dashboard/homework',
+    icon: <IoMdPaper className="h-6 w-6" />,
+  },
+  {
+    title: 'การติว',
+    route: '/dashboard/tutoring',
+    icon: <GoBook className="h-6 w-6" />,
   },
 ]
 

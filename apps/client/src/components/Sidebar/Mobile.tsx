@@ -20,7 +20,7 @@ const SidebarMobile = () => {
         <div className="flex h-full flex-col justify-between px-6 py-8">
           <div className="flex flex-col gap-2">
             <Link href="/" className="flex flex-row items-center gap-3">
-              <p className="text-xl font-bold">Floodsim</p>
+              <p className="text-xl font-bold">Leanify</p>
             </Link>
             <div className="flex flex-col gap-2">
               <div className="mt-6 flex w-full flex-col gap-1">
@@ -32,6 +32,7 @@ const SidebarMobile = () => {
                       route={r.route}
                       currentRoute={router.pathname}
                       icon={r.icon}
+                      isOpen={true}
                     />
                   ))}
               </div>

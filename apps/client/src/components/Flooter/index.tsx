@@ -8,10 +8,10 @@ const Flooter = () => {
       <footer className="flex w-full shrink-0 flex-col items-center gap-2 border-t bg-gray-50 px-4 py-6 sm:flex-row md:px-6">
         <div className="flex items-center gap-2">
           <Waves className="h-5 w-5 text-slate-600" />
-          <span className="text-sm font-medium">FloodSim</span>
+          <span className="text-sm font-medium">Leanify</span>
         </div>
         <p className="text-xs text-gray-500 sm:ml-4">
-          © 2024 FloodSim. All rights reserved.
+          © 2024 Leanify. All rights reserved.
         </p>
         <nav className="flex gap-4 sm:ml-auto sm:gap-6">
           <Link

@@ -1,75 +1,71 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { signOut, useSession } from 'next-auth/react'
-import { MdLogout } from 'react-icons/md'
+import { useSession } from 'next-auth/react'
+import { useState } from 'react'
+import Image from 'next/image'
+import { MdMenuOpen } from 'react-icons/md'
 
 import SidebarItem from './Item'
 import { USER_ROUTES } from './constants'
-import { useQuery } from '@tanstack/react-query'
-import { getMe } from '@/services/user'
-// import Image from 'next/image'
 
 const SidebarDesktop = () => {
   const router = useRouter()
   const { data: session } = useSession()
-
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => getMe(session?.user.accessToken ?? '', {}),
-    enabled: !!session?.user.accessToken,
-  })
+  const [isOpen, setIsOpen] = useState(true)
 
   return (
-    <div className="drawer-content hidden h-screen w-60 flex-col justify-between bg-white px-3 py-5 shadow-md md:flex">
-      <div className="flex flex-col gap-5">
-        <Link href="/" className="flex items-center justify-center">
-          {/* <Image
-            src="/image.png"
-            alt="Massager"
-            width={100}
-            height={100}
-            className="h-14 w-14 rounded-full object-cover"
-            priority
-          /> */}
-          <div className="text-md flex-row gap-3 bg-gradient-to-r from-[#252661] via-blue-700 to-sky-600 bg-clip-text px-3 text-xl font-extrabold tracking-wide text-transparent">
-            {/* <Waves className="h-50 w-50 text-blue-600" /> */}
-            <span className="hidden text-xl sm:inline">FloodSim Viewer</span>
-          </div>
-        </Link>
+    <div
+      className={`drawer-content hidden h-screen flex-col bg-white py-5 shadow-md transition-all duration-300 md:flex ${isOpen ? 'w-60 px-3' : 'w-20 px-2'} `}
+    >
+      <div className="flex flex-col gap-6">
+        <div
+          className={`flex items-center transition-all ${
+            isOpen ? 'justify-start gap-2' : 'justify-center'
+          }`}
+        >
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100"
+            aria-label="Toggle Sidebar"
+          >
+            <MdMenuOpen
+              className={`h-6 w-6 text-black transition-transform duration-300 ${
+                isOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {isOpen && (
+            <Link href="/" className="flex items-center overflow-hidden">
+              <Image
+                src="/learnify-logo.png"
+                alt="Leanify"
+                width={44}
+                height={44}
+                className="rounded-full object-cover"
+                priority
+              />
+              <span className="whitespace-nowrap text-2xl font-extrabold tracking-wide text-black">
+                Leanify
+              </span>
+            </Link>
+          )}
+        </div>
+
         <div className="mt-1 flex flex-col gap-3">
-          {session?.user.role === 'USER' &&
+          {session?.user.role === 'ADMIN' &&
             USER_ROUTES.map((r, i) => (
               <SidebarItem
-                key={`user-${i}`}
+                key={i}
                 title={r.title}
                 route={r.route}
                 currentRoute={router.pathname}
                 icon={r.icon}
+                isOpen={isOpen}
               />
             ))}
         </div>
       </div>
-      {user && (
-        <div className="flex flex-col gap-1">
-          <div className="pt-3">
-            <div className="mb-5 flex flex-col items-center border-b-[0.5px] border-gray-500 p-3">
-              <p className="text-base font-semibold text-gray-800">
-                {user.firstName} {user.lastName}
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                signOut({ redirect: false })
-                router.push('/')
-              }}
-              className="mx-auto flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#6b92df] px-4 py-2 text-base font-semibold text-white shadow-md transition-all hover:border-2 hover:border-[#6b92df] hover:bg-white hover:text-[#6b92df]"
-            >
-              <MdLogout className="h-5 w-5" />
-              ออกจากระบบ
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
