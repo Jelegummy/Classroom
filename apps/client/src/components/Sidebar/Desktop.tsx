@@ -1,58 +1,65 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
 import Image from 'next/image'
 import { MdMenuOpen } from 'react-icons/md'
 
 import SidebarItem from './Item'
 import { USER_ROUTES } from './constants'
 
-const SidebarDesktop = () => {
+interface SidebarProps {
+  isOpen: boolean
+  onToggle: () => void
+}
+
+const SidebarDesktop = ({ isOpen, onToggle }: SidebarProps) => {
   const router = useRouter()
   const { data: session } = useSession()
-  const [isOpen, setIsOpen] = useState(true)
 
   return (
-    <div
-      className={`drawer-content hidden h-screen flex-col bg-white py-5 shadow-md transition-all duration-300 md:flex ${isOpen ? 'w-60 px-3' : 'w-20 px-2'} `}
+    <aside
+      className={`relative hidden h-screen flex-col bg-white py-5 shadow-md transition-all duration-300 md:flex ${
+        isOpen ? 'px-3' : 'px-2'
+      }`}
     >
-      <div className="flex flex-col gap-6">
+      <button
+        onClick={onToggle}
+        aria-label="Toggle Sidebar"
+        className="absolute right-[-16px] top-6 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white shadow-md hover:bg-gray-100"
+      >
+        <MdMenuOpen
+          className={`h-5 w-5 transition-transform duration-300 ${
+            isOpen ? 'rotate-180' : ''
+          }`}
+        />
+      </button>
+
+      <div className="flex flex-col gap-4">
         <div
           className={`flex items-center transition-all ${
             isOpen ? 'justify-start gap-2' : 'justify-center'
           }`}
         >
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100"
-            aria-label="Toggle Sidebar"
-          >
-            <MdMenuOpen
-              className={`h-6 w-6 text-black transition-transform duration-300 ${
-                isOpen ? 'rotate-180' : ''
-              }`}
+          <Link href="/" className="flex items-center gap-2 overflow-hidden">
+            <Image
+              src="/learnify-logo.png"
+              alt="Leanify"
+              width={44}
+              height={44}
+              className="rounded-full object-cover"
+              priority
             />
-          </button>
-
-          {isOpen && (
-            <Link href="/" className="flex items-center overflow-hidden">
-              <Image
-                src="/learnify-logo.png"
-                alt="Leanify"
-                width={44}
-                height={44}
-                className="rounded-full object-cover"
-                priority
-              />
-              <span className="whitespace-nowrap text-2xl font-extrabold tracking-wide text-black">
+            {isOpen && (
+              <span className="whitespace-nowrap text-2xl font-extrabold text-black">
                 Leanify
               </span>
-            </Link>
-          )}
+            )}
+          </Link>
         </div>
 
-        <div className="mt-1 flex flex-col gap-3">
+        <hr />
+
+        <div className="flex flex-col gap-3">
           {session?.user.role === 'ADMIN' &&
             USER_ROUTES.map((r, i) => (
               <SidebarItem
@@ -66,7 +73,7 @@ const SidebarDesktop = () => {
             ))}
         </div>
       </div>
-    </div>
+    </aside>
   )
 }
 

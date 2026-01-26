@@ -1,33 +1,34 @@
 import Link from 'next/link'
 
-type SidebarItemProps = {
+type Props = {
   title: string
   route: string
   currentRoute: string
   icon: React.ReactNode
   isOpen: boolean
+  onClick?: () => void
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({
+const SidebarItem = ({
   title,
   route,
   currentRoute,
   icon,
   isOpen,
-}) => {
-  const active = route === currentRoute
-
+  onClick,
+}: Props) => {
   return (
     <Link
       href={route}
+      onClick={onClick}
       className={`flex items-center rounded-xl p-2 transition-all ${isOpen ? 'justify-start gap-2' : 'justify-center'} ${
-        active
-          ? 'border-2 bg-[#1F57CF] text-white shadow-inset-sm'
-          : 'bg-white text-zinc-500 hover:bg-slate-200 hover:text-[#000000]'
-      } `}
+        route === currentRoute
+          ? 'bg-[#1F57CF] text-white'
+          : 'text-gray-700 hover:bg-gray-100'
+      }`}
     >
       {icon}
-      {isOpen && <p className="text-md font-normal">{title}</p>}
+      {isOpen && <span>{title}</span>}
     </Link>
   )
 }
