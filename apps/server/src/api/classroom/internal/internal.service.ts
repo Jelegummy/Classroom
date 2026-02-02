@@ -1,5 +1,5 @@
 import { PrismaService } from "@app/db";
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dto";
 import { Context, getUserFromContext } from "@app/common";
 import { nanoid } from 'nanoid';
@@ -14,11 +14,13 @@ export class ClassroomInternalService {
         const user = getUserFromContext(ctx);
 
         if (!user) {
-            throw new Error('User not found');
+            throw new UnauthorizedException('User not found')
         }
 
         if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-            throw new Error('Only teachers and admins can create classrooms');
+            throw new ForbiddenException(
+                'Only teachers and admins can create classrooms'
+            )
         }
 
         let code = '';
@@ -36,7 +38,7 @@ export class ClassroomInternalService {
         });
 
         if (!userWithSchool?.schoolId) {
-            throw new Error('User school not found');
+            throw new BadRequestException('User school not found');
         }
 
         const classroom = await this.db.classroom.create({

@@ -16,4 +16,15 @@ export type Classroom = {
     name: string,
     title?: string,
     hoverImage?: string,
+    announce: string,
+    code: string,
+    createdAt: string,
+    updatedAt: string,
+    users: {
+        user: {
+            id: string,
+            firstName: string,
+            lastName: string,
+        }
+    }[],
 }
