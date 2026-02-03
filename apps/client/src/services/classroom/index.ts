@@ -15,7 +15,7 @@ export const CreateClassRoom = async (args: CreateClassroom) => {
     if (res.statusCode >= HttpStatus.BAD_REQUEST) {
         throw new Error(res.message)
     }
-}
+} // use for creating classroom
 
 export const JoinClassroom = async (args: JoinClassroomArgs) => {
     const session = await getSession()
@@ -32,7 +32,7 @@ export const JoinClassroom = async (args: JoinClassroomArgs) => {
     }
 
     return res.data
-}
+} // use for joining classroom (student)
 
 export const UpdateClassRoom = async (args: UpdateClassroom) => {
     const session = await getSession()
@@ -44,7 +44,7 @@ export const UpdateClassRoom = async (args: UpdateClassroom) => {
     if (res.statusCode >= HttpStatus.BAD_REQUEST) {
         throw new Error(res.message)
     }
-}
+} // use for updating classroom
 
 export const getClassroom = async (id: string) => {
     const session = await getSession()
@@ -56,7 +56,7 @@ export const getClassroom = async (id: string) => {
     }
 
     return res.data
-}
+} // use for getting classroom by id
 
 export const getAllClassrooms = async () => {
     const session = await getSession()
@@ -68,7 +68,7 @@ export const getAllClassrooms = async () => {
     }
 
     return res.data
-}
+} // use for getting all classrooms
 
 export const deleteClassroom = async (id: string) => {
     const session = await getSession()
@@ -78,4 +78,4 @@ export const deleteClassroom = async (id: string) => {
     if (res.statusCode >= HttpStatus.BAD_REQUEST) {
         throw new Error(res.message)
     }
-}
+} // use for deleting classroom
