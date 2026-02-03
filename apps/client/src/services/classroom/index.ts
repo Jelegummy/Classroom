@@ -1,5 +1,5 @@
 import { ENDPOINT, fetchers, HttpStatus } from "@/utils";
-import { Classroom, CreateClassroom, UpdateClassroom } from "./types";
+import { Classroom, CreateClassroom, JoinClassroomArgs, UpdateClassroom } from "./types";
 import { getSession } from "next-auth/react";
 
 export const CreateClassRoom = async (args: CreateClassroom) => {
@@ -15,6 +15,23 @@ export const CreateClassRoom = async (args: CreateClassroom) => {
     if (res.statusCode >= HttpStatus.BAD_REQUEST) {
         throw new Error(res.message)
     }
+}
+
+export const JoinClassroom = async (args: JoinClassroomArgs) => {
+    const session = await getSession()
+
+    const res = await fetchers.Post<Classroom>(
+        `${ENDPOINT}/classroom/internal/join/code`,
+        {
+            data: args,
+            token: session?.user.accessToken,
+        },
+    )
+    if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+        throw new Error(res.message)
+    }
+
+    return res.data
 }
 
 export const UpdateClassRoom = async (args: UpdateClassroom) => {

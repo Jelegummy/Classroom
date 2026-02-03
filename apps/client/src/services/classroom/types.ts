@@ -28,3 +28,7 @@ export type Classroom = {
         }
     }[],
 }
+
+export type JoinClassroomArgs = {
+    code: string,
+}
