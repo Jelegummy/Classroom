@@ -25,6 +25,7 @@ export type Classroom = {
             id: string,
             firstName: string,
             lastName: string,
+            role: 'TEACHER' | 'STUDENT' | 'ADMIN',
         }
     }[],
 }

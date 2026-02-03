@@ -92,9 +92,9 @@ export default function Page() {
               <div className="card h-full bg-[url('/classroom-bg.jpg')] shadow-md">
                 <div className="card-body flex flex-col">
                   <h2 className="card-title text-xl">{classroom.name}</h2>
-
                   <p className="text-sm text-black">
                     {classroom.users
+                      .filter(u => u.user.role === 'TEACHER')
                       .map(u => `${u.user.firstName} ${u.user.lastName}`)
                       .join(', ')}
                   </p>
