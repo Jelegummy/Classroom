@@ -1,6 +1,6 @@
 import { PrismaService } from "@app/db";
 import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common";
-import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dto";
+import { CreateClassroomArgs, JoinCodeArgs, UpdateClassroomArgs } from "./internal.dto";
 import { Context, getUserFromContext } from "@app/common";
 import { nanoid } from 'nanoid';
 
@@ -178,5 +178,43 @@ export class ClassroomInternalService {
         });
 
         return classrooms;
+    }
+
+    async joinClassroom(args: JoinCodeArgs, ctx: Context) {
+        const user = getUserFromContext(ctx);
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const classroom = await this.db.classroom.findUnique({
+            where: { code: args.code.toUpperCase() },
+            include: { users: true }
+        });
+
+        if (!classroom) {
+            throw new BadRequestException('Classroom not found');
+        }
+
+        const isAlreadyJoined = classroom.users.some(
+            cu => cu.userId === user.id
+        );
+
+        if (isAlreadyJoined) {
+            throw new BadRequestException('User already joined this classroom');
+        }
+
+        await this.db.classroomOnUser.create({
+            data: {
+                classroom: {
+                    connect: { id: classroom.id }
+                },
+                user: {
+                    connect: { id: user.id }
+                }
+            }
+        });
+
+        return classroom;
     }
 }

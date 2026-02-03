@@ -18,4 +18,10 @@ export class UpdateClassroomArgs extends createZodDto(
     })
 ) { }
 
+export class JoinCodeArgs extends createZodDto(
+    z.object({
+        code: z.string().min(1),
+    })
+) { }
+
 patchNestJsSwagger();

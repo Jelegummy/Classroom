@@ -1,7 +1,7 @@
 import { Context } from "@app/common";
 import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
-import { CreateClassroomArgs, UpdateClassroomArgs } from "./internal.dto";
+import { CreateClassroomArgs, JoinCodeArgs, UpdateClassroomArgs } from "./internal.dto";
 import { ClassroomInternalService } from "./internal.service";
 
 @ApiTags('Classroom - Internal')
@@ -40,6 +40,13 @@ export class ClassroomInternalController {
     @Get('/all')
     async getAllClassroom(@Req() ctx: Context) {
         const res = await this.service.getAllClassroom(ctx);
+
+        return { statusCode: HttpStatus.OK, data: res }
+    }
+
+    @Post('/join/code')
+    async joinClassroom(@Body() args: JoinCodeArgs, @Req() ctx: Context) {
+        const res = await this.service.joinClassroom(args, ctx);
 
         return { statusCode: HttpStatus.OK, data: res }
     }

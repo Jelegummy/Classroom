@@ -39,7 +39,7 @@ export default function CreateButton() {
           className="btn btn-primary btn-sm"
           onClick={() => setOpen(true)}
         >
-          + สร้างห้องเรียน
+          + เพิ่มห้องเรียน
         </button>
       </div>
 
