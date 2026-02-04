@@ -8,7 +8,7 @@ declare module 'next-auth' {
   interface User {
     id: string
     email: string
-    role: 'ADMIN' | 'USER'
+    role: 'ADMIN' | 'TEACHER' | 'STUDENT'
     firstName: string
     lastName: string
     phoneNumber: string | null

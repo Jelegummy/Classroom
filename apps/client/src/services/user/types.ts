@@ -15,7 +15,7 @@ export type LoginArgs = {
 export type User = {
   id: string
   email: string
-  role: 'USER' | 'ADMIN'
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT'
   firstName: string
   lastName: string
   phoneNumber: string | null

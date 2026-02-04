@@ -2,7 +2,7 @@ import { GoBook, GoHome } from 'react-icons/go'
 import { SiGoogleclassroom } from 'react-icons/si'
 import { IoMdPaper } from 'react-icons/io'
 
-export const USER_ROUTES = [
+export const TEARCHER_ROUTES = [
   {
     title: 'หน้าแรก',
     route: '/dashboard/place',
