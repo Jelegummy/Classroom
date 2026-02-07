@@ -3,13 +3,14 @@ import DashboardLayout from '@/components/Layouts/Dashboard'
 import NavbarContent from '@/components/NavbarContent'
 import { getAllClassrooms } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
-import CreateButton from './createBotton'
+import CreateButton from './create-botton'
 import { useState } from 'react'
 import { SiGoogleclassroom } from 'react-icons/si'
 import { HiUsers } from 'react-icons/hi2'
 import { VscNotebook } from 'react-icons/vsc'
 import { CiSettings } from 'react-icons/ci'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 
 export default function Page() {
   const [search, setSearch] = useState('')
@@ -86,47 +87,54 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 md:grid-cols-3">
+          {/* {classrooms?.map(c => ( */}
           {filteredClassrooms?.map(classroom => (
-            <div
+            <Link
               key={classroom.id}
-              className="card w-96 overflow-hidden rounded-xl bg-base-100 shadow-md transition hover:shadow-lg"
+              href={`/dashboard/classroom/${classroom.id}`}
             >
               <div
-                className="relative h-28 bg-cover bg-center"
-                style={{
-                  backgroundImage: "url('/classroom-bg.jpg')",
-                }}
+                key={classroom.id}
+                className="card w-96 overflow-hidden rounded-xl bg-base-100 shadow-md transition hover:shadow-lg"
               >
-                <div className="relative z-10 p-4 text-black">
-                  <h2 className="line-clamp-2 text-lg font-semibold">
-                    {classroom.name}
-                  </h2>
-                  <p className="mt-1 text-sm opacity-90">
-                    {classroom.users
-                      .filter(u => u.user.role === 'TEACHER')
-                      .map(u => `${u.user.firstName} ${u.user.lastName}`)
-                      .join(', ')}
-                  </p>
+                <div
+                  className="relative h-28 bg-cover bg-center"
+                  style={{
+                    backgroundImage: "url('/classroom-bg.jpg')",
+                  }}
+                >
+                  <div className="relative z-10 p-4 text-black">
+                    <h2 className="line-clamp-2 text-lg font-semibold">
+                      {classroom.name}
+                    </h2>
+                    <p className="mt-1 text-sm opacity-90">
+                      {classroom.users
+                        .filter(u => u.user.role === 'TEACHER')
+                        .map(u => `${u.user.firstName} ${u.user.lastName}`)
+                        .join(', ')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex h-12 flex-col p-4">
+                  {(session?.user?.role === 'TEACHER' ||
+                    session?.user?.role === 'ADMIN') && (
+                    <div className="flex items-center justify-end">
+                      <CiSettings className="h-5 w-5 cursor-pointer" />
+                      {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
+                    </div>
+                  )}
+                  {session?.user?.role === 'STUDENT' && (
+                    <div className="flex items-center justify-end text-sm text-gray-500">
+                      {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
+                      นักเรียน
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="flex h-12 flex-col p-4">
-                {(session?.user?.role === 'TEACHER' ||
-                  session?.user?.role === 'ADMIN') && (
-                  <div className="flex items-center justify-end">
-                    <CiSettings className="h-5 w-5 cursor-pointer" />
-                    {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
-                  </div>
-                )}
-                {session?.user?.role === 'STUDENT' && (
-                  <div className="flex items-center justify-end text-sm text-gray-500">
-                    {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
-                    นักเรียน
-                  </div>
-                )}
-              </div>
-            </div>
+            </Link>
           ))}
+          {/* ))} */}
         </div>
       </DashboardLayout>
     </AppLayout>
