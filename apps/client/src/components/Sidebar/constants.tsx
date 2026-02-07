@@ -5,22 +5,22 @@ import { IoMdPaper } from 'react-icons/io'
 export const TEARCHER_ROUTES = [
   {
     title: 'หน้าแรก',
-    route: '/dashboard/place',
+    route: '/dashboard',
     icon: <GoHome className="h-6 w-6" />,
   },
   {
     title: 'ห้องเรียน',
-    route: '/dashboard/classroom',
+    route: '/dashboard/teacher/classroom',
     icon: <SiGoogleclassroom className="h-6 w-6" />,
   },
   {
     title: 'การบ้าน',
-    route: '/dashboard/homework',
+    route: '/dashboard/teacher/homework',
     icon: <IoMdPaper className="h-6 w-6" />,
   },
   {
     title: 'การติว',
-    route: '/dashboard/tutoring',
+    route: '/dashboard/teacher/tutoring',
     icon: <GoBook className="h-6 w-6" />,
   },
 ]

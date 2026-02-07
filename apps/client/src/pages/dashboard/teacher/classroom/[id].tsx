@@ -134,11 +134,17 @@ export default function ClassroomId() {
           </div>
 
           <div className="p-4">
-            {activeTab === 'main_tabs' && <div>Content Tab 1</div>}
-            {activeTab === 'jobs_tabs' && <div>Content Tab 2</div>}
-            {activeTab === 'game_tabs' && <div>Content Tab 3</div>}
-            {activeTab === 'tutor_tabs' && <div>Content Tab 4</div>}
-            {activeTab === 'people_tabs' && <div>Content Tab 5</div>}
+            {activeTab === 'main_tabs' && (
+              <div>make components main to create tasks</div>
+            )}
+            {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
+            {/* connect model aong */}
+            {activeTab === 'game_tabs' && <div>make components game</div>}
+            {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
+            {/* connect model jee */}
+            {activeTab === 'people_tabs' && (
+              <div>make components people for ranking</div>
+            )}
           </div>
         </div>
       </DashboardLayout>
