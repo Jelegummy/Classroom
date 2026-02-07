@@ -14,6 +14,7 @@ import { SchoolModule } from './api/school/school.module'
 import { ClassroomModule } from './api/classroom/classroom.module'
 import { ItemsModule } from './api/items/items.module'
 import { GameModule } from './api/game/game.module'
+import { AnnounceModule } from './api/announce/announce.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { GameModule } from './api/game/game.module'
     ClassroomModule,
     GameModule,
     ItemsModule,
+    AnnounceModule,
     AuthModule,
     PrismaModule,
     MailerModule.forRoot(mailerConfig),

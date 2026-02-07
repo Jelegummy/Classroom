@@ -130,7 +130,15 @@ export default function ClassroomId() {
               />
             </div>
 
-            <div className="flex">sdssdsdsd</div>
+            <div className="flex">
+              {activeTab === 'main_tabs' && <div>button create announce</div>}
+              {activeTab === 'jobs_tabs' && <div>button create job</div>}
+              {activeTab === 'game_tabs' && <div>button create game</div>}
+              {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
+              {activeTab === 'people_tabs' && (
+                <div>button create people for ranking</div>
+              )}
+            </div>
           </div>
 
           <div className="p-4">
