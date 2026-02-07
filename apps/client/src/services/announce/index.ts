@@ -2,7 +2,7 @@ import { getSession } from 'next-auth/react'
 import { CreateAnnounceArgs, UpdateAnnounceArgs } from './types'
 import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
 
-export const craeteAnnounce = async (args: CreateAnnounceArgs) => {
+export const createAnnounce = async (args: CreateAnnounceArgs) => {
   const session = await getSession()
 
   const res = await fetchers.Post<{ accessToken: string }>(

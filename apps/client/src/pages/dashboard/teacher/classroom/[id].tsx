@@ -9,6 +9,7 @@ import { useState } from 'react'
 import { HiUsers } from 'react-icons/hi2'
 import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
+import CreateButtonAnnounce from './components/create-button-announce'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -131,7 +132,11 @@ export default function ClassroomId() {
             </div>
 
             <div className="flex">
-              {activeTab === 'main_tabs' && <div>button create announce</div>}
+              {activeTab === 'main_tabs' && (
+                <div>
+                  <CreateButtonAnnounce classroomId={classroom?.id ?? ''} />
+                </div>
+              )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
               {activeTab === 'game_tabs' && <div>button create game</div>}
               {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
@@ -140,9 +145,8 @@ export default function ClassroomId() {
               )}
             </div>
           </div>
-
+          <hr className="mt-3" />
           <div className="p-4">
-            button create job
             {activeTab === 'main_tabs' && (
               <div>make components main to create tasks</div>
             )}
