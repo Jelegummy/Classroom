@@ -12,6 +12,9 @@ import { VscNotebook } from 'react-icons/vsc'
 
 export default function ClassroomId() {
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState<
+    'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
+  >('jobs_tabs')
   const [search, setSearch] = useState('')
   const classroomId = router.query.id as string
 
@@ -28,8 +31,8 @@ export default function ClassroomId() {
   return (
     <AppLayout>
       <DashboardLayout>
-        <NavbarContent search={search} onSearch={setSearch} />
-
+        <NavbarContent search={search} onSearch={setSearch} />{' '}
+        {/* fix navbar to search anything in classroom not name of classroom */}
         <div className="mx-4 mt-8 flex flex-col rounded-md border bg-white shadow-sm sm:mx-4 sm:mt-4">
           <div className="flex w-full flex-col items-center justify-between gap-4 p-4 sm:flex-row sm:gap-0">
             <div className="flex flex-row items-center gap-3">
@@ -78,6 +81,64 @@ export default function ClassroomId() {
                 </h1>
               </div>
             </div>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-col p-4">
+          <div className="flex justify-between">
+            <div className="tabs-box tabs gap-2 rounded-lg border bg-base-100 p-1">
+              <input
+                type="radio"
+                name="main_tabs"
+                aria-label="หน้าหลัก"
+                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                checked={activeTab === 'main_tabs'}
+                onChange={() => setActiveTab('main_tabs')}
+              />
+
+              <input
+                type="radio"
+                name="jobs_tabs"
+                aria-label="งานของชั้นเรียน"
+                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                checked={activeTab === 'jobs_tabs'}
+                onChange={() => setActiveTab('jobs_tabs')}
+              />
+
+              <input
+                type="radio"
+                name="game_tabs"
+                aria-label="เกมเช็คชื่อ"
+                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                checked={activeTab === 'game_tabs'}
+                onChange={() => setActiveTab('game_tabs')}
+              />
+              <input
+                type="radio"
+                name="tutor_tabs"
+                aria-label="การติว"
+                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                checked={activeTab === 'tutor_tabs'}
+                onChange={() => setActiveTab('tutor_tabs')}
+              />
+              <input
+                type="radio"
+                name="people_tabs"
+                aria-label="ผู้คนในชั้นเรียน"
+                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                checked={activeTab === 'people_tabs'}
+                onChange={() => setActiveTab('people_tabs')}
+              />
+            </div>
+
+            <div className="flex">sdssdsdsd</div>
+          </div>
+
+          <div className="p-4">
+            {activeTab === 'main_tabs' && <div>Content Tab 1</div>}
+            {activeTab === 'jobs_tabs' && <div>Content Tab 2</div>}
+            {activeTab === 'game_tabs' && <div>Content Tab 3</div>}
+            {activeTab === 'tutor_tabs' && <div>Content Tab 4</div>}
+            {activeTab === 'people_tabs' && <div>Content Tab 5</div>}
           </div>
         </div>
       </DashboardLayout>

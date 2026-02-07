@@ -87,11 +87,10 @@ export default function Page() {
           </div>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 md:grid-cols-3">
-          {/* {classrooms?.map(c => ( */}
           {filteredClassrooms?.map(classroom => (
             <Link
               key={classroom.id}
-              href={`/dashboard/classroom/${classroom.id}`}
+              href={`/dashboard/teacher/classroom/${classroom.id}`}
             >
               <div
                 key={classroom.id}
@@ -134,7 +133,6 @@ export default function Page() {
               </div>
             </Link>
           ))}
-          {/* ))} */}
         </div>
       </DashboardLayout>
     </AppLayout>
