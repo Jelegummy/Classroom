@@ -10,13 +10,13 @@ export class UpdateUserArgs extends createZodDto(
     teacherId: z.string().optional(),
     major: z.string().optional(),
   }),
-) { }
+) {}
 
 export class UpdatePasswordArgs extends createZodDto(
   z.object({
     oldpassword: z.string().min(8),
     newPassword: z.string().min(8),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

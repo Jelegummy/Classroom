@@ -9,7 +9,7 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -21,7 +21,7 @@ export class UserPublicService {
 
     const hashedPassword = await this.authService.hashPassword(password)
 
-    return this.db.$transaction(async (tx) => {
+    return this.db.$transaction(async tx => {
       let finalSchoolId = schoolId
 
       if (!finalSchoolId) {

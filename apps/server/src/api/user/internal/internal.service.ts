@@ -10,7 +10,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -36,8 +36,7 @@ export class UserInternalService {
             id: true,
             name: true,
           },
-        }
-
+        },
       },
     })
     return users

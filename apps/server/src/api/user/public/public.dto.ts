@@ -11,13 +11,13 @@ export class RegisterArgs extends createZodDto(
     schoolId: z.string().min(1).optional(),
     schoolName: z.string().min(1).optional(),
   }),
-) { }
+) {}
 
 export class LoginArgs extends createZodDto(
   z.object({
     email: z.string().email(),
     password: z.string().min(8),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

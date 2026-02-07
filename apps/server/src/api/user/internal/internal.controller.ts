@@ -1,5 +1,14 @@
 import { Context } from '@app/common'
-import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Req } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Param,
+  Patch,
+  Req,
+} from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
 import { UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
@@ -8,7 +17,7 @@ import { UserInternalService } from './internal.service'
 @ApiTags('User - Internal')
 @Controller('user/internal')
 export class UserInternalController {
-  constructor(private readonly service: UserInternalService) { }
+  constructor(private readonly service: UserInternalService) {}
 
   @Get('/me')
   async getMe(@Req() ctx: Context) {

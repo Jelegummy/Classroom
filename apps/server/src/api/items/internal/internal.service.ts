@@ -1,131 +1,134 @@
-import { PrismaService } from "@app/db";
-import { Injectable } from "@nestjs/common";
-import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from "./internal.dto";
-import { Context, getUserFromContext } from "@app/common";
+import { PrismaService } from '@app/db'
+import { Injectable } from '@nestjs/common'
+import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from './internal.dto'
+import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class ItemsInternalService {
-    constructor(
-        private readonly db: PrismaService
-    ) { }
+  constructor(private readonly db: PrismaService) {}
 
-    async createItems(args: ItemsArgs, ctx: Context) {
-        const user = getUserFromContext(ctx);
+  async createItems(args: ItemsArgs, ctx: Context) {
+    const user = getUserFromContext(ctx)
 
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-            throw new Error('Only teachers and admins can create items');
-        }
-
-        const item = await this.db.item.create({
-            data: {
-                name: args.name,
-                description: args.description,
-                price: args.price,
-                effectValue: args.effectValue ?? 0,
-                type: args.type,
-            },
-        });
-
-        return item
+    if (!user) {
+      throw new Error('User not found')
     }
 
-    async updateItems(args: UpdateItemsArgs, ctx: Context) {
-        const user = getUserFromContext(ctx);
-
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-            throw new Error('Only teachers and admins can update items');
-        }
-
-        const item = await this.db.item.update({
-            where: { id: args.id },
-            data: {
-                name: args.name,
-                description: args.description,
-                price: args.price,
-                effectValue: args.effectValue ?? 0,
-                type: args.type,
-            },
-        })
-
-        return item
+    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+      throw new Error('Only teachers and admins can create items')
     }
 
-    async deleteItems(args: { id: string }, ctx: Context) {
-        const user = getUserFromContext(ctx);
+    const item = await this.db.item.create({
+      data: {
+        name: args.name,
+        description: args.description,
+        price: args.price,
+        effectValue: args.effectValue ?? 0,
+        type: args.type,
+      },
+    })
 
-        if (!user) {
-            throw new Error('User not found');
-        }
+    return item
+  }
 
-        if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-            throw new Error('Only teachers and admins can delete items');
-        }
+  async updateItems(args: UpdateItemsArgs, ctx: Context) {
+    const user = getUserFromContext(ctx)
 
-        await this.db.item.delete({
-            where: { id: args.id },
-        });
+    if (!user) {
+      throw new Error('User not found')
     }
 
-    async getItems(args: { id: string }, ctx: Context) {
-        const user = getUserFromContext(ctx);
-        if (!user) throw new Error('User not found');
-
-        const item = await this.db.item.findUnique({
-            where: { id: args.id },
-        });
-
-        if (!item) {
-            throw new Error('Item not found');
-        }
-
-        return item;
+    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+      throw new Error('Only teachers and admins can update items')
     }
 
-    async getAllItems(ctx: Context) {
-        const user = getUserFromContext(ctx);
-        if (!user) throw new Error('User not found');
+    const item = await this.db.item.update({
+      where: { id: args.id },
+      data: {
+        name: args.name,
+        description: args.description,
+        price: args.price,
+        effectValue: args.effectValue ?? 0,
+        type: args.type,
+      },
+    })
 
-        const items = await this.db.item.findMany();
+    return item
+  }
 
-        return items;
+  async deleteItems(args: { id: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (!user) {
+      throw new Error('User not found')
     }
 
-    async createSpacialItems(args: SpacialItemsArgs, ctx: Context, userId: string, itemId: string) {
-        const user = getUserFromContext(ctx);
-
-        if (!user) {
-            throw new Error('User not found');
-        }
-
-        if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-            throw new Error('Only teachers and admins can create spacial items');
-        }
-
-        return await this.db.userItem.upsert({
-            where: {
-                user_item_unique: {
-                    userId,
-                    itemId
-                }
-            },
-            update: {
-                amount: {
-                    increment: args.amount
-                }
-            },
-            create: {
-                userId: userId,
-                itemId: itemId,
-                amount: args.amount
-            }
-        })
+    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+      throw new Error('Only teachers and admins can delete items')
     }
+
+    await this.db.item.delete({
+      where: { id: args.id },
+    })
+  }
+
+  async getItems(args: { id: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const item = await this.db.item.findUnique({
+      where: { id: args.id },
+    })
+
+    if (!item) {
+      throw new Error('Item not found')
+    }
+
+    return item
+  }
+
+  async getAllItems(ctx: Context) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const items = await this.db.item.findMany()
+
+    return items
+  }
+
+  async createSpacialItems(
+    args: SpacialItemsArgs,
+    ctx: Context,
+    userId: string,
+    itemId: string,
+  ) {
+    const user = getUserFromContext(ctx)
+
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+      throw new Error('Only teachers and admins can create spacial items')
+    }
+
+    return await this.db.userItem.upsert({
+      where: {
+        user_item_unique: {
+          userId,
+          itemId,
+        },
+      },
+      update: {
+        amount: {
+          increment: args.amount,
+        },
+      },
+      create: {
+        userId: userId,
+        itemId: itemId,
+        amount: args.amount,
+      },
+    })
+  }
 }
