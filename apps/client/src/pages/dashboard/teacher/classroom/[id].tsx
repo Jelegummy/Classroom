@@ -11,6 +11,7 @@ import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
 import CreateButtonAnnounce from './components/create-button-announce'
 import MainTasks from './components/main-tasks'
+import Ranking from './components/ranking'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -86,8 +87,8 @@ export default function ClassroomId() {
           </div>
         </div>
         <div className="mt-3 flex flex-col p-4">
-          <div className="flex justify-between">
-            <div className="tabs-box tabs gap-2 rounded-lg border bg-base-100 p-1">
+          <div className="flex flex-col sm:flex-row sm:justify-between">
+            <div className="tabs-box tabs flex flex-col gap-2 rounded-lg border bg-base-100 p-1 sm:flex-row">
               <input
                 type="radio"
                 name="main_tabs"
@@ -132,7 +133,7 @@ export default function ClassroomId() {
               />
             </div>
 
-            <div className="flex">
+            <div className="mt-3 flex sm:mt-0">
               {activeTab === 'main_tabs' && (
                 <div>
                   <CreateButtonAnnounce classroomId={classroom?.id ?? ''} />
@@ -141,9 +142,6 @@ export default function ClassroomId() {
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
               {activeTab === 'game_tabs' && <div>button create game</div>}
               {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
-              {activeTab === 'people_tabs' && (
-                <div>button create people for ranking</div>
-              )}
             </div>
           </div>
           <hr className="mt-3" />
@@ -159,7 +157,14 @@ export default function ClassroomId() {
             {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
             {/* connect model jee */}
             {activeTab === 'people_tabs' && (
-              <div>make components people for ranking</div>
+              <Ranking
+                points={classroom?.users.map(u => u.user.points) ?? []}
+                names={
+                  classroom?.users.map(
+                    u => `${u.user.firstName} ${u.user.lastName}`,
+                  ) ?? []
+                }
+              />
             )}
           </div>
         </div>

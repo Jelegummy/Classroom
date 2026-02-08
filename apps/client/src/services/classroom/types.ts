@@ -26,6 +26,7 @@ export type Classroom = {
       firstName: string
       lastName: string
       role: 'TEACHER' | 'STUDENT' | 'ADMIN'
+      points: number
     }
   }[]
   announces: {
