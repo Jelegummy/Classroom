@@ -15,6 +15,7 @@ import { ClassroomModule } from './api/classroom/classroom.module'
 import { ItemsModule } from './api/items/items.module'
 import { GameModule } from './api/game/game.module'
 import { AnnounceModule } from './api/announce/announce.module'
+import { AttendanceModule } from './api/attendance/attendance.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AnnounceModule } from './api/announce/announce.module'
     SchoolModule, //Not used yet
     ClassroomModule,
     GameModule,
+    AttendanceModule,
     ItemsModule,
     AnnounceModule,
     AuthModule,

@@ -9,7 +9,7 @@ import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -35,6 +35,14 @@ export class GameInternalService {
           connect: { id: user.id },
         },
       },
+    })
+
+    await this.db.classroomOnGame.create({
+      data: {
+        classroom: { connect: { id: args.classroomId } },
+        game: { connect: { id: gameSession.id } },
+        currentHp: args.maxHp,
+      }
     })
 
     return gameSession
@@ -148,7 +156,7 @@ export class GameInternalService {
     await this.db.game.delete({
       where: { id: args.id },
     })
-  }
+  } //TODO: fix bug internal server error when deleting game session
 
   async addItemToGame(
     ctx: Context,

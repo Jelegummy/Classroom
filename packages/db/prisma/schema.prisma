@@ -104,6 +104,7 @@ model ClassroomOnUser {
     classroomId String
     user        User      @relation(fields: [userId], references: [id])
     classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+    score       Int       @default(0)
 
     @@id([userId, classroomId])
     @@map("classroom_users")

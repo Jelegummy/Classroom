@@ -11,8 +11,9 @@ export class CreateGameArgs extends createZodDto(
     timeLimit: z.number().min(1),
     description: z.string().optional(),
     isActive: z.boolean().default(true),
+    classroomId: z.string().min(1),
   }),
-) {}
+) { }
 
 export class UpdateGameArgs extends createZodDto(
   z.object({
@@ -25,6 +26,6 @@ export class UpdateGameArgs extends createZodDto(
     description: z.string().optional(),
     isActive: z.boolean().default(true),
   }),
-) {}
+) { }
 
 patchNestJsSwagger()
