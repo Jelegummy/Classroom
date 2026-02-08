@@ -5,6 +5,10 @@ export type Announce = {
   filePdf?: string
   createdAt: string
   updatedAt: string
+  creator: {
+    name: string
+    avatar?: string | null
+  }
 }
 
 export type CreateAnnounceArgs = {

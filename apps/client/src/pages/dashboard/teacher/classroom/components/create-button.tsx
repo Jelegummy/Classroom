@@ -90,7 +90,6 @@ export default function CreateButton() {
           </div>
         </dialog>
       )}
-      <div></div>
     </>
   )
 }

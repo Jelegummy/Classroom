@@ -28,6 +28,13 @@ export type Classroom = {
       role: 'TEACHER' | 'STUDENT' | 'ADMIN'
     }
   }[]
+  announces: {
+    id: string
+    title: string
+    content: string
+    createdAt: string
+    updatedAt: string
+  }[]
 }
 
 export type JoinClassroomArgs = {

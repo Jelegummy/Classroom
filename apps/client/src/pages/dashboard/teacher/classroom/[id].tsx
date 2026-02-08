@@ -10,6 +10,7 @@ import { HiUsers } from 'react-icons/hi2'
 import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
 import CreateButtonAnnounce from './components/create-button-announce'
+import MainTasks from './components/main-tasks'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -148,7 +149,9 @@ export default function ClassroomId() {
           <hr className="mt-3" />
           <div className="p-4">
             {activeTab === 'main_tabs' && (
-              <div>make components main to create tasks</div>
+              <MainTasks
+                announcesId={classroom?.announces.map(a => a.id) ?? []}
+              />
             )}
             {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
             {/* connect model aong */}

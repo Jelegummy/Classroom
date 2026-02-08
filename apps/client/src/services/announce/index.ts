@@ -1,5 +1,5 @@
 import { getSession } from 'next-auth/react'
-import { CreateAnnounceArgs, UpdateAnnounceArgs } from './types'
+import { Announce, CreateAnnounceArgs, UpdateAnnounceArgs } from './types'
 import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
 
 export const createAnnounce = async (args: CreateAnnounceArgs) => {
@@ -15,7 +15,7 @@ export const createAnnounce = async (args: CreateAnnounceArgs) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
-}
+} // use for creating announce
 
 export const updateAnnounce = async (args: UpdateAnnounceArgs) => {
   const session = await getSession()
@@ -30,7 +30,7 @@ export const updateAnnounce = async (args: UpdateAnnounceArgs) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
-}
+} // use for updating announce
 
 export const deleteAnnounce = async (id: string) => {
   const session = await getSession()
@@ -44,12 +44,12 @@ export const deleteAnnounce = async (id: string) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
-}
+} // use for deleting announce
 
 export const getAnnounce = async (id: string) => {
   const session = await getSession()
 
-  const res = await fetchers.Get<UpdateAnnounceArgs>(
+  const res = await fetchers.Get<Announce>(
     `${ENDPOINT}/announce/internal/${id}`,
     {
       token: session?.user.accessToken,
@@ -60,12 +60,12 @@ export const getAnnounce = async (id: string) => {
   }
 
   return res.data
-}
+} // use for getting announce by id
 
 export const getAllAnnounces = async () => {
   const session = await getSession()
 
-  const res = await fetchers.Get<UpdateAnnounceArgs[]>(
+  const res = await fetchers.Get<Announce[]>(
     `${ENDPOINT}/announce/internal/all`,
     {
       token: session?.user.accessToken,
@@ -76,4 +76,4 @@ export const getAllAnnounces = async () => {
   }
 
   return res.data
-}
+} // use for getting all announces
