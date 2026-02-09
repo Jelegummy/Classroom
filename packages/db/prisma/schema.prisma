@@ -137,7 +137,7 @@ model Game {
 
 model Character {
     id          String  @id @default(uuid())
-    name        String
+    name        String?
     description String?
     modelUrl    String? @map("model_url")
     imageUrl    String? @map("image_url")
