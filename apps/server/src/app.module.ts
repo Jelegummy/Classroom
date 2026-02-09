@@ -16,6 +16,7 @@ import { ItemsModule } from './api/items/items.module'
 import { GameModule } from './api/game/game.module'
 import { AnnounceModule } from './api/announce/announce.module'
 import { AttendanceModule } from './api/attendance/attendance.module'
+import { CharacterModule } from './api/character/character.module'
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AttendanceModule } from './api/attendance/attendance.module'
     ClassroomModule,
     GameModule,
     AttendanceModule,
+    CharacterModule,
     ItemsModule,
     AnnounceModule,
     AuthModule,
