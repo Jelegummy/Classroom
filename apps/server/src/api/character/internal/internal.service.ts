@@ -15,7 +15,9 @@ export class CharacterInternalService {
 
         const character = await this.db.character.create({
             data: {
-                name: args.name,
+                bossName: args.bossName,
+                maxHp: args.maxHp,
+                timeLimit: args.timeLimit,
                 description: args.description,
                 modelUrl: args.modelUrl,
                 imageUrl: args.imageUrl,

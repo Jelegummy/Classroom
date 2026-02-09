@@ -25,12 +25,12 @@ export class GameInternalService {
     const gameSession = await this.db.game.create({
       data: {
         name: args.name,
-        bossName: args.bossName,
         imageUrl: args.imageUrl,
-        maxHp: args.maxHp,
-        timeLimit: args.timeLimit,
         description: args.description,
         isActive: true,
+        character: {
+          connect: { id: args.characterId }
+        },
         creator: {
           connect: { id: user.id },
         },
@@ -41,7 +41,7 @@ export class GameInternalService {
       data: {
         classroom: { connect: { id: args.classroomId } },
         game: { connect: { id: gameSession.id } },
-        currentHp: args.maxHp,
+        currentHp: 0,
       }
     })
 
@@ -63,10 +63,7 @@ export class GameInternalService {
       where: { id: args.id },
       data: {
         name: args.name,
-        bossName: args.bossName,
         imageUrl: args.imageUrl,
-        maxHp: args.maxHp,
-        timeLimit: args.timeLimit,
         description: args.description,
         isActive: args.isActive,
       },
@@ -100,6 +97,15 @@ export class GameInternalService {
             item: true,
           },
         },
+        character: {
+          select: {
+            imageUrl: true,
+            modelUrl: true,
+            bossName: true,
+            maxHp: true,
+            timeLimit: true,
+          },
+        }
       },
     })
 

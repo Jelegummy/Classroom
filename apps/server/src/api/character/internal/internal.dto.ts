@@ -3,7 +3,9 @@ import { z } from "zod";
 
 export class CreateCharacterDto extends createZodDto(
     z.object({
-        name: z.string().optional(),
+        bossName: z.string().min(1),
+        maxHp: z.number().min(1),
+        timeLimit: z.number().min(1),
         description: z.string().optional(),
         modelUrl: z.string().optional(),
         imageUrl: z.string().optional(),
