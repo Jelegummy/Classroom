@@ -114,10 +114,7 @@ model ClassroomOnUser {
 model Game {
     id          String  @id @default(uuid())
     name        String
-    bossName    String  @map("boss_name")
     imageUrl    String? @map("image_url")
-    maxHp       Int     @map("max_hp")
-    timeLimit   Int     @map("time_limit")
     description String?
     isActive    Boolean @default(true)
 
@@ -137,7 +134,9 @@ model Game {
 
 model Character {
     id          String  @id @default(uuid())
-    name        String?
+    bossName    String  @map("boss_name")
+    maxHp       Int     @map("max_hp")
+    timeLimit   Int     @map("time_limit")
     description String?
     modelUrl    String? @map("model_url")
     imageUrl    String? @map("image_url")
