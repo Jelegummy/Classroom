@@ -49,7 +49,8 @@ model User {
     hostedTutors Tutor[]              @relation("TutorHost")
     submissions  HomeworkSubmission[]
 
-    attendances Attendance[]
+    attendances       Attendance[]
+    createdCharacters Character[]
 
     createdAt          DateTime            @default(now()) @map("created_at")
     updatedAt          DateTime            @updatedAt @map("updated_at")
@@ -123,9 +124,10 @@ model Game {
     creatorId String? @map("creator_id")
     creator   User?   @relation("GameCreator", fields: [creatorId], references: [id])
 
-    items      GameOnItem[]
-    classrooms ClassroomOnGame[]
-    characters Character[]
+    items       GameOnItem[]
+    classrooms  ClassroomOnGame[]
+    characterId String?           @map("character_id")
+    character   Character?        @relation(fields: [characterId], references: [id])
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
@@ -140,8 +142,10 @@ model Character {
     modelUrl    String? @map("model_url")
     imageUrl    String? @map("image_url")
 
-    gameId String @map("game_id")
-    game   Game   @relation(fields: [gameId], references: [id])
+    game Game[]
+
+    creatorId String @map("creator_id")
+    creator   User   @relation(fields: [creatorId], references: [id])
 
     createdAt DateTime @default(now()) @map("created_at")
     updatedAt DateTime @updatedAt @map("updated_at")
