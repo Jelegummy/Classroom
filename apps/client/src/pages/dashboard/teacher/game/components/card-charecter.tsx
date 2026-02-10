@@ -29,8 +29,8 @@ export default function CardCharacter({
           >
             <div className="flex aspect-square w-full items-center justify-center overflow-hidden">
               <Image
-                // src={character.imageUrl || '/catIcon.jpg'}
-                src={'/catIcon.jpg'}
+                src={character.imageUrl || '/catIcon.jpg'}
+                // src={'/catIcon.jpg'}
                 alt={character.bossName}
                 width={100}
                 height={100}
