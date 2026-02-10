@@ -114,6 +114,8 @@ model ClassroomOnUser {
 model Game {
     id          String  @id @default(uuid())
     name        String
+    timeLimit   Int     @default(0) @map("time_limit")
+    damageBoost Int     @default(0) @map("damage_boost")
     imageUrl    String? @map("image_url")
     description String?
     isActive    Boolean @default(true)
