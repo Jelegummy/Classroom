@@ -9,7 +9,7 @@ import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -31,7 +31,7 @@ export class GameInternalService {
         timeLimit: args.timeLimit ?? 0,
         damageBoost: args.damageBoost ?? 0,
         character: {
-          connect: { id: args.characterId }
+          connect: { id: args.characterId },
         },
         creator: {
           connect: { id: user.id },
@@ -44,7 +44,7 @@ export class GameInternalService {
         classroom: { connect: { id: args.classroomId } },
         game: { connect: { id: gameSession.id } },
         currentHp: 0,
-      }
+      },
     })
 
     return gameSession
@@ -107,7 +107,7 @@ export class GameInternalService {
             maxHp: true,
             timeLimit: true,
           },
-        }
+        },
       },
     })
 

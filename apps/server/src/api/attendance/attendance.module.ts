@@ -1,10 +1,9 @@
-import { Module } from "@nestjs/common";
-import { AttendanceInternalController } from "./internal/internal.controller";
-import { AttendanceInternalService } from "./internal/internal.service";
+import { Module } from '@nestjs/common'
+import { AttendanceInternalController } from './internal/internal.controller'
+import { AttendanceInternalService } from './internal/internal.service'
 
 @Module({
-    controllers: [AttendanceInternalController],
-    providers: [AttendanceInternalService],
+  controllers: [AttendanceInternalController],
+  providers: [AttendanceInternalService],
 })
-
-export class AttendanceModule { }
+export class AttendanceModule {}

@@ -15,7 +15,7 @@ import { nanoid } from 'nanoid'
 
 @Injectable()
 export class ClassroomInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createClassroom(args: CreateClassroomArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
