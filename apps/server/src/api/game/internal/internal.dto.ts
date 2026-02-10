@@ -10,6 +10,8 @@ export class CreateGameArgs extends createZodDto(
     isActive: z.boolean().default(true),
     classroomId: z.string().min(1),
     characterId: z.string().min(1),
+    timeLimit: z.number().min(0).optional(),
+    damageBoost: z.number().min(0).optional(),
   }),
 ) { }
 

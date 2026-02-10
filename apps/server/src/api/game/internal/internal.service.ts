@@ -28,6 +28,8 @@ export class GameInternalService {
         imageUrl: args.imageUrl,
         description: args.description,
         isActive: true,
+        timeLimit: args.timeLimit ?? 0,
+        damageBoost: args.damageBoost ?? 0,
         character: {
           connect: { id: args.characterId }
         },
