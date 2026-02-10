@@ -11,6 +11,8 @@
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "@mui/x-charts": "7.27.0",
     "@next/third-parties": "15.2.4",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "@tanstack/react-query": "5.71.0",
     "@types/proj4": "^2.19.0",
     "@types/three": "^0.178.0",
@@ -36,6 +38,7 @@
     "simplex-noise": "^4.0.3",
     "sonner": "2.0.2",
     "three": "^0.178.0",
+    "three-stdlib": "^2.36.1",
     "use-debounce": "10.0.4",
     "usehooks-ts": "3.1.1"
   },

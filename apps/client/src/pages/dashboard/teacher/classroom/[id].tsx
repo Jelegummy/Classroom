@@ -12,6 +12,7 @@ import { VscNotebook } from 'react-icons/vsc'
 import CreateButtonAnnounce from './components/create-button-announce'
 import MainTasks from './components/main-tasks'
 import Ranking from './components/ranking'
+import Link from 'next/link'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -140,7 +141,6 @@ export default function ClassroomId() {
                 </div>
               )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
-              {activeTab === 'game_tabs' && <div>button create game</div>}
               {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
             </div>
           </div>
@@ -153,7 +153,19 @@ export default function ClassroomId() {
             )}
             {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
             {/* connect model aong */}
-            {activeTab === 'game_tabs' && <div>make components game</div>}
+            {activeTab === 'game_tabs' && (
+              <Link
+                // ส่ง id ไปผ่าน query param
+                href={{
+                  pathname: '/dashboard/teacher/game',
+                  query: { classroomId: classroom?.id },
+                }}
+              >
+                <div className="cursor-pointer rounded-lg bg-blue-100 p-4 text-blue-700 hover:bg-blue-200">
+                  สร้างเกมเช็คชื่อ (Click to create game)
+                </div>
+              </Link>
+            )}
             {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
             {/* connect model jee */}
             {activeTab === 'people_tabs' && (
