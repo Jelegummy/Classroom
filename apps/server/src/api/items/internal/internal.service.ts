@@ -1,6 +1,11 @@
 import { PrismaService } from '@app/db'
 import { Injectable } from '@nestjs/common'
-import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from './internal.dto'
+import {
+  BuyItemsArgs,
+  ItemsArgs,
+  SpacialItemsArgs,
+  UpdateItemsArgs,
+} from './internal.dto'
 import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
@@ -129,6 +134,47 @@ export class ItemsInternalService {
         itemId: itemId,
         amount: args.amount,
       },
+    })
+  }
+
+  async buyItems(args: BuyItemsArgs, ctx: Context) {
+    const userContext = getUserFromContext(ctx)
+    if (!userContext) throw new Error('User not found')
+
+    const item = await this.db.item.findUnique({ where: { id: args.itemId } })
+    if (!item) throw new Error('Item not found')
+
+    const totalPrice = item.price * args.amount
+
+    return await this.db.$transaction(async tx => {
+      // 1. ตรวจสอบ User และ Points ภายใน Transaction
+      const user = await tx.user.findUnique({
+        where: { id: args.userId },
+        select: { points: true },
+      })
+
+      if (!user || user.points < totalPrice) {
+        throw new Error('Not enough points to buy this item')
+      }
+
+      // 2. หัก Points
+      await tx.user.update({
+        where: { id: args.userId },
+        data: { points: { decrement: totalPrice } },
+      })
+
+      // 3. เพิ่ม Item เข้า Inventory
+      return await tx.userItem.upsert({
+        where: {
+          user_item_unique: { userId: args.userId, itemId: args.itemId },
+        },
+        update: { amount: { increment: args.amount } },
+        create: {
+          userId: args.userId,
+          itemId: args.itemId,
+          amount: args.amount,
+        },
+      })
     })
   }
 }

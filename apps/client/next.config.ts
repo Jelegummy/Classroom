@@ -29,7 +29,8 @@ const config: NextConfig = {
     return [
       {
         source: '/models/:path*', // เรียกผ่าน /models/pumpkin.glb
-        destination: 'https://pub-10de472ef8d2442881c7be671b9b1e32.r2.dev/model/:path*', // Next.js จะไปดึงจาก R2 มาให้
+        destination:
+          'https://pub-10de472ef8d2442881c7be671b9b1e32.r2.dev/model/:path*', // Next.js จะไปดึงจาก R2 มาให้
       },
     ]
   },

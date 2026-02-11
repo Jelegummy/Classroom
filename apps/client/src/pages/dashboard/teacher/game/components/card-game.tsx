@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { RiSwordLine } from 'react-icons/ri'
+import { useRouter } from 'next/dist/client/components/navigation'
 
 type CardGameProps = {
   classroomId: string
@@ -11,6 +12,9 @@ type CardGameProps = {
 }
 
 export default function CardGame({ classroomId, characterId }: CardGameProps) {
+  const router = useRouter()
+  const [openModal, setOpenModal] = useState(false)
+  const [createdGameId, setCreatedGameId] = useState<string | null>(null)
   const [form, setForm] = useState<{
     name: string
     timeLimit: number
@@ -23,8 +27,18 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
 
   const createGame = useMutation({
     mutationFn: (args: CreateGameArgs) => createGameSession(args),
-    onSuccess: () => {
+    onSuccess: res => {
       toast.success('สร้างเกมสำเร็จ')
+
+      const gameId = res?.id
+      if (!gameId) {
+        toast.error('ไม่พบ game id')
+        return
+      }
+
+      setCreatedGameId(gameId)
+      setOpenModal(true)
+
       setForm({ name: '', timeLimit: 0, damageBoost: 0 })
     },
     onError: e => {
@@ -62,7 +76,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label className="ml-1 text-sm font-bold text-gray-800">
-            พลังชีวิตของบอส (ชื่อ)
+            ชื่อเกม
           </label>
           <input
             type="text"
@@ -95,6 +109,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
             type="number"
             className="w-full rounded-xl border-2 border-black bg-white px-4 py-2 text-lg outline-none focus:ring-4 focus:ring-blue-200"
             value={form.timeLimit || ''}
+            placeholder="100"
             onChange={e =>
               setForm({ ...form, timeLimit: Number(e.target.value) })
             }
@@ -112,6 +127,37 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
           </span>
         </button>
       </div>
+      {openModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-800">
+              สร้างเกมสำเร็จแล้ว
+            </h2>
+            <p className="mt-2 text-gray-600">ต้องการเริ่มเกมนี้เลยหรือไม่?</p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                className="flex-1 rounded-xl border-2 border-gray-300 bg-red-400 py-2 font-semibold text-white hover:bg-red-500"
+                onClick={() => {
+                  setOpenModal(false)
+                  router.push(`/dashboard/teacher/classroom/${classroomId}`)
+                }}
+              >
+                ยังไม่เริ่ม
+              </button>
+              <button
+                className="flex-1 rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
+                onClick={() => {
+                  if (!createdGameId) return
+                  router.push(`/dashboard/teacher/game/${createdGameId}`)
+                }}
+              >
+                เริ่มเกมเลย
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

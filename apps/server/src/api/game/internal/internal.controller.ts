@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { GameInternalService } from './internal.service'
-import { CreateGameArgs, UpdateGameArgs } from './internal.dto'
+import { AttackGameArgs, CreateGameArgs, UpdateGameArgs } from './internal.dto'
 import { Context } from '@app/common'
 
 @ApiTags('game-internal')
@@ -61,6 +61,20 @@ export class GameInternalController {
     @Param('itemId') itemId: string,
   ) {
     const res = await this.service.addItemToGame(ctx, { gameId }, { itemId })
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Post('/attack')
+  async attackBoss(@Req() ctx: Context, @Body() args: AttackGameArgs) {
+    const res = await this.service.attackBoss(ctx, args)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Get('/leaderboard/:gameId')
+  async getLeaderboard(@Param('id') id: string, @Req() ctx: Context) {
+    const res = await this.service.getGameLeaderboard(ctx, { id })
 
     return { statusCode: HttpStatus.OK, data: res }
   }

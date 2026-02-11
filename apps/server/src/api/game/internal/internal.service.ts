@@ -39,11 +39,15 @@ export class GameInternalService {
       },
     })
 
+    const character = await this.db.character.findUnique({
+      where: { id: args.characterId },
+    })
+
     await this.db.classroomOnGame.create({
       data: {
         classroom: { connect: { id: args.classroomId } },
         game: { connect: { id: gameSession.id } },
-        currentHp: 0,
+        currentHp: character?.maxHp ?? 0,
       },
     })
 
@@ -108,6 +112,30 @@ export class GameInternalService {
             timeLimit: true,
           },
         },
+        classrooms: {
+          where: {
+            isActive: true,
+          },
+          include: {
+            attendances: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    points: true,
+                    inventory: {
+                      include: {
+                        item: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     })
 
@@ -140,6 +168,39 @@ export class GameInternalService {
             item: true,
           },
         },
+        character: {
+          select: {
+            imageUrl: true,
+            modelUrl: true,
+            bossName: true,
+            maxHp: true,
+            timeLimit: true,
+          },
+        },
+        classrooms: {
+          where: {
+            isActive: true,
+          },
+          include: {
+            attendances: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    points: true,
+                    inventory: {
+                      include: {
+                        item: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     })
 
@@ -161,10 +222,18 @@ export class GameInternalService {
       throw new Error('Only teachers and admins can delete game sessions')
     }
 
+    await this.db.gameOnItem.deleteMany({
+      where: { gameId: args.id },
+    })
+
+    await this.db.classroomOnGame.deleteMany({
+      where: { gameId: args.id },
+    })
+
     await this.db.game.delete({
       where: { id: args.id },
     })
-  } //TODO: fix bug internal server error when deleting game session
+  }
 
   async addItemToGame(
     ctx: Context,
@@ -201,6 +270,160 @@ export class GameInternalService {
     })
 
     return gameItem
+  }
+
+  async attackBoss(ctx: Context, args: { gameId: string; damage: number }) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const activeGame = await this.db.classroomOnGame.findFirst({
+      where: {
+        gameId: args.gameId,
+        classroom: {
+          OR: [
+            { school: { users: { some: { id: user.id } } } },
+            { users: { some: { userId: user.id } } },
+          ],
+        },
+      },
+      include: {
+        game: {
+          include: {
+            character: {
+              select: {
+                maxHp: true,
+                pointBoss: true,
+              },
+            },
+          },
+        },
+        classroom: true,
+      },
+    })
+
+    if (!activeGame) {
+      throw new NotFoundException('Active game session not found')
+    }
+    if (activeGame.currentHp <= 0) {
+      throw new Error('Boss is already dead')
+    }
+
+    const actualDamage = Math.min(args.damage, activeGame.currentHp)
+    const newHp = activeGame.currentHp - actualDamage
+
+    await this.db.$transaction(async tx => {
+      await tx.attendance.upsert({
+        where: {
+          userId_activeGameId: {
+            userId: user.id,
+            activeGameId: activeGame.id,
+          },
+        },
+        update: {
+          damageDealt: { increment: actualDamage },
+          status: 'PRESENT',
+        },
+        create: {
+          userId: user.id,
+          activeGameId: activeGame.id,
+          damageDealt: actualDamage,
+          status: 'PRESENT',
+        },
+      })
+
+      await tx.classroomOnGame.update({
+        where: { id: activeGame.id },
+        data: { currentHp: newHp },
+      })
+
+      if (newHp === 0) {
+        const bossMaxHp = activeGame.game.character?.maxHp || 1
+        const bossPoints = activeGame.game.character?.pointBoss || 0
+
+        if (bossPoints > 0) {
+          const allAttackers = await tx.attendance.findMany({
+            where: { activeGameId: activeGame.id },
+          })
+
+          for (const attacker of allAttackers) {
+            const rawScore = (attacker.damageDealt / bossMaxHp) * bossPoints
+            const finalScore = Math.floor(rawScore)
+
+            if (finalScore > 0) {
+              await tx.user.update({
+                where: { id: attacker.userId },
+                data: { points: { increment: finalScore } },
+              })
+
+              await tx.classroomOnUser.updateMany({
+                where: {
+                  userId: attacker.userId,
+                  classroomId: activeGame.classroomId,
+                },
+                data: { score: { increment: finalScore } },
+              })
+
+              await tx.attendance.update({
+                where: { id: attacker.id },
+                data: { scoreEarned: finalScore },
+              })
+            }
+          }
+        }
+      }
+    })
+
+    return {
+      currentHp: newHp,
+      damageDealt: actualDamage,
+      isDead: newHp === 0,
+    }
+  }
+
+  async getGameLeaderboard(ctx: Context, args: { id: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const activeGame = await this.db.classroomOnGame.findFirst({
+      where: {
+        gameId: args.id,
+        classroom: {
+          OR: [
+            { school: { users: { some: { id: user.id } } } },
+            { users: { some: { userId: user.id } } },
+          ],
+        },
+      },
+    })
+
+    if (!activeGame) {
+      return []
+    }
+
+    const leaderboard = await this.db.attendance.findMany({
+      where: {
+        activeGameId: activeGame.id,
+        damageDealt: { gt: 0 },
+      },
+      select: {
+        id: true,
+        damageDealt: true,
+        scoreEarned: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            points: true,
+          },
+        },
+      },
+      orderBy: {
+        damageDealt: 'desc',
+      },
+    })
+
+    return leaderboard
   }
 
   // async updateItemFromGame(ctx: Context, gameIds: { gameId: string }, itemIds: { itemId: string }) {

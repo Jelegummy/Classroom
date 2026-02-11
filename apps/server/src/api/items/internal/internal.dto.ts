@@ -28,4 +28,12 @@ export class SpacialItemsArgs extends createZodDto(
   }),
 ) {}
 
+export class BuyItemsArgs extends createZodDto(
+  z.object({
+    userId: z.string().min(1),
+    itemId: z.string().min(1),
+    amount: z.number().min(1),
+  }),
+) {}
+
 patchNestJsSwagger()

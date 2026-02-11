@@ -155,7 +155,6 @@ export default function ClassroomId() {
             {/* connect model aong */}
             {activeTab === 'game_tabs' && (
               <Link
-                // ส่ง id ไปผ่าน query param
                 href={{
                   pathname: '/dashboard/teacher/game',
                   query: { classroomId: classroom?.id },

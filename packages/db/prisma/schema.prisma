@@ -137,7 +137,7 @@ model Game {
 model Character {
     id          String  @id @default(uuid())
     bossName    String  @map("boss_name")
-    pointBoos   Int     @default(0) @map("point_boost")
+    pointBoss   Int     @default(0) @map("point_boss")
     maxHp       Int     @map("max_hp")
     timeLimit   Int     @map("time_limit")
     description String?

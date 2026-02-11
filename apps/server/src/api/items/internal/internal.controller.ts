@@ -11,7 +11,12 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { ItemsInternalService } from './internal.service'
-import { ItemsArgs, SpacialItemsArgs, UpdateItemsArgs } from './internal.dto'
+import {
+  BuyItemsArgs,
+  ItemsArgs,
+  SpacialItemsArgs,
+  UpdateItemsArgs,
+} from './internal.dto'
 import { Context } from '@app/common'
 
 @ApiTags('Items - Internal')
@@ -62,6 +67,13 @@ export class ItemsInternalController {
     @Param('itemId') itemId: string,
   ) {
     const res = await this.service.createSpacialItems(args, ctx, userId, itemId)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  } //not use yet
+
+  @Post('/buy-items')
+  async buyItems(@Body() args: BuyItemsArgs, @Req() ctx: Context) {
+    const res = await this.service.buyItems(args, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }

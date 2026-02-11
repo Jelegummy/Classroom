@@ -25,4 +25,11 @@ export class UpdateGameArgs extends createZodDto(
   }),
 ) {}
 
+export class AttackGameArgs extends createZodDto(
+  z.object({
+    gameId: z.string().min(1),
+    damage: z.number().min(1),
+  }),
+) {}
+
 patchNestJsSwagger()

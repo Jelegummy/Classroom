@@ -1,14 +1,38 @@
 import { getSession } from 'next-auth/react'
-import { CreateGameArgs, Game, UpdateGameArgs } from './types'
+import {
+  CreateGameArgs,
+  CreateGameResponse,
+  Game,
+  Leader,
+  UpdateGameArgs,
+} from './types'
 import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
 
 export const createGameSession = async (args: CreateGameArgs) => {
   const session = await getSession()
 
-  const res = await fetchers.Post<{ accessToken: string }>(
+  const res = await fetchers.Post<CreateGameResponse>(
     `${ENDPOINT}/game/internal/create`,
     {
       data: args,
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
+export const attackBoss = async (gameId: string, damage: number) => {
+  const session = await getSession()
+
+  const res = await fetchers.Post<{ currentHp: number }>(
+    `${ENDPOINT}/game/internal/attack`,
+    {
+      data: { gameId, damage },
       token: session?.user.accessToken,
     },
   )
@@ -80,6 +104,23 @@ export const addItemToGame = async (gameId: string, itemId: string) => {
 
   const res = await fetchers.Post<{ accessToken: string }>(
     `${ENDPOINT}/game/internal/Item/item-in-game/${gameId}/${itemId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
+export const getGameLeaderboard = async (gameId: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Get<Leader[]>(
+    `${ENDPOINT}/game/internal/leaderboard/${gameId}`,
     {
       token: session?.user.accessToken,
     },
