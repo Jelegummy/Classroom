@@ -17,7 +17,7 @@ import { Context } from '@app/common'
 @ApiTags('game-internal')
 @Controller('game/internal')
 export class GameInternalController {
-  constructor(private readonly service: GameInternalService) {}
+  constructor(private readonly service: GameInternalService) { }
 
   @Post('/create')
   async createGameSession(@Body() args: CreateGameArgs, @Req() ctx: Context) {
@@ -75,6 +75,20 @@ export class GameInternalController {
   @Get('/leaderboard/:gameId')
   async getLeaderboard(@Param('id') id: string, @Req() ctx: Context) {
     const res = await this.service.getGameLeaderboard(ctx, { id })
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Post('join/:gameId')
+  async joinGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
+    const res = await this.service.joinGame(ctx, { gameId })
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Patch('start/:gameId')
+  async startGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
+    const res = await this.service.startGame(ctx, { gameId })
 
     return { statusCode: HttpStatus.OK, data: res }
   }

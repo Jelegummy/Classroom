@@ -132,3 +132,37 @@ export const getGameLeaderboard = async (gameId: string) => {
 
   return res.data
 }
+
+export const joinGame = async (gameId: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Post<{ accessToken: string }>(
+    `${ENDPOINT}/game/internal/join/${gameId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
+export const startGame = async (gameId: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Patch(
+    `${ENDPOINT}/game/internal/start/${gameId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}

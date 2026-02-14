@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { MdMenuOpen } from 'react-icons/md'
 
 import SidebarItem from './Item'
-import { TEARCHER_ROUTES } from './constants'
+import { STUDENT_ROUTES, TEARCHER_ROUTES } from './constants'
 
 interface SidebarProps {
   isOpen: boolean
@@ -63,6 +63,19 @@ const SidebarDesktop = ({ isOpen, onToggle }: SidebarProps) => {
           {(session?.user.role === 'TEACHER' ||
             session?.user.role === 'ADMIN') &&
             TEARCHER_ROUTES.map((r, i) => (
+              <SidebarItem
+                key={i}
+                title={r.title}
+                route={r.route}
+                currentRoute={router.pathname}
+                icon={r.icon}
+                isOpen={isOpen}
+              />
+            ))}
+        </div>
+        <div className="flex flex-col gap-3">
+          {session?.user.role === 'STUDENT' &&
+            STUDENT_ROUTES.map((r, i) => (
               <SidebarItem
                 key={i}
                 title={r.title}

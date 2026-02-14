@@ -9,7 +9,7 @@ import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -424,6 +424,67 @@ export class GameInternalService {
     })
 
     return leaderboard
+  }
+
+  async joinGame(ctx: Context, args: { gameId: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const activeGame = await this.db.classroomOnGame.findFirst({
+      where: {
+        gameId: args.gameId,
+        classroom: {
+          OR: [
+            { school: { users: { some: { id: user.id } } } },
+            { users: { some: { userId: user.id } } },
+          ],
+        },
+      },
+    })
+
+    if (!activeGame) {
+      throw new NotFoundException('Active game session not found')
+    }
+
+    await this.db.attendance.upsert({
+      where: {
+        userId_activeGameId: {
+          userId: user.id,
+          activeGameId: activeGame.id,
+        },
+      },
+      update: {
+        status: 'PRESENT',
+      },
+      create: {
+        userId: user.id,
+        activeGameId: activeGame.id,
+        damageDealt: 0,
+        status: 'PRESENT',
+      },
+    })
+  }
+
+  async startGame(ctx: Context, args: { gameId: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const game = await this.db.game.findUnique({
+      where: { id: args.gameId },
+    })
+
+    if (!game) {
+      throw new NotFoundException('Game not found')
+    }
+
+    if (user.role !== 'ADMIN' && game.creatorId !== user.id) {
+      throw new ForbiddenException('You are not the owner of this game')
+    }
+
+    await this.db.game.update({
+      where: { id: args.gameId },
+      data: { status: 'ONGOING' },
+    })
   }
 
   // async updateItemFromGame(ctx: Context, gameIds: { gameId: string }, itemIds: { itemId: string }) {

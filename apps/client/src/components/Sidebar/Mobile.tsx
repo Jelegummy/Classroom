@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { signOut, useSession } from 'next-auth/react'
 import SidebarItem from './Item'
-import { TEARCHER_ROUTES } from './constants'
+import { STUDENT_ROUTES, TEARCHER_ROUTES } from './constants'
 
 interface SidebarMobileProps {
   isOpen: boolean
@@ -46,6 +46,20 @@ const SidebarMobile = ({ isOpen, onClose }: SidebarMobileProps) => {
               {(session?.user.role === 'ADMIN' ||
                 session?.user.role === 'TEACHER') &&
                 TEARCHER_ROUTES.map((r, i) => (
+                  <SidebarItem
+                    key={i}
+                    title={r.title}
+                    route={r.route}
+                    currentRoute={router.pathname}
+                    icon={r.icon}
+                    isOpen
+                    onClick={onClose}
+                  />
+                ))}
+            </div>
+            <div className="flex flex-col gap-1">
+              {session?.user.role === 'STUDENT' &&
+                STUDENT_ROUTES.map((r, i) => (
                   <SidebarItem
                     key={i}
                     title={r.title}

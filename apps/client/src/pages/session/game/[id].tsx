@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
-import { getGameSession, attackBoss } from '@/services/game-session'
+import { getGameSession, attackBoss, startGame } from '@/services/game-session'
 import { getAllItems, buyItems } from '@/services/Items'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -24,6 +24,7 @@ interface Game {
   damageBoost?: number
   timeLimit?: number
   isActive: boolean
+  status: 'WAITING' | 'ONGOING' | 'FINISHED'
   character?: {
     timeLimit: number
     maxHp: number
@@ -58,7 +59,6 @@ export default function GameId() {
   const queryClient = useQueryClient()
   const { data: session } = useSession()
 
-  const [isStarted, setIsStarted] = useState(false)
   const [isGameOver, setIsGameOver] = useState(false)
   const [timeLeft, setTimeLeft] = useState(0)
   const [isAttacking, setIsAttacking] = useState(false)
@@ -67,8 +67,10 @@ export default function GameId() {
     queryKey: ['getGameSession', gameId],
     queryFn: () => getGameSession(gameId),
     enabled: !!gameId,
-    refetchInterval: isStarted ? 2000 : false,
+    refetchInterval: !isGameOver ? 2000 : false,
   })
+
+  const isStarted = game?.status === 'ONGOING'
 
   const { data: shopItems } = useQuery({
     queryKey: ['getAllItems'],
@@ -86,7 +88,6 @@ export default function GameId() {
     if (isStarted && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
     } else if (timeLeft === 0 && isStarted) {
-      setIsStarted(false)
       setIsGameOver(true)
     }
     return () => clearInterval(timer)
@@ -112,7 +113,7 @@ export default function GameId() {
     }, 0)
 
     return baseDamage + itemBonus
-  }, [currentUserData])
+  }, [currentUserData, game?.damageBoost])
 
   const attackMutation = useMutation({
     mutationFn: (damage: number) => attackBoss(gameId, damage),
@@ -137,12 +138,22 @@ export default function GameId() {
     },
   })
 
+  const startGameMutation = useMutation({
+    mutationFn: () => startGame(gameId),
+    onSuccess: () => {
+      toast.success('เริ่มเกมแล้ว!')
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'เกิดข้อผิดพลาด')
+    },
+  })
+
   const handleStartGame = () => {
     if (attendances.length === 0) {
       toast.error('รอนักเรียนเข้าห้องก่อนนะอาจารย์!')
       return
     }
-    setIsStarted(true)
+    startGameMutation.mutate()
   }
 
   const handleAttack = () => {
@@ -182,7 +193,7 @@ export default function GameId() {
 
   if (isLoading || !game)
     return (
-      <div className="flex h-screen items-center justify-center text-white">
+      <div className="flex h-screen items-center justify-center bg-black text-white">
         Loading...
       </div>
     )
@@ -204,7 +215,7 @@ export default function GameId() {
           เวลาเหลือ
         </span>
         <div
-          className={`text-7xl font-black ${timeLeft < 10 ? 'animate-pulse text-red-500' : 'text-white'}`}
+          className={`text-7xl font-black ${timeLeft < 10 && isStarted ? 'animate-pulse text-red-500' : 'text-white'}`}
         >
           {timeLeft}
         </div>
@@ -212,19 +223,25 @@ export default function GameId() {
 
       <div className="absolute right-10 top-10 z-10 w-80 rounded-3xl border border-white/30 bg-white/40 p-5 shadow-2xl backdrop-blur-md">
         <div className="custom-scrollbar flex max-h-[50vh] flex-col gap-2 overflow-y-auto pr-2">
-          {sortedAttendances.map((att, index) => (
-            <div
-              key={att.id}
-              className="flex justify-between rounded bg-white/80 p-2 text-sm"
-            >
-              <span>
-                {index + 1}. {att.user.firstName}
-              </span>
-              <span className="font-bold">
-                {att.damageDealt.toLocaleString()}
-              </span>
+          {sortedAttendances.length === 0 ? (
+            <div className="p-2 text-center text-sm font-bold text-gray-800">
+              กำลังรอนักเรียนเข้าร่วม...
             </div>
-          ))}
+          ) : (
+            sortedAttendances.map((att, index) => (
+              <div
+                key={att.id}
+                className="flex justify-between rounded bg-white/80 p-2 text-sm"
+              >
+                <span>
+                  {index + 1}. {att.user.firstName}
+                </span>
+                <span className="font-bold">
+                  {att.damageDealt.toLocaleString()}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -325,30 +342,16 @@ export default function GameId() {
             })}
           </div>
         </div>
-
-        {!isStarted &&
-          currentHp > 0 &&
-          (session?.user.role === 'TEACHER' ||
-            session?.user.role === 'ADMIN') && (
-            <div className="mt-3 flex">
-              <button
-                onClick={() => setIsStarted(true)}
-                className="group relative rounded-full bg-blue-600 px-14 py-3 text-xl font-black text-white shadow-[0_10px_0_0_#1e40af] transition-all hover:-translate-y-1 hover:bg-blue-500 hover:shadow-[0_12px_0_0_#1e40af] active:translate-y-2 active:shadow-none"
-              >
-                เริ่มเกม
-              </button>
-            </div>
-          )}
       </div>
 
-      {session?.user.role === 'TEACHER' &&
+      {(session?.user.role === 'TEACHER' || session?.user.role === 'ADMIN') &&
         !isStarted &&
         !isGameOver &&
         currentHp > 0 && (
           <div className="absolute bottom-10 left-10 z-50">
             {attendances.length === 0 && (
               <div className="mb-2 w-max rounded bg-black p-2 text-xs text-white">
-                รอให้นักเรียนเข้าห้องก่อนนะครับจารย์
+                รอให้นักเรียนเข้าห้องก่อนนะครับอาจารย์
               </div>
             )}
             <button
@@ -365,7 +368,7 @@ export default function GameId() {
           </div>
         )}
 
-      {currentHp <= 0 && (
+      {!game?.isActive && currentHp <= 0 && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md duration-500">
           <h2 className="animate-bounce text-8xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">
             VICTORY!
@@ -380,7 +383,7 @@ export default function GameId() {
         </div>
       )}
 
-      {isGameOver && currentHp > 0 && (
+      {!game?.isActive && isGameOver && currentHp > 0 && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md duration-500">
           <h2 className="text-8xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)]">
             DEFEAT

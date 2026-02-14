@@ -52,6 +52,7 @@ export interface Game {
   imageUrl?: string
   description?: string
   isActive: boolean
+  status: 'WAITING' | 'ONGOING' | 'FINISHED'
   character?: {
     id: string
     bossName: string
