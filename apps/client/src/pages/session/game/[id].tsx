@@ -372,7 +372,7 @@ export default function GameId() {
           </h2>
           <p className="mt-4 text-2xl font-bold text-white">ภารกิจสำเร็จ!</p>
 
-          <Link href={`/dashboard/teacher/game/leader/${game.id}`}>
+          <Link href={`/session/game/leader/${game.id}`}>
             <button className="mt-8 rounded-full bg-white px-8 py-3 font-bold text-black transition-all hover:scale-105 hover:bg-gray-200">
               สรุปผลคะแนน
             </button>
@@ -389,7 +389,7 @@ export default function GameId() {
             หมดเวลาแล้ว! บอสยังไม่ตาย
           </p>
 
-          <Link href="/dashboard/teacher/game">
+          <Link href="/session/game">
             <button className="mt-8 rounded-full bg-red-600 px-8 py-3 font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-red-500">
               สรุปผลคะแนน
             </button>

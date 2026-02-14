@@ -140,7 +140,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
                 className="flex-1 rounded-xl border-2 border-gray-300 bg-red-400 py-2 font-semibold text-white hover:bg-red-500"
                 onClick={() => {
                   setOpenModal(false)
-                  router.push(`/dashboard/teacher/classroom/${classroomId}`)
+                  router.push(`/session/game/${classroomId}`)
                 }}
               >
                 ยังไม่เริ่ม
@@ -149,7 +149,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
                 className="flex-1 rounded-xl bg-blue-600 py-2 font-semibold text-white hover:bg-blue-700"
                 onClick={() => {
                   if (!createdGameId) return
-                  router.push(`/dashboard/teacher/game/${createdGameId}`)
+                  router.push(`/session/game/${createdGameId}`)
                 }}
               >
                 เริ่มเกมเลย

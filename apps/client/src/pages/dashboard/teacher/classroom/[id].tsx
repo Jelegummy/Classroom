@@ -156,7 +156,7 @@ export default function ClassroomId() {
             {activeTab === 'game_tabs' && (
               <Link
                 href={{
-                  pathname: '/dashboard/teacher/game',
+                  pathname: '/session/game',
                   query: { classroomId: classroom?.id },
                 }}
               >
