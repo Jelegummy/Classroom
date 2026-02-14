@@ -215,3 +215,5 @@ export default function Leaderboard() {
     </div>
   )
 }
+
+//TODO : get info from api and display (info boss, damage, player name, etc.)
