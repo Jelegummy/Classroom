@@ -2,7 +2,6 @@ import { PrismaService } from "@app/db";
 import { BadRequestException, Injectable, UnauthorizedException, } from "@nestjs/common";
 import { CreateTutorArgs } from "./internal.dto";
 import { Context, getUserFromContext } from "@app/common";
-import { get } from "http";
 
 @Injectable()
 export class TutorInternalService {

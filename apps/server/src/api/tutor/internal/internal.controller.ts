@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { TutorInternalService } from "./internal.service";
 import { CreateTutorArgs } from "./internal.dto";
@@ -29,4 +29,16 @@ export class TutorInternalController {
 
         return { statusCode: HttpStatus.OK, data: res }
     }
+
+    // @Patch('/:id/bot')
+    // async updateTutorBot(
+    //     @Req() ctx: Context,
+    //     @Param('id') id: string,
+    //     @Body() args: any,
+    //     @Headers('x-bot-secret') botSecret: "super-secret-bot-key",
+    // ) {
+    //     const res = await this.service.updateTutorBot(id, args, ctx, botSecret);
+
+    //     return { statusCode: HttpStatus.OK, data: res };
+    // }
 }

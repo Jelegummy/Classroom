@@ -8,5 +8,5 @@ next-env.d.ts
 .DS_Store
 deployment
 generated
-
+.venv
 /bin/**
