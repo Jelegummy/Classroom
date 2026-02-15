@@ -37,7 +37,7 @@ export const getAllTutors = async () => {
     return res.data
 }
 
-export const getTutor = async (id: string) => {
+export const getTutorById = async (id: string) => {
     const session = await getSession()
 
     const res = await fetchers.Get<Tutor>(
