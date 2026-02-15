@@ -5,7 +5,7 @@ import { Context, getUserFromContext } from '@app/common/dist/utils'
 
 @Injectable()
 export class CharacterInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createCharacter(args: CreateCharacterDto, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -37,7 +37,6 @@ export class CharacterInternalService {
     }
 
     const characters = await this.db.character.findMany({
-      where: { creatorId: user.id },
       include: {
         creator: true,
       },
