@@ -17,12 +17,14 @@ import { GameModule } from './api/game/game.module'
 import { AnnounceModule } from './api/announce/announce.module'
 import { AttendanceModule } from './api/attendance/attendance.module'
 import { CharacterModule } from './api/character/character.module'
+import { TutorModule } from './api/tutor/tuter.module'
 
 @Module({
   imports: [
     UserModule,
     SchoolModule, //Not used yet
     ClassroomModule,
+    TutorModule,
     GameModule,
     AttendanceModule,
     CharacterModule,
