@@ -1,4 +1,3 @@
-import NavbarGame from '@/components/Navbar-Game'
 import CardCharacter from './components/card-charecter'
 import CardGame from './components/card-game'
 import CharacterScene from './components/character-scene'
@@ -6,6 +5,7 @@ import { useRouter } from 'next/router'
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllCharacters } from '@/services/charecter'
+import NavbarSession from '@/components/Navbar-Session'
 
 export default function GameSession() {
   const router = useRouter()
@@ -29,7 +29,7 @@ export default function GameSession() {
       className="flex h-screen w-full flex-col overflow-hidden bg-cover bg-center bg-no-repeat"
       style={{ backgroundImage: "url('/bg-game.png')" }}
     >
-      <NavbarGame />
+      <NavbarSession />
 
       <div className="flex flex-1 flex-row overflow-hidden">
         <div className="z-20 h-full shadow-xl">

@@ -10,9 +10,11 @@ import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
 // import CreateButtonAnnounce from './components/create-button-announce'
 import Link from 'next/link'
-import MainTasks from '../../teacher/classroom/components/main-tasks'
-import Ranking from '../../teacher/classroom/components/ranking'
+import MainTasks from '../../teacher/classroom/components/main-tasks' // เดี๋ยวทำให้เป็นของนักเรียน
+import Ranking from '../../teacher/classroom/components/ranking' // เดี๋ยวทำให้เป็นของนักเรียน
 import JoinGame from './components/join-game'
+import TutorSession from '../tutor'
+import CreateButtonTutor from '../tutor/components/button-create'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -137,7 +139,9 @@ export default function ClassroomId() {
                 </div>
               )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
-              {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
+              {activeTab === 'tutor_tabs' && (
+                <CreateButtonTutor classroomId={classroom?.id ?? ''} />
+              )}
             </div>
           </div>
           <hr className="mt-3" />
@@ -152,7 +156,7 @@ export default function ClassroomId() {
             {activeTab === 'game_tabs' && (
               <JoinGame classroomId={classroom?.id ?? ''} />
             )}
-            {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
+            {activeTab === 'tutor_tabs' && <TutorSession />}
             {/* connect model jee */}
             {activeTab === 'people_tabs' && (
               <Ranking

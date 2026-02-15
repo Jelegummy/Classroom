@@ -15,4 +15,9 @@ export type Tutor = {
     dataContent?: string
     discordChannelId?: string
     classroomId: string
+    host: {
+        id: string
+        firstName: string
+        lastName: string
+    }
 }
