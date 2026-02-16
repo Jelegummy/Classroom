@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, HttpStatus, Param, Patch, Post, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { TutorInternalService } from "./internal.service";
 import { CreateTutorArgs } from "./internal.dto";
@@ -26,6 +26,13 @@ export class TutorInternalController {
     @Get('/:id')
     async getTutorById(@Req() ctx: Context, @Param('id') id: string) {
         const res = await this.service.getTutorById(id, ctx)
+
+        return { statusCode: HttpStatus.OK, data: res }
+    }
+
+    @Delete('/delete/:id')
+    async deleteTutor(@Req() ctx: Context, @Param('id') id: string) {
+        const res = await this.service.deleteTutor(id, ctx)
 
         return { statusCode: HttpStatus.OK, data: res }
     }

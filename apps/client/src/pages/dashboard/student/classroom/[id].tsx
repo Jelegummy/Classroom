@@ -156,8 +156,9 @@ export default function ClassroomId() {
             {activeTab === 'game_tabs' && (
               <JoinGame classroomId={classroom?.id ?? ''} />
             )}
-            {activeTab === 'tutor_tabs' && <TutorSession />}
-            {/* connect model jee */}
+            {activeTab === 'tutor_tabs' && (
+              <TutorSession classroomId={classroom?.id ?? ''} />
+            )}
             {activeTab === 'people_tabs' && (
               <Ranking
                 points={classroom?.users.map(u => u.user.points) ?? []}

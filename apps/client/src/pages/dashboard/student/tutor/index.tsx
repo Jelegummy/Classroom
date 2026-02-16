@@ -2,10 +2,23 @@ import { getAllTutors } from '@/services/tutor'
 import { useQuery } from '@tanstack/react-query'
 import { Video } from 'lucide-react'
 
-export default function TutorSession() {
+interface TutorSessionProps {
+  classroomId: string
+}
+
+export default function TutorSession({ classroomId }: TutorSessionProps) {
   const { data: tutors, isLoading } = useQuery({
-    queryKey: ['getAllTutors'],
+    queryKey: ['getAllTutors', classroomId],
     queryFn: () => getAllTutors(),
+    select: tutors => {
+      return (
+        tutors?.filter((t: any) =>
+          t.classroomSessions?.some(
+            (session: any) => session.classroomId === classroomId,
+          ),
+        ) || []
+      )
+    },
     refetchOnWindowFocus: false,
     refetchInterval: 5000,
   })

@@ -96,4 +96,24 @@ export class TutorInternalService {
 
         return tutor
     }
+
+    async deleteTutor(id: string, ctx: Context) {
+        const user = getUserFromContext(ctx)
+
+        if (!user) {
+            throw new UnauthorizedException('User not found')
+        }
+
+        await this.db.classroomOnTutor.deleteMany({
+            where: {
+                tutorId: id,
+            }
+        })
+
+        await this.db.tutor.delete({
+            where: {
+                id,
+            }
+        })
+    }
 }
