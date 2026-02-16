@@ -166,3 +166,20 @@ export const startGame = async (gameId: string) => {
 
   return res.data
 }
+
+export const endGame = async (gameId: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Patch(
+    `${ENDPOINT}/game/internal/end/${gameId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}

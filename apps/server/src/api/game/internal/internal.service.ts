@@ -487,6 +487,29 @@ export class GameInternalService {
     })
   }
 
+  async endGame(ctx: Context, args: { gameId: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    const game = await this.db.game.findUnique({
+      where: { id: args.gameId },
+    })
+
+    if (!game) {
+      throw new NotFoundException('Game not found')
+    }
+
+    await this.db.game.update({
+      where: { id: args.gameId },
+      data: {
+        status: 'FINISHED',
+        isActive: false,
+      },
+    })
+  }
+
   // async updateItemFromGame(ctx: Context, gameIds: { gameId: string }, itemIds: { itemId: string }) {
   //     const user = getUserFromContext(ctx);
 

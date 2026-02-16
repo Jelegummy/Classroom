@@ -93,6 +93,13 @@ export class GameInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   }
 
+  @Patch('end/:gameId')
+  async endGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
+    const res = await this.service.endGame(ctx, { gameId })
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
   // @Patch('Item/update-item-from-game/:gameId/:itemId')
   // async updateItemFromGame(@Req() ctx: Context, @Param('gameId') gameId: string, @Param('itemId') itemId: string) {
   //     const res = await this.service.updateItemFromGame(ctx, { gameId }, { itemId });

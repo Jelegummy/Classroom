@@ -2,7 +2,12 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
-import { getGameSession, attackBoss, startGame } from '@/services/game-session'
+import {
+  getGameSession,
+  attackBoss,
+  startGame,
+  endGame,
+} from '@/services/game-session'
 import { getAllItems, buyItems } from '@/services/Items'
 import { toast } from 'sonner'
 import Image from 'next/image'
@@ -77,6 +82,16 @@ export default function GameId() {
     queryFn: () => getAllItems(),
   })
 
+  const endGameMutation = useMutation({
+    mutationFn: () => endGame(gameId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['getGameSession', gameId] })
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'เกิดข้อผิดพลาด')
+    },
+  })
+
   useEffect(() => {
     if (game?.timeLimit && timeLeft === 0 && !isStarted) {
       setTimeLeft(game.timeLimit)
@@ -89,6 +104,7 @@ export default function GameId() {
       timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
     } else if (timeLeft === 0 && isStarted) {
       setIsGameOver(true)
+      endGameMutation.mutate()
     }
     return () => clearInterval(timer)
   }, [isStarted, timeLeft])
@@ -368,7 +384,7 @@ export default function GameId() {
           </div>
         )}
 
-      {!game?.isActive && currentHp <= 0 && (
+      {(isStarted || !game?.isActive) && currentHp <= 0 && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md duration-500">
           <h2 className="animate-bounce text-8xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">
             VICTORY!
@@ -383,7 +399,7 @@ export default function GameId() {
         </div>
       )}
 
-      {!game?.isActive && isGameOver && currentHp > 0 && (
+      {isGameOver && currentHp > 0 && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md duration-500">
           <h2 className="text-8xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)]">
             DEFEAT
