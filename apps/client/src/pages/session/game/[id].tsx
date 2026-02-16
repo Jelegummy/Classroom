@@ -429,7 +429,7 @@ export default function GameId() {
             หมดเวลาแล้ว! บอสยังไม่ตาย
           </p>
 
-          <Link href="/session/game">
+          <Link href={`/session/game/leader/${game.id}`}>
             <button className="mt-8 rounded-full bg-red-600 px-8 py-3 font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-red-500">
               สรุปผลคะแนน
             </button>

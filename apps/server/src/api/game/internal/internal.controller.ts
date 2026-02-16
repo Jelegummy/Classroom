@@ -80,8 +80,8 @@ export class GameInternalController {
   }
 
   @Get('/leaderboard/:gameId')
-  async getLeaderboard(@Param('id') id: string, @Req() ctx: Context) {
-    const res = await this.service.getGameLeaderboard(ctx, { id })
+  async getLeaderboard(@Param('gameId') gameId: string, @Req() ctx: Context) {
+    const res = await this.service.getGameLeaderboard(ctx, { id: gameId })
 
     return { statusCode: HttpStatus.OK, data: res }
   }

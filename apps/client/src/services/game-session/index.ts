@@ -3,6 +3,7 @@ import {
   CreateGameArgs,
   CreateGameResponse,
   Game,
+  GameLeaderboardResponse,
   Leader,
   UpdateGameArgs,
 } from './types'
@@ -119,7 +120,7 @@ export const addItemToGame = async (gameId: string, itemId: string) => {
 export const getGameLeaderboard = async (gameId: string) => {
   const session = await getSession()
 
-  const res = await fetchers.Get<Leader[]>(
+  const res = await fetchers.Get<GameLeaderboardResponse>(
     `${ENDPOINT}/game/internal/leaderboard/${gameId}`,
     {
       token: session?.user.accessToken,

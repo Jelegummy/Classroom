@@ -1,6 +1,7 @@
 import NavbarLeader from '@/components/Navbar-Leader'
 import { getGameLeaderboard } from '@/services/game-session'
 import { useQuery } from '@tanstack/react-query'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 // import Image from 'next/image'
 
@@ -8,15 +9,12 @@ export default function Leaderboard() {
   const router = useRouter()
   const gameId = router.query.id as string
 
-  const { data: leaderboard, isLoading } = useQuery({
+  const { data: gameData, isLoading } = useQuery({
     queryKey: ['gameLeaderboard', gameId],
     queryFn: () => getGameLeaderboard(gameId),
     enabled: !!gameId,
     refetchOnWindowFocus: false,
   })
-
-  console.log('Game ID:', gameId)
-  console.log('API Result:', leaderboard)
 
   if (isLoading) {
     return (
@@ -26,16 +24,21 @@ export default function Leaderboard() {
     )
   }
 
-  const firstPlace = leaderboard?.[0]
-  const secondPlace = leaderboard?.[1]
-  const thirdPlace = leaderboard?.[2]
-  const otherPlayers = leaderboard?.slice(3) || []
+  const boss = gameData?.character
+  const players = gameData?.leaderboard || []
+
+  const firstPlace = players[0]
+  const secondPlace = players[1]
+  const thirdPlace = players[2]
+  const otherPlayers = players.slice(3)
 
   const bossInfo = {
-    imageUrl: '/boss.png',
-    hp: 500,
-    duration: '100 วินาที',
-    participants: leaderboard?.length || 0,
+    name: boss?.bossName || 'ไม่ทราบชื่อ',
+    imageUrl: boss?.imageUrl || '/boss.png',
+    hp: boss?.maxHp || 0,
+    pointBoss: boss?.pointBoss || 0,
+    duration: boss?.timeLimit ? `${boss.timeLimit} วินาที` : 'ไม่จำกัดเวลา',
+    participants: players.length,
   }
 
   return (
@@ -73,13 +76,13 @@ export default function Leaderboard() {
                   </div>
                   <div className="text-center">
                     <p className="line-clamp-1 font-bold text-gray-800">
-                      {secondPlace.user.firstName}
+                      {secondPlace.user.firstName} {secondPlace.user.lastName}
                     </p>
                     <p className="text-lg font-bold text-blue-500">
-                      {secondPlace.damageDealt} ดาเมจ
+                      {secondPlace.scoreEarned} พอยต์
                     </p>
                     <p className="text-xs text-gray-400">
-                      ได้รับ {secondPlace.user.points} พอยต์
+                      พอยต์ {secondPlace.user.points} ทั้งหมด
                     </p>
                   </div>
                 </div>
@@ -94,14 +97,14 @@ export default function Leaderboard() {
                   </div>
                   <div className="text-center">
                     <p className="line-clamp-1 text-lg font-bold text-gray-900">
-                      {firstPlace.user.firstName}
+                      {firstPlace.user.firstName} {firstPlace.user.lastName}
                     </p>
                     <p className="text-xl font-black text-yellow-600">
-                      {firstPlace.damageDealt} ดาเมจ
+                      {firstPlace.scoreEarned} พอยต์
                     </p>
-                    {/* <p className="text-sm text-yellow-500/80">
-                      ได้รับ {firstPlace.user.points} พอยต์
-                    </p> */}
+                    <p className="text-sm text-yellow-500/80">
+                      พอยต์ {firstPlace.user.points} ทั้งหมด
+                    </p>
                   </div>
                 </div>
               )}
@@ -130,63 +133,65 @@ export default function Leaderboard() {
                   </div>
                   <div className="text-center">
                     <p className="line-clamp-1 font-bold text-gray-800">
-                      {thirdPlace.user.firstName}
+                      {thirdPlace.user.firstName} {thirdPlace.user.lastName}
                     </p>
                     <p className="text-lg font-bold text-blue-500">
-                      {thirdPlace.damageDealt} ดาเมจ
+                      {thirdPlace.scoreEarned} พอยต์
                     </p>
                     <p className="text-xs text-gray-400">
-                      ได้รับ {thirdPlace.user.points} พอยต์
+                      พอยต์ {thirdPlace.user.points} ทั้งหมด
                     </p>
                   </div>
                 </div>
               )}
             </div>
-
-            <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm">
-              {otherPlayers.map((player, index) => (
-                <div
-                  key={player.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-100 bg-white p-3 hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100 text-sm font-bold text-gray-500">
-                      {index + 4}
-                    </div>
-                    <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-200">
-                      <div className="flex h-full w-full items-center justify-center bg-gray-300">
-                        👤
+            {otherPlayers.length === 0 && (
+              <div className="hidden">
+                <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm">
+                  {otherPlayers.map((player, index) => (
+                    <div
+                      key={player.id}
+                      className="flex items-center justify-between rounded-lg border border-gray-100 bg-white p-3 hover:bg-gray-50"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100 text-sm font-bold text-gray-500">
+                          {index + 4}
+                        </div>
+                        <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-200">
+                          <div className="flex h-full w-full items-center justify-center bg-gray-300">
+                            👤
+                          </div>
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-800">
+                            {player.user.firstName}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            พอยต์ {player.user.points} ทั้งหมด
+                          </p>
+                        </div>
+                      </div>
+                      <div className="font-bold text-blue-500">
+                        {player.scoreEarned.toLocaleString()} พอยต์
                       </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-gray-800">
-                        {player.user.firstName}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        ได้รับ {player.user.points} พอยต์
-                      </p>
-                    </div>
-                  </div>
-                  <div className="font-bold text-blue-500">
-                    {player.damageDealt.toLocaleString()} ดาเมจ
-                  </div>
-                </div>
-              ))}
+                  ))}
 
-              {otherPlayers.length === 0 && (
-                <div className="py-4 text-center text-gray-400">
-                  ไม่มีผู้เล่นอื่น
+                  <div className="hidden py-4 text-center text-gray-400">
+                    ไม่มีผู้เล่นอื่น
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3">
             <div className="flex flex-col gap-4">
               <div className="flex aspect-square items-center justify-center rounded-2xl bg-white p-6 shadow-md">
                 <div className="relative h-full w-full">
-                  {/* <div className="flex h-full w-full items-center justify-center text-6xl opacity-20">
-                  </div> */}
+                  <div className="flex h-full w-full items-center justify-center text-6xl">
+                    <Image src={bossInfo.imageUrl} alt="Boss" fill />
+                  </div>
                 </div>
               </div>
 

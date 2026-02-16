@@ -86,11 +86,29 @@ export type Leader = {
   id: string
   damageDealt: number
   scoreEarned: number
-  userName: string
   user: {
     id: string
     firstName: string
     lastName: string
     points: number
   }
+}
+
+export type BossCharacter = {
+  id: string
+  bossName: string
+  pointBoss: number
+  maxHp: number
+  timeLimit: number
+  description: string
+  modelUrl: string
+  imageUrl: string
+  creatorId: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type GameLeaderboardResponse = {
+  character: BossCharacter
+  leaderboard: Leader[]
 }

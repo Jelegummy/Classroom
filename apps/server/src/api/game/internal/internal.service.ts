@@ -405,6 +405,13 @@ export class GameInternalService {
           ],
         },
       },
+      include: {
+        game: {
+          include: {
+            character: true
+          },
+        },
+      }
     })
 
     if (!activeGame) {
@@ -434,7 +441,10 @@ export class GameInternalService {
       },
     })
 
-    return leaderboard
+    return {
+      character: activeGame.game.character,
+      leaderboard: leaderboard
+    }
   }
 
   async joinGame(ctx: Context, args: { gameId: string }) {
