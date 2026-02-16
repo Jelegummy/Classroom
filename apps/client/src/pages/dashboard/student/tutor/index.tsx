@@ -1,12 +1,15 @@
 import { getAllTutors } from '@/services/tutor'
 import { useQuery } from '@tanstack/react-query'
 import { Video } from 'lucide-react'
+import StateLink from './components/state-link'
+import { useState } from 'react'
 
 interface TutorSessionProps {
   classroomId: string
 }
 
 export default function TutorSession({ classroomId }: TutorSessionProps) {
+  const [open, setOpen] = useState(false)
   const { data: tutors, isLoading } = useQuery({
     queryKey: ['getAllTutors', classroomId],
     queryFn: () => getAllTutors(),
@@ -26,7 +29,7 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
   if (isLoading) return <div>Loading...</div>
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tutors?.map(tutor => (
           <div
@@ -53,15 +56,27 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
               </span> */}
             </div>
 
-            <div className="mt-2">
-              <span className="rounded-full px-4 py-1.5 text-sm font-medium">
-                {tutor.startTime?.toLocaleString()} เวลาเริ่มต้น
+            <div className="mt-1">
+              <span className="rounded-full px-2 py-1 text-sm font-medium">
+                {tutor.startTime &&
+                  new Date(tutor.startTime).toLocaleString('th-TH', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}{' '}
               </span>
             </div>
 
-            <button className="mt-2 w-full rounded-lg bg-primary py-1 font-medium text-white transition-colors hover:bg-primary/80">
+            <button
+              onClick={() => setOpen(true)}
+              className="mt-2 w-full rounded-lg bg-primary py-1 font-medium text-white transition-colors hover:bg-primary/80"
+            >
               ตรวจสอบ
             </button>
+
+            {open && <StateLink onClose={() => setOpen(false)} />}
           </div>
         ))}
       </div>
