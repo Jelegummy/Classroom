@@ -1,5 +1,5 @@
 {
-   "name": "@discord/bot",
+  "name": "@discord/bot",
   "scripts": {
     "dev:api": "fastapi dev ./main.py --port 4000",
     "dev": "python ./main.py",

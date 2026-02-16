@@ -10,7 +10,7 @@ import { TransactionClient } from '@app/db/dist/generated/internal/prismaNamespa
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -379,7 +379,7 @@ export class GameInternalService {
           activeGame.id,
           activeGame.classroomId,
           bossMaxHp,
-          bossPoints
+          bossPoints,
         )
       }
     })
@@ -408,10 +408,10 @@ export class GameInternalService {
       include: {
         game: {
           include: {
-            character: true
+            character: true,
           },
         },
-      }
+      },
     })
 
     if (!activeGame) {
@@ -443,7 +443,7 @@ export class GameInternalService {
 
     return {
       character: activeGame.game.character,
-      leaderboard: leaderboard
+      leaderboard: leaderboard,
     }
   }
 
@@ -567,7 +567,7 @@ export class GameInternalService {
     if (activeGame.currentHp <= 0) {
       return {
         success: true,
-        message: 'Boss is already dead. Points were already distributed.'
+        message: 'Boss is already dead. Points were already distributed.',
       }
     }
 
@@ -580,7 +580,7 @@ export class GameInternalService {
         activeGame.id,
         activeGame.classroomId,
         bossMaxHp,
-        bossPoints
+        bossPoints,
       )
 
       await tx.classroomOnGame.update({

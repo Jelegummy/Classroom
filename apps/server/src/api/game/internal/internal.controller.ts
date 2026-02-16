@@ -17,7 +17,7 @@ import { Context } from '@app/common'
 @ApiTags('game-internal')
 @Controller('game/internal')
 export class GameInternalController {
-  constructor(private readonly service: GameInternalService) { }
+  constructor(private readonly service: GameInternalService) {}
 
   @Post('/create')
   async createGameSession(@Body() args: CreateGameArgs, @Req() ctx: Context) {

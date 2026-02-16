@@ -171,12 +171,9 @@ export const startGame = async (gameId: string) => {
 export const endGame = async (gameId: string) => {
   const session = await getSession()
 
-  const res = await fetchers.Patch(
-    `${ENDPOINT}/game/internal/end/${gameId}`,
-    {
-      token: session?.user.accessToken,
-    },
-  )
+  const res = await fetchers.Patch(`${ENDPOINT}/game/internal/end/${gameId}`, {
+    token: session?.user.accessToken,
+  })
 
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
@@ -188,13 +185,10 @@ export const endGame = async (gameId: string) => {
 export const timeoutBossGame = async (gameId: string) => {
   const session = await getSession()
 
-  const res = await fetchers.Patch(
-    `${ENDPOINT}/game/internal/attack-timeout`,
-    {
-      data: { gameId },
-      token: session?.user.accessToken,
-    },
-  )
+  const res = await fetchers.Patch(`${ENDPOINT}/game/internal/attack-timeout`, {
+    data: { gameId },
+    token: session?.user.accessToken,
+  })
 
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)

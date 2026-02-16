@@ -5,7 +5,7 @@ import { Context, getUserFromContext } from '@app/common/dist/utils'
 
 @Injectable()
 export class CharacterInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createCharacter(args: CreateCharacterDto, ctx: Context) {
     const user = getUserFromContext(ctx)
