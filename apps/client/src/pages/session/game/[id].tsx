@@ -7,6 +7,7 @@ import {
   attackBoss,
   startGame,
   endGame,
+  timeoutBossGame,
 } from '@/services/game-session'
 import { getAllItems, buyItems } from '@/services/Items'
 import { toast } from 'sonner'
@@ -92,6 +93,17 @@ export default function GameId() {
     },
   })
 
+  const timeoutMutation = useMutation({
+    mutationFn: () => timeoutBossGame(gameId),
+    onSuccess: () => {
+      endGameMutation.mutate()
+    },
+    onError: (err: any) => {
+      console.error('Timeout error:', err)
+      endGameMutation.mutate()
+    },
+  })
+
   useEffect(() => {
     if (game?.timeLimit && timeLeft === 0 && !isStarted) {
       setTimeLeft(game.timeLimit)
@@ -102,12 +114,14 @@ export default function GameId() {
     let timer: NodeJS.Timeout
     if (isStarted && timeLeft > 0) {
       timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
-    } else if (timeLeft === 0 && isStarted) {
+    } else if (timeLeft === 0 && isStarted && !isGameOver) {
       setIsGameOver(true)
-      endGameMutation.mutate()
+
+      console.log('Time is up! Distributing points...')
+      timeoutMutation.mutate()
     }
     return () => clearInterval(timer)
-  }, [isStarted, timeLeft])
+  }, [isStarted, timeLeft, isGameOver, gameId])
 
   const activeSession = game?.classrooms?.[0]
   const boss = game?.character
@@ -220,6 +234,13 @@ export default function GameId() {
   const sortedAttendances = [...attendances].sort(
     (a, b) => b.damageDealt - a.damageDealt,
   )
+
+  const totalDamage = sortedAttendances.reduce(
+    (sum, att) => sum + att.damageDealt,
+    0,
+  )
+  const isVictory = currentHp <= 0 && totalDamage >= maxHp
+  const isDefeat = isGameOver || (currentHp <= 0 && totalDamage < maxHp)
 
   return (
     <div
@@ -384,7 +405,7 @@ export default function GameId() {
           </div>
         )}
 
-      {(isStarted || !game?.isActive) && currentHp <= 0 && (
+      {isVictory && !isDefeat && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md duration-500">
           <h2 className="animate-bounce text-8xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">
             VICTORY!
@@ -399,7 +420,7 @@ export default function GameId() {
         </div>
       )}
 
-      {isGameOver && currentHp > 0 && (
+      {isDefeat && (
         <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md duration-500">
           <h2 className="text-8xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)]">
             DEFEAT

@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { CreateGameArgs, UpdateGameArgs } from './internal.dto'
+import { AttackGameArgs, CreateGameArgs, UpdateGameArgs } from './internal.dto'
 import { Context, getUserFromContext } from '@app/common'
+import { TransactionClient } from '@app/db/dist/generated/internal/prismaNamespace'
 
 @Injectable()
 export class GameInternalService {
@@ -272,7 +273,49 @@ export class GameInternalService {
     return gameItem
   }
 
-  async attackBoss(ctx: Context, args: { gameId: string; damage: number }) {
+  private async distributePoints(
+    tx: TransactionClient,
+    activeGameId: string,
+    classroomId: string,
+    bossMaxHp: number,
+    bossPoints: number,
+  ) {
+    if (bossPoints <= 0) return
+
+    const allAttackers = await tx.attendance.findMany({
+      where: { activeGameId },
+    })
+
+    for (const attacker of allAttackers) {
+      const currentEarnedScore = attacker.scoreEarned || 0
+      if (currentEarnedScore > 0) continue
+
+      const rawScore = (attacker.damageDealt / bossMaxHp) * bossPoints
+      const finalScore = Math.floor(rawScore)
+
+      if (finalScore > 0) {
+        await tx.user.update({
+          where: { id: attacker.userId },
+          data: { points: { increment: finalScore } },
+        })
+
+        await tx.classroomOnUser.updateMany({
+          where: {
+            userId: attacker.userId,
+            classroomId: classroomId,
+          },
+          data: { score: { increment: finalScore } },
+        })
+
+        await tx.attendance.update({
+          where: { id: attacker.id },
+          data: { scoreEarned: finalScore },
+        })
+      }
+    }
+  }
+
+  async attackBoss(ctx: Context, args: AttackGameArgs) {
     const user = getUserFromContext(ctx)
     if (!user) throw new Error('User not found')
 
@@ -290,10 +333,7 @@ export class GameInternalService {
         game: {
           include: {
             character: {
-              select: {
-                maxHp: true,
-                pointBoss: true,
-              },
+              select: { maxHp: true, pointBoss: true },
             },
           },
         },
@@ -314,15 +354,9 @@ export class GameInternalService {
     await this.db.$transaction(async tx => {
       await tx.attendance.upsert({
         where: {
-          userId_activeGameId: {
-            userId: user.id,
-            activeGameId: activeGame.id,
-          },
+          userId_activeGameId: { userId: user.id, activeGameId: activeGame.id },
         },
-        update: {
-          damageDealt: { increment: actualDamage },
-          status: 'PRESENT',
-        },
+        update: { damageDealt: { increment: actualDamage } },
         create: {
           userId: user.id,
           activeGameId: activeGame.id,
@@ -340,36 +374,13 @@ export class GameInternalService {
         const bossMaxHp = activeGame.game.character?.maxHp || 1
         const bossPoints = activeGame.game.character?.pointBoss || 0
 
-        if (bossPoints > 0) {
-          const allAttackers = await tx.attendance.findMany({
-            where: { activeGameId: activeGame.id },
-          })
-
-          for (const attacker of allAttackers) {
-            const rawScore = (attacker.damageDealt / bossMaxHp) * bossPoints
-            const finalScore = Math.floor(rawScore)
-
-            if (finalScore > 0) {
-              await tx.user.update({
-                where: { id: attacker.userId },
-                data: { points: { increment: finalScore } },
-              })
-
-              await tx.classroomOnUser.updateMany({
-                where: {
-                  userId: attacker.userId,
-                  classroomId: activeGame.classroomId,
-                },
-                data: { score: { increment: finalScore } },
-              })
-
-              await tx.attendance.update({
-                where: { id: attacker.id },
-                data: { scoreEarned: finalScore },
-              })
-            }
-          }
-        }
+        await this.distributePoints(
+          tx,
+          activeGame.id,
+          activeGame.classroomId,
+          bossMaxHp,
+          bossPoints
+        )
       }
     })
 
@@ -507,6 +518,65 @@ export class GameInternalService {
         status: 'FINISHED',
         isActive: false,
       },
+    })
+  }
+
+  async timeoutBossGame(ctx: Context, args: { gameId: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) throw new Error('User not found')
+
+    const activeGame = await this.db.classroomOnGame.findFirst({
+      where: {
+        gameId: args.gameId,
+        classroom: {
+          OR: [
+            { school: { users: { some: { id: user.id } } } },
+            { users: { some: { userId: user.id } } },
+          ],
+        },
+      },
+      include: {
+        game: {
+          include: {
+            character: {
+              select: {
+                maxHp: true,
+                pointBoss: true,
+              },
+            },
+          },
+        },
+        classroom: true,
+      },
+    })
+
+    if (!activeGame) {
+      throw new NotFoundException('Active game session not found')
+    }
+
+    if (activeGame.currentHp <= 0) {
+      return {
+        success: true,
+        message: 'Boss is already dead. Points were already distributed.'
+      }
+    }
+
+    await this.db.$transaction(async tx => {
+      const bossMaxHp = activeGame.game.character?.maxHp || 1
+      const bossPoints = activeGame.game.character?.pointBoss || 0
+
+      await this.distributePoints(
+        tx,
+        activeGame.id,
+        activeGame.classroomId,
+        bossMaxHp,
+        bossPoints
+      )
+
+      await tx.classroomOnGame.update({
+        where: { id: activeGame.id },
+        data: { currentHp: 0 },
+      })
     })
   }
 

@@ -72,6 +72,13 @@ export class GameInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   }
 
+  @Patch('/attack-timeout')
+  async timeoutBossGame(@Req() ctx: Context, @Body() args: { gameId: string }) {
+    const res = await this.service.timeoutBossGame(ctx, args)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
   @Get('/leaderboard/:gameId')
   async getLeaderboard(@Param('id') id: string, @Req() ctx: Context) {
     const res = await this.service.getGameLeaderboard(ctx, { id })
