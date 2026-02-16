@@ -13,6 +13,8 @@ import CreateButtonAnnounce from './components/create-button-announce'
 import MainTasks from './components/main-tasks'
 import Ranking from './components/ranking'
 import Link from 'next/link'
+import InfoGame from './components/info-game'
+import Image from 'next/image'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -154,16 +156,38 @@ export default function ClassroomId() {
             {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
             {/* connect model aong */}
             {activeTab === 'game_tabs' && (
-              <Link
-                href={{
-                  pathname: '/session/game',
-                  query: { classroomId: classroom?.id },
-                }}
-              >
-                <div className="cursor-pointer rounded-lg bg-blue-100 p-4 text-blue-700 hover:bg-blue-200">
-                  สร้างเกมเช็คชื่อ (Click to create game)
-                </div>
-              </Link>
+              <>
+                <Link
+                  href={{
+                    pathname: '/session/game',
+                    query: { classroomId: classroom?.id },
+                  }}
+                  className="group block w-[300px]"
+                >
+                  <div className="relative overflow-hidden rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                    <Image
+                      src="/game-bg.jpg"
+                      alt="Create Game"
+                      width={300}
+                      height={200}
+                      className="h-[190px] w-full object-cover"
+                    />
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                    <div className="absolute bottom-0 w-full p-6 text-white">
+                      <h2 className="text-2xl font-extrabold tracking-wide">
+                        สร้างเกมเช็คชื่อ
+                      </h2>
+                      <p className="mt-1 text-sm text-gray-200">
+                        สร้างเกมสนุกๆ เพื่อเพิ่มความสนุกในชั้นเรียน
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+                <hr className="mt-5" />
+                <InfoGame classroomId={classroom?.id ?? ''} />
+              </>
             )}
             {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
             {/* connect model jee */}

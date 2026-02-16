@@ -5,7 +5,6 @@ import { IoChevronBackSharp } from 'react-icons/io5'
 const NavbarSession = () => {
   const { data: session } = useSession()
   const role = session?.user?.role
-  console.log('role', role)
   const href =
     role === 'TEACHER'
       ? '/dashboard/teacher/classroom'

@@ -9,7 +9,7 @@ interface JoinGameProps {
   classroomId: string
 }
 
-export default function JoinGame({ classroomId }: JoinGameProps) {
+export default function InfoGame({ classroomId }: JoinGameProps) {
   const router = useRouter()
 
   const { data: game } = useQuery({
@@ -26,19 +26,19 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
     refetchInterval: 5000,
   })
 
-  const joinMutation = useMutation({
+  const infoMutation = useMutation({
     mutationFn: (gameId: string) => joinGame(gameId),
-    onSuccess: (data, gameId) => {
-      router.push(`/session/game/${gameId}`)
-    },
-    onError: (error: any) => {
-      toast.error('ไม่สามารถเข้าห้องได้: ' + error.message)
-    },
+    // onSuccess: gameId => {
+    //   router.push(`/session/game/leader/${gameId}`)
+    // },
+    // onError: (error: any) => {
+    //   toast.error('ไม่สามารถเข้าห้องได้: ' + error.message)
+    // },
   })
 
   return (
     <>
-      <div className="min-h-screen bg-slate-50 p-4">
+      <div className="mt-5 min-h-screen bg-slate-50 p-2">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {game?.map(game => (
             <div
@@ -75,7 +75,7 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
               </div>
 
               <hr className="mb-4 border-gray-100" />
-              {!game.isActive ? (
+              {!game.isActive && (
                 <Link
                   href={`/session/game/leader/${game.id}`}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-300 py-3 font-semibold text-primary transition-all hover:bg-gray-300/80"
@@ -83,23 +83,6 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
                   <Swords className="h-5 w-5" />
                   สรุปผลคะแนน
                 </Link>
-              ) : (
-                <button
-                  onClick={() => joinMutation.mutate(game.id)}
-                  disabled={
-                    joinMutation.isPending && joinMutation.variables === game.id
-                  }
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold text-white transition-all duration-200 ${
-                    joinMutation.isPending && joinMutation.variables === game.id
-                      ? 'cursor-not-allowed bg-gray-500'
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:scale-105 hover:shadow-lg'
-                  }`}
-                >
-                  <Swords className="h-5 w-5" />
-                  {joinMutation.isPending && joinMutation.variables === game.id
-                    ? 'กำลังเข้าห้อง...'
-                    : 'เข้าร่วม'}
-                </button>
               )}
             </div>
           ))}
