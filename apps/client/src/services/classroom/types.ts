@@ -41,3 +41,8 @@ export type Classroom = {
 export type JoinClassroomArgs = {
   code: string
 }
+
+export type RewardDataResponse = {
+  statusCode: number
+  data: number
+}

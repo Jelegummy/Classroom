@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { rewardOwner } from '@/services/classroom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 export interface RewardResponse {
@@ -18,22 +18,40 @@ interface PointsButtonProps {
 
 export default function PointsButton({ classroomId }: PointsButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const { mutate, isPending } = useMutation<RewardResponse, Error, void>({
     mutationFn: async () => {
-      return (await rewardOwner(classroomId)) as unknown as RewardResponse
+      const res: any = await rewardOwner(classroomId)
+
+      const payload = res?.data?.data || res?.data || res
+
+      if (
+        payload?.statusCode >= 400 ||
+        payload?.error ||
+        payload?.message === 'ไม่มีนักเรียนใหม่ให้รับแต้มในขณะนี้'
+      ) {
+        throw new Error(
+          payload?.message || 'ไม่มีนักเรียนใหม่ให้รับแต้มในขณะนี้',
+        )
+      }
+
+      return res as RewardResponse
     },
-    onSuccess: res => {
-      const { pointsAwarded, userCount } = res.data
+    onSuccess: (res: any) => {
+      const payload = res?.data?.data || res?.data || res
+
+      const pointsAwarded = payload?.pointsAwarded ?? 0
+      const userCount = payload?.userCount ?? payload?.newUsersCount ?? 0
 
       toast.success(
         `รับแต้มสำเร็จ! ได้รับ ${pointsAwarded} แต้ม (จากนักเรียนใหม่ ${userCount} คน)`,
       )
+      queryClient.invalidateQueries({ queryKey: ['getRewards', classroomId] })
       setIsOpen(false)
     },
     onError: (error: any) => {
-      const errorMsg =
-        error?.response?.data?.message || 'เกิดข้อผิดพลาด ไม่สามารถรับแต้มได้'
+      const errorMsg = error?.message || 'เกิดข้อผิดพลาด ไม่สามารถรับแต้มได้'
       toast.error(errorMsg)
       console.error(error)
       setIsOpen(false)

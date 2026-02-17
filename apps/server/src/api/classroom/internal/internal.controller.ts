@@ -78,6 +78,13 @@ export class ClassroomInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   }
 
+  @Get('/rewards/:classroomId')
+  async getRewards(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+    const res = await this.service.getRewards({ classroomId }, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
   @Patch('/reward-student/:classroomId')
   async rewardStudent(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
     const res = await this.service.rewardStudent({ classroomId }, ctx)

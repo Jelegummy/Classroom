@@ -16,12 +16,13 @@ import Link from 'next/link'
 import InfoGame from './components/info-game'
 import Image from 'next/image'
 import PointsButton from './components/points-button'
+import NavbarPoints from '@/components/NavbarContent/navbarPoints'
 
 export default function ClassroomId() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<
     'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
-  >('jobs_tabs')
+  >('main_tabs')
   const [search, setSearch] = useState('')
   const classroomId = router.query.id as string
 
@@ -38,7 +39,7 @@ export default function ClassroomId() {
   return (
     <AppLayout>
       <DashboardLayout>
-        <NavbarContent search={search} onSearch={setSearch} />{' '}
+        <NavbarPoints classroomId={classroomId} />
         {/* fix navbar to search anything in classroom not name of classroom */}
         <div className="mx-4 mt-8 flex flex-col rounded-md border bg-white shadow-sm sm:mx-4 sm:mt-4">
           <div className="flex w-full flex-col items-center justify-between gap-4 p-4 sm:flex-row sm:gap-0">

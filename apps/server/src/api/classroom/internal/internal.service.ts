@@ -289,7 +289,26 @@ export class ClassroomInternalService {
       }
     })
   }
-  //TODO : bug
+
+  async getRewards(args: { classroomId: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (!user) {
+      throw new UnauthorizedException('User not found')
+    }
+
+    const userInClass = await this.db.classroomOnUser.findUnique({
+      where: {
+        userId_classroomId: {
+          userId: user.id,
+          classroomId: args.classroomId,
+        },
+      },
+      select: { score: true }
+    })
+
+    return userInClass?.score || 0
+  }
 
   async rewardStudent(args: { classroomId: string }, ctx: Context) {
     const user = getUserFromContext(ctx)

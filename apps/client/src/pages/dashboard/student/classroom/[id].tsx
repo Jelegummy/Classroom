@@ -9,7 +9,7 @@ import { HiUsers } from 'react-icons/hi2'
 import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
 // import CreateButtonAnnounce from './components/create-button-announce'
-import Link from 'next/link'
+// import Link from 'next/link'
 import MainTasks from '../../teacher/classroom/components/main-tasks' // เดี๋ยวทำให้เป็นของนักเรียน
 import Ranking from '../../teacher/classroom/components/ranking' // เดี๋ยวทำให้เป็นของนักเรียน
 import JoinGame from './components/join-game'
@@ -20,7 +20,7 @@ export default function ClassroomId() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<
     'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
-  >('jobs_tabs')
+  >('main_tabs')
   const [search, setSearch] = useState('')
   const classroomId = router.query.id as string
 

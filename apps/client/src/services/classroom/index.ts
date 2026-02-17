@@ -3,6 +3,7 @@ import {
   Classroom,
   CreateClassroom,
   JoinClassroomArgs,
+  RewardDataResponse,
   UpdateClassroom,
 } from './types'
 import { getSession } from 'next-auth/react'
@@ -105,4 +106,21 @@ export const rewardOwner = async (classroomId: string) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
+
+  return res.data
 } // use for rewarding owner of the classroom
+
+export const getRewards = async (classroomId: string) => {
+  const session = await getSession()
+  const res = await fetchers.Get<RewardDataResponse>(
+    `${ENDPOINT}/classroom/internal/rewards/${classroomId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+} // use for getting rewards of the classroom
