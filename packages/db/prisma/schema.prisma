@@ -106,6 +106,7 @@ model ClassroomOnUser {
     user        User      @relation(fields: [userId], references: [id])
     classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
     score       Int       @default(0)
+    isRewarded  Boolean   @default(false) @map("is_rewarded")
 
     @@id([userId, classroomId])
     @@map("classroom_users")

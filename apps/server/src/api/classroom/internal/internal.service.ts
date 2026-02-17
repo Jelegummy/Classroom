@@ -241,11 +241,32 @@ export class ClassroomInternalService {
         throw new BadRequestException('Classroom not found')
       }
 
-      const userCount = await tx.classroomOnUser.count({
-        where: { classroomId: args.classroomId },
+      const unrewardedUsers = await tx.classroomOnUser.findMany({
+        where: {
+          classroomId: args.classroomId,
+          userId: { not: user.id },
+          isRewarded: false
+        },
+        select: { userId: true }
       })
 
-      const pointsToAdd = userCount * 10
+      const newUsersCount = unrewardedUsers.length
+
+      if (newUsersCount === 0) {
+        throw new BadRequestException('ไม่มีนักเรียนใหม่ให้รับแต้มในขณะนี้')
+      }
+
+      const pointsToAdd = newUsersCount * 10
+
+      await tx.classroomOnUser.updateMany({
+        where: {
+          classroomId: args.classroomId,
+          userId: { in: unrewardedUsers.map(u => u.userId) },
+        },
+        data: {
+          isRewarded: true,
+        },
+      })
 
       const updatedOwnerRecord = await tx.classroomOnUser.update({
         where: {
@@ -262,12 +283,13 @@ export class ClassroomInternalService {
       })
 
       return {
-        userCount,
+        newUsersCount,
         pointsAwarded: pointsToAdd,
         currentOwnerPoints: updatedOwnerRecord.score
       }
     })
-  } //TODO : not yet
+  }
+  //TODO : bug
 
   async rewardStudent(args: { classroomId: string }, ctx: Context) {
     const user = getUserFromContext(ctx)

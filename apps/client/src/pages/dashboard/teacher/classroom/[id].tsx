@@ -15,6 +15,7 @@ import Ranking from './components/ranking'
 import Link from 'next/link'
 import InfoGame from './components/info-game'
 import Image from 'next/image'
+import PointsButton from './components/points-button'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -144,6 +145,9 @@ export default function ClassroomId() {
               )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
               {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
+              {activeTab === 'people_tabs' && (
+                <PointsButton classroomId={classroom?.id ?? ''} />
+              )}
             </div>
           </div>
           <hr className="mt-3" />
