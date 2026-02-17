@@ -68,7 +68,7 @@ export default function ClassroomId() {
             <div className="flex h-24 w-80 flex-col rounded-xl border border-[#fbc02d] p-4 shadow-md sm:w-96">
               <div className="flex flex-row items-center gap-2">
                 <HiUsers className="h-5 w-5 text-[#fbc02d]" />
-                <p className="text-sm">นักเรียนทั้งหมด</p>
+                <p className="text-sm">ผู้ใช้ทั้งหมด</p>
               </div>
               <div className="ml-1 mt-2">
                 <h1 className="text-xl font-bold text-[#fbc02d]">
@@ -199,6 +199,7 @@ export default function ClassroomId() {
                     u => `${u.user.firstName} ${u.user.lastName}`,
                   ) ?? []
                 }
+                roles={classroom?.users.map(u => u.user.role) ?? []}
               />
             )}
           </div>

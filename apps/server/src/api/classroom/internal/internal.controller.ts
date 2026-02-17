@@ -21,7 +21,7 @@ import { ClassroomInternalService } from './internal.service'
 @ApiTags('Classroom - Internal')
 @Controller('classroom/internal')
 export class ClassroomInternalController {
-  constructor(private readonly service: ClassroomInternalService) {}
+  constructor(private readonly service: ClassroomInternalService) { }
 
   @Post('/create')
   async createClassroom(
@@ -67,6 +67,20 @@ export class ClassroomInternalController {
   @Post('/join/code')
   async joinClassroom(@Body() args: JoinCodeArgs, @Req() ctx: Context) {
     const res = await this.service.joinClassroom(args, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Patch('/reward-owner/:classroomId')
+  async rewardOwner(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+    const res = await this.service.rewardOwner({ classroomId }, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Patch('/reward-student/:classroomId')
+  async rewardStudent(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+    const res = await this.service.rewardStudent({ classroomId }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }

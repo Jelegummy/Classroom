@@ -15,7 +15,7 @@ import { nanoid } from 'nanoid'
 
 @Injectable()
 export class ClassroomInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createClassroom(args: CreateClassroomArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -224,4 +224,94 @@ export class ClassroomInternalService {
 
     return classroom
   }
+
+  async rewardOwner(args: { classroomId: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (!user) {
+      throw new UnauthorizedException('User not found')
+    }
+
+    return await this.db.$transaction(async tx => {
+      const classroom = await tx.classroom.findUnique({
+        where: { id: args.classroomId },
+      })
+
+      if (!classroom) {
+        throw new BadRequestException('Classroom not found')
+      }
+
+      const userCount = await tx.classroomOnUser.count({
+        where: { classroomId: args.classroomId },
+      })
+
+      const pointsToAdd = userCount * 10
+
+      const updatedOwnerRecord = await tx.classroomOnUser.update({
+        where: {
+          userId_classroomId: {
+            userId: user.id,
+            classroomId: args.classroomId,
+          },
+        },
+        data: {
+          score: {
+            increment: pointsToAdd,
+          },
+        },
+      })
+
+      return {
+        userCount,
+        pointsAwarded: pointsToAdd,
+        currentOwnerPoints: updatedOwnerRecord.score
+      }
+    })
+  } //TODO : not yet
+
+  async rewardStudent(args: { classroomId: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (!user) {
+      throw new UnauthorizedException('User not found')
+    }
+
+    const classroom = await this.db.classroom.findUnique({
+      where: { id: args.classroomId },
+      include: {
+        users: true,
+      },
+    })
+
+    if (!classroom) {
+      throw new BadRequestException('Classroom not found')
+    }
+
+    const isJoined = classroom.users.some(cu => cu.userId === user.id)
+
+    if (!isJoined) {
+      throw new BadRequestException('User has not joined this classroom')
+    }
+
+    const pointsToAdd = 10
+
+    const updatedRecord = await this.db.classroomOnUser.update({
+      where: {
+        userId_classroomId: {
+          userId: user.id,
+          classroomId: args.classroomId,
+        },
+      },
+      data: {
+        score: {
+          increment: pointsToAdd,
+        },
+      },
+    })
+
+    return {
+      pointsAwarded: pointsToAdd,
+      currentPoints: updatedRecord.score
+    }
+  } //TODO : not yet
 }

@@ -1,14 +1,17 @@
 type RankingProps = {
   points: number[]
   names: string[]
+  roles: string[]
 }
 
-export default function Ranking({ points, names }: RankingProps) {
+export default function Ranking({ points, names, roles }: RankingProps) {
   const combined = points
     .map((pt, i) => ({
       point: pt,
       name: names[i] ?? 'Unknown',
+      role: roles[i] ?? 'STUDENT',
     }))
+    .filter(user => user.role !== 'TEACHER')
     .sort((a, b) => b.point - a.point)
 
   const top3 = combined.slice(0, 3)

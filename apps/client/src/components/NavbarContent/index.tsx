@@ -26,7 +26,10 @@ export default function NavbarContent({ search, onSearch }: Props) {
                 />
               </label>
             </div>
-            <h1>sdfghjkjhgfdswdfghjkljhg</h1>
+            <div className="flex flex-row gap-2">
+              <h1>sds</h1>
+              <h1>sdfghjkjhgfdswdfghjkljhg</h1>
+            </div>
           </div>
         </div>
       </div>
