@@ -36,6 +36,7 @@
     "react-infinite-scroll-component": "6.1.0",
     "react-three-fiber": "^6.0.13",
     "simplex-noise": "^4.0.3",
+    "socket.io-client": "^4.8.3",
     "sonner": "2.0.2",
     "three": "^0.178.0",
     "three-stdlib": "^2.36.1",
