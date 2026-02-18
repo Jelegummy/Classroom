@@ -52,4 +52,11 @@ export class TutorInternalController {
 
         return { statusCode: HttpStatus.OK, data: res }
     }
+
+    @Get('/contentUser/:id')
+    async getTutorContentUserById(@Req() ctx: Context, @Param('id') id: string) {
+        const res = await this.service.getTutorContentUserById(id, ctx)
+
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 }

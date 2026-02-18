@@ -21,3 +21,30 @@ export type Tutor = {
     lastName: string
   }
 }
+
+export type TutorContent = {
+  id: string
+  topic: string
+  summary: string
+  dataContent: {
+    roles: {
+      main_speaker: string
+      active_participants: string[]
+      silent_participants: string[]
+    }
+    transcript: {
+      end: number
+      text: string
+      start: number
+      speaker: string
+    }[]
+    participants: string[]
+  }
+}
+
+export type TutorContentUser = {
+  userId: string
+  fullName: string
+  scoreEarnedInSession: number
+  totalUserPoints: number
+} 

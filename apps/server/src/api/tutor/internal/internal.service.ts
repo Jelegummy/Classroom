@@ -148,4 +148,47 @@ export class TutorInternalService {
 
         return tutorContent;
     } // get tutor content by tutor id
+
+    async getTutorContentUserById(id: string, ctx: Context) {
+        const user = getUserFromContext(ctx);
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        const activeTutorSession = await this.db.classroomOnTutor.findFirst({
+            where: { tutorId: id },
+        });
+
+        if (!activeTutorSession) {
+            throw new NotFoundException('ไม่พบเซสชันการสอนสำหรับ Tutor นี้');
+        }
+
+        const participants = await this.db.attendance.findMany({
+            where: {
+                activeTutorId: activeTutorSession.id,
+                scoreEarned: { gt: 0 }
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        points: true
+                    }
+                }
+            },
+            orderBy: {
+                scoreEarned: 'desc'
+            }
+        });
+
+        return participants.map(record => ({
+            userId: record.user.id,
+            fullName: `${record.user.firstName} ${record.user.lastName || ''}`.trim(),
+            scoreEarnedInSession: record.scoreEarned,
+            totalUserPoints: record.user.points,
+        }));
+    }
 }

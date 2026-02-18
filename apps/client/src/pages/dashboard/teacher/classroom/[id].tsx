@@ -1,7 +1,6 @@
 import CopyCode from '@/components/Copy-code'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
-import NavbarContent from '@/components/NavbarContent'
 import { getClassroom } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
@@ -17,13 +16,13 @@ import InfoGame from './components/info-game'
 import Image from 'next/image'
 import PointsButton from './components/points-button'
 import NavbarPoints from '@/components/NavbarContent/navbarPoints'
+import TutorSessionTeacher from '../tutor'
 
 export default function ClassroomId() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<
     'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
   >('main_tabs')
-  const [search, setSearch] = useState('')
   const classroomId = router.query.id as string
 
   const { data: classroom } = useQuery({
@@ -145,7 +144,7 @@ export default function ClassroomId() {
                 </div>
               )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
-              {activeTab === 'tutor_tabs' && <div>button create tutor</div>}
+              {/* {activeTab === 'tutor_tabs' && <div>button create tutor</div>} */}
               {activeTab === 'people_tabs' && (
                 <PointsButton classroomId={classroom?.id ?? ''} />
               )}
@@ -194,8 +193,9 @@ export default function ClassroomId() {
                 <InfoGame classroomId={classroom?.id ?? ''} />
               </>
             )}
-            {activeTab === 'tutor_tabs' && <div>make components tutor</div>}
-            {/* connect model jee */}
+            {activeTab === 'tutor_tabs' && (
+              <TutorSessionTeacher classroomId={classroomId} />
+            )}
             {activeTab === 'people_tabs' && (
               <Ranking
                 points={classroom?.users.map(u => u.user.points) ?? []}
