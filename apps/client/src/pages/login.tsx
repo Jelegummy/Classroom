@@ -34,8 +34,15 @@ const Login = () => {
       const session = await getSession()
 
       localStorage.setItem('accessToken', session?.user.accessToken ?? '')
+      const userRole = session?.user?.role
 
-      router.push('/dashboard/student/classroom')
+      if (userRole === 'TEACHER') {
+        router.push('/dashboard/teacher/classroom')
+      } else if (userRole === 'ADMIN') {
+        router.push('/dashboard/admin')
+      } else {
+        router.push('/dashboard/student/classroom')
+      }
     } catch (e) {
       toast.error((e as Error).message)
     }
