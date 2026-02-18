@@ -187,10 +187,26 @@ model Tutor {
     host   User   @relation("TutorHost", fields: [hostId], references: [id])
 
     classroomSessions ClassroomOnTutor[]
+    voiceLogs         TutorVoiceLog[]
 
     createdAt DateTime @default(now()) @map("created_at")
 
     @@map("tutor_sessions")
+}
+
+model TutorVoiceLog {
+    id      String @id @default(uuid())
+    tutorId String @map("tutor_id")
+
+    topic       String?
+    summary     String?
+    dataContent Json    @map("data_content")
+
+    createdAt DateTime @default(now()) @map("created_at")
+
+    tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+    @@map("tutor_voice_logs")
 }
 
 model ClassroomOnTutor {

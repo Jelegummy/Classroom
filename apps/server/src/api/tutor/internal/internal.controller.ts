@@ -1,14 +1,12 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Headers,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  Req,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpStatus,
+    Param,
+    Post,
+    Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { TutorInternalService } from './internal.service'
@@ -18,45 +16,40 @@ import { Context } from '@app/common'
 @ApiTags('Tutor - Internal')
 @Controller('tutor/internal')
 export class TutorInternalController {
-  constructor(private readonly service: TutorInternalService) {}
+    constructor(private readonly service: TutorInternalService) { }
 
-  @Post('/create')
-  async createTutor(@Body() args: CreateTutorArgs, @Req() ctx: Context) {
-    const res = await this.service.createTutor(args, ctx)
+    @Post('/create')
+    async createTutor(@Body() args: CreateTutorArgs, @Req() ctx: Context) {
+        const res = await this.service.createTutor(args, ctx)
 
-    return { statusCode: HttpStatus.OK, data: res }
-  }
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 
-  @Get('/all')
-  async getAllTutors(@Req() ctx: Context) {
-    const res = await this.service.getAllTutors(ctx)
+    @Get('/all')
+    async getAllTutors(@Req() ctx: Context) {
+        const res = await this.service.getAllTutors(ctx)
 
-    return { statusCode: HttpStatus.OK, data: res }
-  }
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 
-  @Get('/:id')
-  async getTutorById(@Req() ctx: Context, @Param('id') id: string) {
-    const res = await this.service.getTutorById(id, ctx)
+    @Get('/:id')
+    async getTutorById(@Req() ctx: Context, @Param('id') id: string) {
+        const res = await this.service.getTutorById(id, ctx)
 
-    return { statusCode: HttpStatus.OK, data: res }
-  }
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 
-  @Delete('/delete/:id')
-  async deleteTutor(@Req() ctx: Context, @Param('id') id: string) {
-    const res = await this.service.deleteTutor(id, ctx)
+    @Delete('/delete/:id')
+    async deleteTutor(@Req() ctx: Context, @Param('id') id: string) {
+        const res = await this.service.deleteTutor(id, ctx)
 
-    return { statusCode: HttpStatus.OK, data: res }
-  }
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 
-  // @Patch('/:id/bot')
-  // async updateTutorBot(
-  //     @Req() ctx: Context,
-  //     @Param('id') id: string,
-  //     @Body() args: any,
-  //     @Headers('x-bot-secret') botSecret: "super-secret-bot-key",
-  // ) {
-  //     const res = await this.service.updateTutorBot(id, args, ctx, botSecret);
+    @Get('/content/:id')
+    async getTutorContentById(@Req() ctx: Context, @Param('id') id: string) {
+        const res = await this.service.getTutorContentById(id, ctx)
 
-  //     return { statusCode: HttpStatus.OK, data: res };
-  // }
+        return { statusCode: HttpStatus.OK, data: res }
+    }
 }

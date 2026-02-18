@@ -249,7 +249,7 @@ async def join(ctx):
 
 
 @bot.command()
-async def start(ctx, seconds: int, tutor_id: str):
+async def start(ctx, seconds: int):
     if seconds > MAX_RECORD_SECONDS:
         await ctx.send("อัดเสียงได้สูงสุด 1 ชั่วโมงนะครับ")
         return
@@ -265,6 +265,30 @@ async def start(ctx, seconds: int, tutor_id: str):
     if unregistered:
         mentions = " ".join([m.mention for m in unregistered])
         await ctx.send(f"**ไม่สามารถเริ่มอัดได้!**\nผู้ใช้ต่อไปนี้ยังไม่ได้ลงทะเบียนชื่อจริง: {mentions}\n*(ให้พิมพ์ `!join` อีกครั้งเพื่อเรียกปุ่มลงทะเบียน)*")
+        return
+
+    discord_channel_id = str(ctx.channel.id)
+    tutor_id = None
+
+    await ctx.send("กำลังตรวจสอบ Session จากระบบ...")
+
+    try:
+        get_url = f"{NESTJS_BASE_URL}/channel/{discord_channel_id}/active"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(get_url) as response:
+                if response.status == 200:
+                    res_json = await response.json()
+                    tutor_id = res_json.get("data", {}).get("tutorId")
+
+                    if not tutor_id:
+                        await ctx.send("เกิดข้อผิดพลาด: ได้รับข้อมูลจาก API แต่ไม่พบ Tutor ID")
+                        return
+                else:
+                    await ctx.send(f"**ไม่พบ Session สำหรับห้องนี้**\nกรุณาสร้าง Session บนหน้าเว็บโดยระบุ Discord Channel ID: `{discord_channel_id}` ให้ถูกต้องครับ")
+                    return
+    except Exception as api_err:
+        print(f"API Error (Get Tutor ID): {api_err}")
+        await ctx.send("การเชื่อมต่อกับฐานข้อมูลล้มเหลว (ตรวจสอบว่า NestJS รันอยู่หรือไม่)")
         return
 
     try:
@@ -369,7 +393,7 @@ async def start(ctx, seconds: int, tutor_id: str):
                 }
             }
 
-            patch_url = f"{NESTJS_BASE_URL}/{tutor_id}/bot"
+            patch_url = f"{NESTJS_BASE_URL}/{tutor_id}/bot/logs"
             headers = {
                 "x-bot-secret": BOT_API_SECRET,
                 "Content-Type": "application/json"
