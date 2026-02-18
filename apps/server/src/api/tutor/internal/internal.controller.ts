@@ -26,8 +26,8 @@ export class TutorInternalController {
     }
 
     @Get('/all')
-    async getAllTutors(@Req() ctx: Context) {
-        const res = await this.service.getAllTutors(ctx)
+    async getAllTutors(@Req() ctx: Context, @Param('classroomId') classroomId?: string) {
+        const res = await this.service.getAllTutors(ctx, classroomId)
 
         return { statusCode: HttpStatus.OK, data: res }
     }

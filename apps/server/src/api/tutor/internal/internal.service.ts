@@ -41,26 +41,30 @@ export class TutorInternalService {
         return tutor
     }
 
-    async getAllTutors(ctx: Context) {
+    async getAllTutors(ctx: Context, classroomId?: string) {
         const user = getUserFromContext(ctx)
 
         if (!user) {
             throw new UnauthorizedException('User not found')
         }
 
-        // if (!user.schoolId) {
-        //     throw new BadRequestException('User does not have an associated schoolId');
-        // }
-
         const tutors = await this.db.tutor.findMany({
-            // where: {
-            //     host: {
-            //         schoolId: user.schoolId
-            //     }
-            // },
+            where: {
+                host: {
+                    schoolId: user.schoolId
+                },
+                classroomSessions: {
+                    some: {
+                        classroomId: classroomId
+                    }
+                }
+            },
             include: {
                 host: true,
                 classroomSessions: {
+                    where: {
+                        classroomId: classroomId
+                    },
                     include: {
                         classroom: true,
                     },

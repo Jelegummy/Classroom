@@ -12,7 +12,7 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
   const [open, setOpen] = useState(false)
   const { data: tutors, isLoading } = useQuery({
     queryKey: ['getAllTutors', classroomId],
-    queryFn: () => getAllTutors(),
+    queryFn: () => getAllTutors({ classroomId }),
     select: tutors => {
       return (
         tutors?.filter((t: any) =>

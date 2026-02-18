@@ -20,10 +20,11 @@ export const createTutor = async (args: CreateTutorArgs) => {
   return res.data
 }
 
-export const getAllTutors = async () => {
+export const getAllTutors = async (args: { classroomId?: string }) => {
   const session = await getSession()
 
-  const res = await fetchers.Get<Tutor[]>(`${ENDPOINT}/tutor/internal/all`, {
+  const queryString = args.classroomId ? `?classroomId=${args.classroomId}` : ''
+  const res = await fetchers.Get<Tutor[]>(`${ENDPOINT}/tutor/internal/all${queryString}`, {
     token: session?.user.accessToken,
   })
 
