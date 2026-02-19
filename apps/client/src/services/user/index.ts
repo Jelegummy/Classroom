@@ -2,7 +2,7 @@ import { getSession } from 'next-auth/react'
 
 import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
-import { LoginArgs, RegisterArgs, UpdateUserArgs, User } from './types'
+import { LoginArgs, RegisterArgs, UpdatePasswordArgs, UpdateUserArgs, User } from './types'
 
 export const register = async (args: RegisterArgs) => {
   const res = await fetchers.Post<{ accessToken: string }>(
@@ -58,10 +58,7 @@ export const updateUser = async (args: UpdateUserArgs) => {
   }
 }
 
-export const updatePassword = async (args: {
-  oldpassword: string
-  newPassword: string
-}) => {
+export const updatePassword = async (args: UpdatePasswordArgs) => {
   const session = await getSession()
 
   const res = await fetchers.Patch(`${ENDPOINT}/user/internal/password`, {
