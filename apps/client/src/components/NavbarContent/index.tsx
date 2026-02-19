@@ -1,8 +1,5 @@
-import { getAllClassrooms } from '@/services/classroom'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useSession } from 'next-auth/react'
 import { FaMagnifyingGlass } from 'react-icons/fa6'
-import { useDebounce } from 'use-debounce'
 
 type Props = {
   search: string
@@ -10,6 +7,7 @@ type Props = {
 }
 
 export default function NavbarContent({ search, onSearch }: Props) {
+  const { data: session } = useSession()
   return (
     <>
       <div className="hidden md:block">
@@ -27,8 +25,12 @@ export default function NavbarContent({ search, onSearch }: Props) {
               </label>
             </div>
             <div className="flex flex-row gap-2">
-              <h1>sds</h1>
-              <h1>sdfghjkjhgfdswdfghjkljhg</h1>
+              {/* <h1>sdsdsds</h1> */}
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(`${session?.user?.firstName || ''} ${session?.user?.lastName || ''}`.trim() || 'User')}&background=random`}
+                alt="avatar"
+                className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+              />
             </div>
           </div>
         </div>
