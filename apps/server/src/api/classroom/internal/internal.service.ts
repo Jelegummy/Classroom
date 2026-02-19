@@ -15,7 +15,7 @@ import { nanoid } from 'nanoid'
 
 @Injectable()
 export class ClassroomInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createClassroom(args: CreateClassroomArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -245,9 +245,9 @@ export class ClassroomInternalService {
         where: {
           classroomId: args.classroomId,
           userId: { not: user.id },
-          isRewarded: false
+          isRewarded: false,
         },
-        select: { userId: true }
+        select: { userId: true },
       })
 
       const newUsersCount = unrewardedUsers.length
@@ -285,7 +285,7 @@ export class ClassroomInternalService {
       return {
         newUsersCount,
         pointsAwarded: pointsToAdd,
-        currentOwnerPoints: updatedOwnerRecord.score
+        currentOwnerPoints: updatedOwnerRecord.score,
       }
     })
   }
@@ -304,7 +304,7 @@ export class ClassroomInternalService {
           classroomId: args.classroomId,
         },
       },
-      select: { score: true }
+      select: { score: true },
     })
 
     return userInClass?.score || 0
@@ -352,7 +352,7 @@ export class ClassroomInternalService {
 
     return {
       pointsAwarded: pointsToAdd,
-      currentPoints: updatedRecord.score
+      currentPoints: updatedRecord.score,
     }
   } //TODO : not yet
 }

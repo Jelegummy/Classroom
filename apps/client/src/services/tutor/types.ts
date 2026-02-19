@@ -47,4 +47,4 @@ export type TutorContentUser = {
   fullName: string
   scoreEarnedInSession: number
   totalUserPoints: number
-} 
+}

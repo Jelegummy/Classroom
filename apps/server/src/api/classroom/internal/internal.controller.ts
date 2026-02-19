@@ -21,7 +21,7 @@ import { ClassroomInternalService } from './internal.service'
 @ApiTags('Classroom - Internal')
 @Controller('classroom/internal')
 export class ClassroomInternalController {
-  constructor(private readonly service: ClassroomInternalService) { }
+  constructor(private readonly service: ClassroomInternalService) {}
 
   @Post('/create')
   async createClassroom(
@@ -72,21 +72,30 @@ export class ClassroomInternalController {
   }
 
   @Patch('/reward-owner/:classroomId')
-  async rewardOwner(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+  async rewardOwner(
+    @Param('classroomId') classroomId: string,
+    @Req() ctx: Context,
+  ) {
     const res = await this.service.rewardOwner({ classroomId }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }
 
   @Get('/rewards/:classroomId')
-  async getRewards(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+  async getRewards(
+    @Param('classroomId') classroomId: string,
+    @Req() ctx: Context,
+  ) {
     const res = await this.service.getRewards({ classroomId }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }
 
   @Patch('/reward-student/:classroomId')
-  async rewardStudent(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+  async rewardStudent(
+    @Param('classroomId') classroomId: string,
+    @Req() ctx: Context,
+  ) {
     const res = await this.service.rewardStudent({ classroomId }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
