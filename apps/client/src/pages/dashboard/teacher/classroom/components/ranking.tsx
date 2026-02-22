@@ -39,7 +39,13 @@ export default function Ranking({ points, names, roles }: RankingProps) {
             >
               {isFirst && <div className="mb-2 text-2xl">👑</div>}
 
-              <div className="mb-3 h-14 w-14 rounded-full bg-gray-200" />
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  `${user?.name || ''}`.trim() || 'User',
+                )}&background=random`}
+                alt="Profile"
+                className="mb-3 h-14 w-14 rounded-full bg-gray-200 object-cover"
+              />
 
               <p
                 className={`text-lg font-bold ${
@@ -66,7 +72,13 @@ export default function Ranking({ points, names, roles }: RankingProps) {
                 {index + 4}
               </span>
 
-              <div className="h-10 w-10 rounded-full bg-gray-200" />
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  `${user?.name || ''}`.trim() || 'User',
+                )}&background=random`}
+                alt="Profile"
+                className="h-10 w-10 rounded-full bg-gray-200 object-cover"
+              />
 
               <div>
                 <p className="font-medium">{user.name}</p>

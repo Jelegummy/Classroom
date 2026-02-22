@@ -19,6 +19,7 @@ export default function Page() {
     queryKey: ['getAllClassrooms', search],
     queryFn: () => getAllClassrooms(),
     refetchOnWindowFocus: false,
+    refetchInterval: 1000,
   })
 
   const filteredClassrooms = classrooms?.filter(classroom =>

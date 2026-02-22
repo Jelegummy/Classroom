@@ -73,7 +73,7 @@ export default function GameId() {
     queryKey: ['getGameSession', gameId],
     queryFn: () => getGameSession(gameId),
     enabled: !!gameId,
-    refetchInterval: !isGameOver ? 2000 : false,
+    refetchInterval: !isGameOver ? 1000 : false,
   })
 
   const isStarted = game?.status === 'ONGOING'

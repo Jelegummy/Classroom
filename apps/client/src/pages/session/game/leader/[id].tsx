@@ -90,11 +90,14 @@ export default function Leaderboard() {
 
               {firstPlace && (
                 <div className="relative z-10 flex h-60 w-56 -translate-y-4 flex-col items-center justify-center rounded-2xl border-2 border-yellow-300 bg-yellow-50 p-4 shadow-xl">
-                  {/* <div className="absolute -top-6 text-4xl"></div> */}
-                  <div className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 shadow-sm">
-                    {/* <div className="flex h-full w-full items-center justify-center bg-yellow-200 text-2xl">
-                    </div> */}
-                  </div>
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      `${firstPlace.user.firstName || ''} ${firstPlace.user.lastName || ''}`.trim() ||
+                        'User',
+                    )}&background=random`}
+                    alt="Profile"
+                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                  />
                   <div className="text-center">
                     <p className="line-clamp-1 text-lg font-bold text-gray-900">
                       {firstPlace.user.firstName} {firstPlace.user.lastName}
@@ -199,6 +202,14 @@ export default function Leaderboard() {
                 <div className="flex justify-between border-b border-gray-100 py-3">
                   <span className="font-bold text-gray-600">เลือดบอส</span>
                   <span className="font-bold text-gray-800">{bossInfo.hp}</span>
+                </div>
+                <div className="flex justify-between border-b border-gray-100 py-3">
+                  <span className="font-bold text-gray-600">
+                    จำนวนพ้อยต์ของบอส
+                  </span>
+                  <span className="font-bold text-gray-800">
+                    {bossInfo.pointBoss}
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-gray-100 py-3">
                   <span className="font-bold text-gray-600">ระยะเวลา</span>
