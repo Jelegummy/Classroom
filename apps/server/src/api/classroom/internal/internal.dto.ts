@@ -7,7 +7,7 @@ export class CreateClassroomArgs extends createZodDto(
     title: z.string().optional(),
     // code: z.string().min(1)
   }),
-) {}
+) { }
 
 export class UpdateClassroomArgs extends createZodDto(
   z.object({
@@ -16,12 +16,18 @@ export class UpdateClassroomArgs extends createZodDto(
     title: z.string().optional(),
     hoverImage: z.string().optional(),
   }),
-) {}
+) { }
 
 export class JoinCodeArgs extends createZodDto(
   z.object({
     code: z.string().min(1),
   }),
-) {}
+) { }
+
+export class RewardStudentArgs extends createZodDto(
+  z.object({
+    pointsToAdd: z.number().positive(),
+  }),
+) { }
 
 patchNestJsSwagger()

@@ -14,6 +14,7 @@ import { ApiTags } from '@nestjs/swagger'
 import {
   CreateClassroomArgs,
   JoinCodeArgs,
+  RewardStudentArgs,
   UpdateClassroomArgs,
 } from './internal.dto'
 import { ClassroomInternalService } from './internal.service'
@@ -21,7 +22,7 @@ import { ClassroomInternalService } from './internal.service'
 @ApiTags('Classroom - Internal')
 @Controller('classroom/internal')
 export class ClassroomInternalController {
-  constructor(private readonly service: ClassroomInternalService) {}
+  constructor(private readonly service: ClassroomInternalService) { }
 
   @Post('/create')
   async createClassroom(
@@ -91,12 +92,14 @@ export class ClassroomInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   }
 
-  @Patch('/reward-student/:classroomId')
+  @Patch('/reward-student/:classroomId/:userId')
   async rewardStudent(
     @Param('classroomId') classroomId: string,
+    @Param('userId') userId: string,
+    @Body() args: RewardStudentArgs,
     @Req() ctx: Context,
   ) {
-    const res = await this.service.rewardStudent({ classroomId }, ctx)
+    const res = await this.service.rewardStudent({ classroomId, userId, pointsToAdd: args.pointsToAdd }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }
