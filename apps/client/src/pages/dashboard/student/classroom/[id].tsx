@@ -11,10 +11,10 @@ import { VscNotebook } from 'react-icons/vsc'
 // import CreateButtonAnnounce from './components/create-button-announce'
 // import Link from 'next/link'
 import MainTasks from '../../teacher/classroom/components/main-tasks' // เดี๋ยวทำให้เป็นของนักเรียน
-import Ranking from '../../teacher/classroom/components/ranking' // เดี๋ยวทำให้เป็นของนักเรียน
 import JoinGame from './components/join-game'
 import TutorSession from '../tutor'
 import CreateButtonTutor from '../tutor/components/button-create'
+import RankingStudent from './components/ranking-student'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -160,7 +160,7 @@ export default function ClassroomId() {
               <TutorSession classroomId={classroom?.id ?? ''} />
             )}
             {activeTab === 'people_tabs' && (
-              <Ranking
+              <RankingStudent
                 points={classroom?.users.map(u => u.user.points) ?? []}
                 names={
                   classroom?.users.map(
