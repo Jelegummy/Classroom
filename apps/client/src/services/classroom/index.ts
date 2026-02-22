@@ -124,3 +124,19 @@ export const getRewards = async (classroomId: string) => {
 
   return res.data
 } // use for getting rewards of the classroom
+
+export const rewardStudent = async (classroomId: string, userId: string, pointsToAdd: number) => {
+  const session = await getSession()
+  const res = await fetchers.Patch(
+    `${ENDPOINT}/classroom/internal/reward-student/${classroomId}/${userId}`,
+    {
+      data: { pointsToAdd },
+      token: session?.user.accessToken,
+    },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+} // use for rewarding student in the classroom
