@@ -9,7 +9,7 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -29,9 +29,15 @@ export class UserPublicService {
           throw new BadRequestException('School name is required')
         }
 
-        const school = await tx.school.create({
-          data: { name: schoolName },
-        }) // wait mail to be sent before creating user (and fix this api)
+        let school = await tx.school.findFirst({
+          where: { name: schoolName },
+        })
+
+        if (!school) {
+          school = await tx.school.create({
+            data: { name: schoolName },
+          })
+        }// wait mail to be sent before creating user (and fix this api)
 
         finalSchoolId = school.id
       }
