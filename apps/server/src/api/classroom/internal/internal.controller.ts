@@ -72,15 +72,15 @@ export class ClassroomInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   }
 
-  @Patch('/reward-owner/:classroomId')
-  async rewardOwner(
-    @Param('classroomId') classroomId: string,
-    @Req() ctx: Context,
-  ) {
-    const res = await this.service.rewardOwner({ classroomId }, ctx)
+  // @Patch('/reward-owner/:classroomId')
+  // async rewardOwner(
+  //   @Param('classroomId') classroomId: string,
+  //   @Req() ctx: Context,
+  // ) {
+  //   const res = await this.service.rewardOwner({ classroomId }, ctx)
 
-    return { statusCode: HttpStatus.OK, data: res }
-  }
+  //   return { statusCode: HttpStatus.OK, data: res }
+  // } -- IGNORE --
 
   @Get('/rewards/:classroomId')
   async getRewards(

@@ -193,105 +193,130 @@ export class ClassroomInternalService {
   }
 
   async joinClassroom(args: JoinCodeArgs, ctx: Context) {
-    const user = getUserFromContext(ctx)
+    const student = getUserFromContext(ctx)
 
-    if (!user) {
+    if (!student) {
       throw new UnauthorizedException('User not found')
     }
 
     const classroom = await this.db.classroom.findUnique({
       where: { code: args.code.toUpperCase() },
-      include: { users: true },
+      include: {
+        users: {
+          include: {
+            user: true,
+          },
+        }
+      },
     })
 
     if (!classroom) {
       throw new BadRequestException('Classroom not found')
     }
 
-    const isAlreadyJoined = classroom.users.some(cu => cu.userId === user.id)
+    const isAlreadyJoined = classroom.users.some(cu => cu.userId === student.id)
 
     if (isAlreadyJoined) {
       throw new BadRequestException('User already joined this classroom')
     }
 
-    await this.db.classroomOnUser.create({
-      data: {
-        classroom: {
-          connect: { id: classroom.id },
+    const teacher = classroom.users.find(cu => cu.user.role === 'TEACHER')
+
+    if (!teacher) {
+      throw new BadRequestException('Only students can join this classroom')
+    }
+
+    await this.db.$transaction(async tx => {
+
+      await tx.classroomOnUser.create({
+        data: {
+          classroomId: classroom.id,
+          userId: student.id,
         },
-        user: {
-          connect: { id: user.id },
+      });
+
+      await tx.classroomOnUser.update({
+        where: {
+          userId_classroomId: {
+            userId: teacher.userId,
+            classroomId: classroom.id,
+          },
         },
-      },
+        data: {
+          score: {
+            increment: 10,
+          },
+        },
+      })
     })
 
     return classroom
   }
 
-  async rewardOwner(args: { classroomId: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
+  // async rewardOwner(args: { classroomId: string }, ctx: Context) {
+  //   const user = getUserFromContext(ctx)
 
-    if (!user) {
-      throw new UnauthorizedException('User not found')
-    }
+  //   if (!user) {
+  //     throw new UnauthorizedException('User not found')
+  //   }
 
-    return await this.db.$transaction(async tx => {
-      const classroom = await tx.classroom.findUnique({
-        where: { id: args.classroomId },
-      })
+  //   return await this.db.$transaction(async tx => {
+  //     const classroom = await tx.classroom.findUnique({
+  //       where: { id: args.classroomId },
+  //     })
 
-      if (!classroom) {
-        throw new BadRequestException('Classroom not found')
-      }
+  //     if (!classroom) {
+  //       throw new BadRequestException('Classroom not found')
+  //     }
 
-      const unrewardedUsers = await tx.classroomOnUser.findMany({
-        where: {
-          classroomId: args.classroomId,
-          userId: { not: user.id },
-          isRewarded: false,
-        },
-        select: { userId: true },
-      })
+  //     const unrewardedUsers = await tx.classroomOnUser.findMany({
+  //       where: {
+  //         classroomId: args.classroomId,
+  //         userId: { not: user.id },
+  //         isRewarded: false,
+  //       },
+  //       select: { userId: true },
+  //     })
 
-      const newUsersCount = unrewardedUsers.length
+  //     const newUsersCount = unrewardedUsers.length
 
-      if (newUsersCount === 0) {
-        throw new BadRequestException('ไม่มีนักเรียนใหม่ให้รับแต้มในขณะนี้')
-      }
+  //     if (newUsersCount === 0) {
+  //       throw new BadRequestException('ไม่มีนักเรียนใหม่ให้รับแต้มในขณะนี้')
+  //     }
 
-      const pointsToAdd = newUsersCount * 10
+  //     const pointsToAdd = newUsersCount * 10
 
-      await tx.classroomOnUser.updateMany({
-        where: {
-          classroomId: args.classroomId,
-          userId: { in: unrewardedUsers.map(u => u.userId) },
-        },
-        data: {
-          isRewarded: true,
-        },
-      })
+  //     await tx.classroomOnUser.updateMany({
+  //       where: {
+  //         classroomId: args.classroomId,
+  //         userId: { in: unrewardedUsers.map(u => u.userId) },
+  //       },
+  //       data: {
+  //         isRewarded: true,
+  //       },
+  //     })
 
-      const updatedOwnerRecord = await tx.classroomOnUser.update({
-        where: {
-          userId_classroomId: {
-            userId: user.id,
-            classroomId: args.classroomId,
-          },
-        },
-        data: {
-          score: {
-            increment: pointsToAdd,
-          },
-        },
-      })
+  //     const updatedOwnerRecord = await tx.classroomOnUser.update({
+  //       where: {
+  //         userId_classroomId: {
+  //           userId: user.id,
+  //           classroomId: args.classroomId,
+  //         },
+  //       },
+  //       data: {
+  //         score: {
+  //           increment: pointsToAdd,
+  //         },
+  //       },
+  //     })
 
-      return {
-        newUsersCount,
-        pointsAwarded: pointsToAdd,
-        currentOwnerPoints: updatedOwnerRecord.score,
-      }
-    })
-  }
+  //     return {
+  //       newUsersCount,
+  //       pointsAwarded: pointsToAdd,
+  //       currentOwnerPoints: updatedOwnerRecord.score,
+  //     }
+  //   })
+  // } -- IGNORE --
 
   async getRewards(args: { classroomId: string }, ctx: Context) {
     const user = getUserFromContext(ctx)
