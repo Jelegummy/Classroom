@@ -24,7 +24,7 @@ export default function TutorSessionTeacher({
       )
     },
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: 1000,
   })
 
   if (isLoading) return <div>Loading...</div>

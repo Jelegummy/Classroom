@@ -30,6 +30,7 @@ export default function ClassroomId() {
     queryFn: () => getClassroom(classroomId),
     enabled: !!classroomId,
     refetchOnWindowFocus: false,
+    refetchInterval: 1000,
   })
 
   const uniqueUserCount = new Set((classroom?.users ?? []).map(u => u.user.id))

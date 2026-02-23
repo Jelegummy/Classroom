@@ -23,7 +23,7 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
       )
     },
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: 1000,
   })
 
   const joinMutation = useMutation({

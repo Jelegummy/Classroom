@@ -14,6 +14,7 @@ export default function Leaderboard() {
     queryFn: () => getGameLeaderboard(gameId),
     enabled: !!gameId,
     refetchOnWindowFocus: false,
+    refetchInterval: 1000,
   })
 
   if (isLoading) {

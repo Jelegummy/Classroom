@@ -17,6 +17,7 @@ export default function GameSession() {
     queryKey: ['charecters'],
     queryFn: () => getAllCharacters(),
     refetchOnWindowFocus: false,
+    refetchInterval: 1000,
   })
 
   const selectedModelUrl = useMemo(() => {

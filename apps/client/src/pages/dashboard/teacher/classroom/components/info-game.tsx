@@ -23,7 +23,7 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
       )
     },
     refetchOnWindowFocus: false,
-    refetchInterval: 5000,
+    refetchInterval: 1000,
   })
 
   const infoMutation = useMutation({
