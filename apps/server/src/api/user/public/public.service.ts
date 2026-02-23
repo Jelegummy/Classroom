@@ -9,7 +9,7 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -37,7 +37,7 @@ export class UserPublicService {
           school = await tx.school.create({
             data: { name: schoolName },
           })
-        }// wait mail to be sent before creating user (and fix this api)
+        } // wait mail to be sent before creating user (and fix this api)
 
         finalSchoolId = school.id
       }

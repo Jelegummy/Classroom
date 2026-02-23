@@ -10,7 +10,7 @@ import { TransactionClient } from '@app/db/dist/generated/internal/prismaNamespa
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -285,7 +285,7 @@ export class GameInternalService {
 
     const allAttackers = await tx.attendance.findMany({
       where: { activeGameId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
     })
 
     let remainingPoints = bossPoints
@@ -321,7 +321,7 @@ export class GameInternalService {
           tx.attendance.update({
             where: { id: attacker.id },
             data: { scoreEarned: finalScore },
-          })
+          }),
         ])
       }
     }
@@ -456,7 +456,7 @@ export class GameInternalService {
     return {
       character: activeGame.game.character,
       leaderboard: leaderboard,
-      games: activeGame.game
+      games: activeGame.game,
     }
   }
 

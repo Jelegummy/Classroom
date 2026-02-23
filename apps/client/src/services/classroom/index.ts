@@ -127,7 +127,11 @@ export const getRewards = async (classroomId: string) => {
   return res.data
 } // use for getting rewards of the classroom
 
-export const rewardStudent = async (classroomId: string, userId: string, pointsToAdd: number) => {
+export const rewardStudent = async (
+  classroomId: string,
+  userId: string,
+  pointsToAdd: number,
+) => {
   const session = await getSession()
   const res = await fetchers.Patch(
     `${ENDPOINT}/classroom/internal/reward-student/${classroomId}/${userId}`,

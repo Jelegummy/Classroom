@@ -13,7 +13,7 @@ export class CreateGameArgs extends createZodDto(
     damageBoost: z.number().min(0).optional(),
     maxHpBoss: z.number().min(0).optional(),
   }),
-) { }
+) {}
 
 export class UpdateGameArgs extends createZodDto(
   z.object({
@@ -23,13 +23,13 @@ export class UpdateGameArgs extends createZodDto(
     description: z.string().optional(),
     isActive: z.boolean().default(true),
   }),
-) { }
+) {}
 
 export class AttackGameArgs extends createZodDto(
   z.object({
     gameId: z.string().min(1),
     damage: z.number().min(1),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

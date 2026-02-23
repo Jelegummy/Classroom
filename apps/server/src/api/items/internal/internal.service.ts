@@ -147,7 +147,6 @@ export class ItemsInternalService {
     const totalPrice = item.price * args.amount
 
     return await this.db.$transaction(async tx => {
-      // 1. ตรวจสอบ User และ Points ภายใน Transaction
       const user = await tx.user.findUnique({
         where: { id: args.userId },
         select: { points: true },
@@ -157,13 +156,11 @@ export class ItemsInternalService {
         throw new Error('Not enough points to buy this item')
       }
 
-      // 2. หัก Points
       await tx.user.update({
         where: { id: args.userId },
         data: { points: { decrement: totalPrice } },
       })
 
-      // 3. เพิ่ม Item เข้า Inventory
       return await tx.userItem.upsert({
         where: {
           user_item_unique: { userId: args.userId, itemId: args.itemId },

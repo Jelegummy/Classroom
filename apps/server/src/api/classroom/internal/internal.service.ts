@@ -13,10 +13,9 @@ import {
 import { Context, getUserFromContext } from '@app/common'
 import { customAlphabet } from 'nanoid'
 
-
 @Injectable()
 export class ClassroomInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createClassroom(args: CreateClassroomArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -160,8 +159,8 @@ export class ClassroomInternalService {
                 lastName: true,
                 role: true,
                 points: true,
-              }
-            }
+              },
+            },
           },
         },
         announces: true,
@@ -214,7 +213,7 @@ export class ClassroomInternalService {
           include: {
             user: true,
           },
-        }
+        },
       },
     })
 
@@ -235,13 +234,12 @@ export class ClassroomInternalService {
     }
 
     await this.db.$transaction(async tx => {
-
       await tx.classroomOnUser.create({
         data: {
           classroomId: classroom.id,
           userId: student.id,
         },
-      });
+      })
 
       await tx.classroomOnUser.update({
         where: {
@@ -346,67 +344,66 @@ export class ClassroomInternalService {
     return userInClass?.score || 0
   }
 
-  async rewardStudent(args: { classroomId: string, userId: string, pointsToAdd: number }, ctx: Context) {
-    const user = getUserFromContext(ctx);
+  async rewardStudent(
+    args: { classroomId: string; userId: string; pointsToAdd: number },
+    ctx: Context,
+  ) {
+    const user = getUserFromContext(ctx)
     if (!user) {
       throw new UnauthorizedException('User not found')
     }
 
-    const points = Number(args.pointsToAdd);
+    const points = Number(args.pointsToAdd)
     if (isNaN(points) || points <= 0) {
-      throw new BadRequestException('คะแนนต้องเป็นตัวเลขที่มากกว่า 0');
+      throw new BadRequestException('คะแนนต้องเป็นตัวเลขที่มากกว่า 0')
     }
 
-    return await this.db.$transaction(async (tx) => {
+    return await this.db.$transaction(async tx => {
       await tx.classroomOnUser.update({
         where: {
-          userId_classroomId:
-          {
+          userId_classroomId: {
             userId: user.id,
-            classroomId: args.classroomId
-          }
+            classroomId: args.classroomId,
+          },
         },
         data: {
-          score: { decrement: points }
-        }
-      });
+          score: { decrement: points },
+        },
+      })
 
       await tx.user.update({
         where: { id: user.id },
         data: {
-          points:
-            { decrement: points }
-        }
-      });
+          points: { decrement: points },
+        },
+      })
 
       const updatedRecord = await tx.classroomOnUser.update({
         where: {
-          userId_classroomId:
-          {
+          userId_classroomId: {
             userId: args.userId,
-            classroomId: args.classroomId
-          }
+            classroomId: args.classroomId,
+          },
         },
         data: {
-          score:
-            { increment: points }
+          score: { increment: points },
         },
-      });
+      })
 
       await tx.user.update({
         where: {
-          id: args.userId
+          id: args.userId,
         },
         data: {
-          points: { increment: points }
-        }
-      });
+          points: { increment: points },
+        },
+      })
 
       return {
         pointsAwarded: points,
         currentPoints: updatedRecord.score,
-      };
-    });
+      }
+    })
   }
 
   async getUsersByClassroomId(args: { classroomId: string }, ctx: Context) {
@@ -421,8 +418,8 @@ export class ClassroomInternalService {
         user: {
           role: {
             not: 'TEACHER',
-          }
-        }
+          },
+        },
       },
       select: {
         user: {
