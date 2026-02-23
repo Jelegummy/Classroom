@@ -7,6 +7,7 @@ export type CreateGameArgs = {
   characterId: string
   timeLimit?: number
   damageBoost?: number
+  maxHpBoss?: number
 }
 
 export type CreateGameResponse = {

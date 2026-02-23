@@ -19,10 +19,12 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
     name: string
     timeLimit: number
     damageBoost: number
+    maxHpBoss: number
   }>({
     name: '',
     timeLimit: 0,
     damageBoost: 0,
+    maxHpBoss: 0,
   })
 
   const createGame = useMutation({
@@ -39,7 +41,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
       setCreatedGameId(gameId)
       setOpenModal(true)
 
-      setForm({ name: '', timeLimit: 0, damageBoost: 0 })
+      setForm({ name: '', timeLimit: 0, damageBoost: 0, maxHpBoss: 0 })
     },
     onError: e => {
       toast.error(e?.message || 'เกิดข้อผิดพลาด')
@@ -64,6 +66,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
       name: form.name,
       timeLimit: form.timeLimit,
       damageBoost: form.damageBoost,
+      maxHpBoss: form.maxHpBoss,
       classroomId: classroomId,
       characterId: characterId,
     }
@@ -95,8 +98,24 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
             type="number"
             className="w-full rounded-xl border-2 border-black bg-white px-4 py-2 text-lg outline-none focus:ring-4 focus:ring-blue-200"
             value={form.damageBoost || ''}
+            placeholder="1"
             onChange={e =>
               setForm({ ...form, damageBoost: Number(e.target.value) })
+            }
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="ml-1 text-sm font-bold text-gray-800">
+            จำนวนพลังชีวิตของบอส
+          </label>
+          <input
+            type="number"
+            className="w-full rounded-xl border-2 border-black bg-white px-4 py-2 text-lg outline-none focus:ring-4 focus:ring-blue-200"
+            value={form.maxHpBoss || ''}
+            placeholder="5000"
+            onChange={e =>
+              setForm({ ...form, maxHpBoss: Number(e.target.value) })
             }
           />
         </div>
