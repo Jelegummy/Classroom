@@ -162,7 +162,7 @@ export default function ClassroomId() {
             )}
             {activeTab === 'people_tabs' && (
               <RankingStudent
-                points={classroom?.users.map(u => u.user.points) ?? []}
+                points={classroom?.users.map(u => u.score) ?? []}
                 names={
                   classroom?.users.map(
                     u => `${u.user.firstName} ${u.user.lastName}`,

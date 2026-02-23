@@ -55,6 +55,7 @@ export interface Game {
   isActive: boolean
   status: 'WAITING' | 'ONGOING' | 'FINISHED'
   maxHpBoss?: number
+  timeLimit?: number
   character?: {
     id: string
     bossName: string
@@ -112,4 +113,5 @@ export type BossCharacter = {
 export type GameLeaderboardResponse = {
   character: BossCharacter
   leaderboard: Leader[]
+  games: Game
 }

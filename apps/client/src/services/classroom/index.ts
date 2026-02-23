@@ -95,20 +95,20 @@ export const deleteClassroom = async (id: string) => {
   }
 } // use for deleting classroom
 
-export const rewardOwner = async (classroomId: string) => {
-  const session = await getSession()
-  const res = await fetchers.Patch(
-    `${ENDPOINT}/classroom/internal/reward-owner/${classroomId}`,
-    {
-      token: session?.user.accessToken,
-    },
-  )
-  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
-    throw new Error(res.message)
-  }
+// export const rewardOwner = async (classroomId: string) => {
+//   const session = await getSession()
+//   const res = await fetchers.Patch(
+//     `${ENDPOINT}/classroom/internal/reward-owner/${classroomId}`,
+//     {
+//       token: session?.user.accessToken,
+//     },
+//   )
+//   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+//     throw new Error(res.message)
+//   }
 
-  return res.data
-} // use for rewarding owner of the classroom
+//   return res.data
+// } // use for rewarding owner of the classroom -- IGNORE --
 
 export const getRewards = async (classroomId: string) => {
   const session = await getSession()

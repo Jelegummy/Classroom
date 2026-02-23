@@ -456,6 +456,7 @@ export class GameInternalService {
     return {
       character: activeGame.game.character,
       leaderboard: leaderboard,
+      games: activeGame.game
     }
   }
 

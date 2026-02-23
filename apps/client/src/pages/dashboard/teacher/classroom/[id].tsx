@@ -14,7 +14,6 @@ import Ranking from './components/ranking'
 import Link from 'next/link'
 import InfoGame from './components/info-game'
 import Image from 'next/image'
-import PointsButton from './components/points-button'
 import NavbarPoints from '@/components/NavbarContent/navbarPoints'
 import TutorSessionTeacher from '../tutor'
 
@@ -40,7 +39,6 @@ export default function ClassroomId() {
     <AppLayout>
       <DashboardLayout>
         <NavbarPoints classroomId={classroomId} />
-        {/* fix navbar to search anything in classroom not name of classroom */}
         <div className="mx-4 mt-8 flex flex-col rounded-md border bg-white shadow-sm sm:mx-4 sm:mt-4">
           <div className="flex w-full flex-col items-center justify-between gap-4 p-4 sm:flex-row sm:gap-0">
             <div className="flex flex-row items-center gap-3">
@@ -145,10 +143,6 @@ export default function ClassroomId() {
                 </div>
               )}
               {activeTab === 'jobs_tabs' && <div>button create job</div>}
-              {/* {activeTab === 'tutor_tabs' && <div>button create tutor</div>} */}
-              {activeTab === 'people_tabs' && (
-                <PointsButton classroomId={classroom?.id ?? ''} />
-              )}
             </div>
           </div>
           <hr className="mt-3" />
@@ -201,7 +195,7 @@ export default function ClassroomId() {
               <Ranking
                 studentIds={classroom?.users.map(u => u.user.id) ?? []}
                 classroomId={classroomId}
-                points={classroom?.users.map(u => u.user.points) ?? []}
+                points={classroom?.users.map(u => u.score) ?? []}
                 names={
                   classroom?.users.map(
                     u => `${u.user.firstName} ${u.user.lastName}`,

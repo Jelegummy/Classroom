@@ -153,7 +153,15 @@ export class ClassroomInternalService {
       include: {
         users: {
           include: {
-            user: true,
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+                points: true,
+              }
+            }
           },
         },
         announces: true,

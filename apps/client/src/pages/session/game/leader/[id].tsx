@@ -38,7 +38,9 @@ export default function Leaderboard() {
     imageUrl: boss?.imageUrl || '/boss.png',
     hp: boss?.maxHp || 0,
     pointBoss: boss?.pointBoss || 0,
-    duration: boss?.timeLimit ? `${boss.timeLimit} วินาที` : 'ไม่จำกัดเวลา',
+    duration: gameData?.games.timeLimit
+      ? `${gameData.games.timeLimit} วินาที`
+      : 'ไม่จำกัดเวลา',
     participants: players.length,
   }
 
@@ -72,18 +74,20 @@ export default function Leaderboard() {
                       />
                     </svg>
                   </div>
-                  <div className="mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-gray-200">
-                    {/* <div className="flex h-full w-full items-center justify-center bg-blue-100 text-xl"></div> */}
-                  </div>
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      `${secondPlace.user.firstName || ''} ${secondPlace.user.lastName || ''}`.trim() ||
+                        'User',
+                    )}&background=random`}
+                    alt="Profile"
+                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                  />
                   <div className="text-center">
                     <p className="line-clamp-1 font-bold text-gray-800">
                       {secondPlace.user.firstName} {secondPlace.user.lastName}
                     </p>
                     <p className="text-lg font-bold text-blue-500">
-                      {secondPlace.scoreEarned} พอยต์
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      พอยต์ {secondPlace.user.points} ทั้งหมด
+                      ได้รับ {secondPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
@@ -104,10 +108,7 @@ export default function Leaderboard() {
                       {firstPlace.user.firstName} {firstPlace.user.lastName}
                     </p>
                     <p className="text-xl font-black text-yellow-600">
-                      {firstPlace.scoreEarned} พอยต์
-                    </p>
-                    <p className="text-sm text-yellow-500/80">
-                      พอยต์ {firstPlace.user.points} ทั้งหมด
+                      ได้รับ {firstPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
@@ -131,19 +132,20 @@ export default function Leaderboard() {
                       />
                     </svg>
                   </div>
-                  <div className="mb-2 h-16 w-16 overflow-hidden rounded-full border-4 border-orange-200">
-                    {/* <div className="flex h-full w-full items-center justify-center bg-orange-100 text-xl">
-                    </div> */}
-                  </div>
+                  <img
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      `${thirdPlace.user.firstName || ''} ${thirdPlace.user.lastName || ''}`.trim() ||
+                        'User',
+                    )}&background=random`}
+                    alt="Profile"
+                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                  />
                   <div className="text-center">
                     <p className="line-clamp-1 font-bold text-gray-800">
                       {thirdPlace.user.firstName} {thirdPlace.user.lastName}
                     </p>
                     <p className="text-lg font-bold text-blue-500">
-                      {thirdPlace.scoreEarned} พอยต์
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      พอยต์ {thirdPlace.user.points} ทั้งหมด
+                      ได้รับ {thirdPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
@@ -169,9 +171,6 @@ export default function Leaderboard() {
                         <div>
                           <p className="font-bold text-gray-800">
                             {player.user.firstName}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            พอยต์ {player.user.points} ทั้งหมด
                           </p>
                         </div>
                       </div>
@@ -202,14 +201,16 @@ export default function Leaderboard() {
               <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 text-sm shadow-md">
                 <div className="flex justify-between border-b border-gray-100 py-3">
                   <span className="font-bold text-gray-600">เลือดบอส</span>
-                  <span className="font-bold text-gray-800">{bossInfo.hp}</span>
+                  <span className="font-bold text-gray-800">
+                    {bossInfo.hp} HP
+                  </span>
                 </div>
                 <div className="flex justify-between border-b border-gray-100 py-3">
                   <span className="font-bold text-gray-600">
                     จำนวนพ้อยต์ของบอส
                   </span>
                   <span className="font-bold text-gray-800">
-                    {bossInfo.pointBoss}
+                    {bossInfo.pointBoss} พอยต์
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-gray-100 py-3">
