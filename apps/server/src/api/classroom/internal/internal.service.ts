@@ -408,4 +408,33 @@ export class ClassroomInternalService {
       };
     });
   }
+
+  async getUsersByClassroomId(args: { classroomId: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new UnauthorizedException('User not found')
+    }
+
+    const users = await this.db.classroomOnUser.findMany({
+      where: {
+        classroomId: args.classroomId,
+        user: {
+          role: {
+            not: 'TEACHER',
+          }
+        }
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    })
+
+    return users
+  }
 }

@@ -75,7 +75,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
   }
 
   return (
-    <div className="fixed bottom-6 right-1 z-50 w-full max-w-sm rounded-3xl border border-white/50 bg-white/40 p-6 shadow-xl backdrop-blur-md">
+    <div className="bottom-6 right-1 z-50 w-full max-w-sm rounded-3xl border border-white/50 bg-white/40 p-6 shadow-xl backdrop-blur-md">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
           <label className="ml-1 text-sm font-bold text-gray-800">

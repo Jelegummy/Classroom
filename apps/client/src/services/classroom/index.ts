@@ -5,8 +5,10 @@ import {
   JoinClassroomArgs,
   RewardDataResponse,
   UpdateClassroom,
+  UserInClassroom,
 } from './types'
 import { getSession } from 'next-auth/react'
+import ClassroomId from '@/pages/dashboard/student/classroom/[id]'
 
 export const CreateClassRoom = async (args: CreateClassroom) => {
   const session = await getSession()
@@ -140,3 +142,19 @@ export const rewardStudent = async (classroomId: string, userId: string, pointsT
 
   return res.data
 } // use for rewarding student in the classroom
+
+export const getUsersByClassroomId = async (ClassroomId: string) => {
+  const session = await getSession()
+  const res = await fetchers.Get<UserInClassroom[]>(
+    `${ENDPOINT}/classroom/internal/users/${ClassroomId}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+} // use for getting users in the classroom by classroom id

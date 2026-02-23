@@ -47,3 +47,11 @@ export type RewardDataResponse = {
   statusCode: number
   data: number
 }
+
+export type UserInClassroom = {
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+  }
+}

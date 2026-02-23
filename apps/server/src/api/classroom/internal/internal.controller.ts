@@ -103,4 +103,11 @@ export class ClassroomInternalController {
 
     return { statusCode: HttpStatus.OK, data: res }
   }
+
+  @Get('/users/:classroomId')
+  async getUsersByClassroomId(@Param('classroomId') classroomId: string, @Req() ctx: Context) {
+    const res = await this.service.getUsersByClassroomId({ classroomId }, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
 }
