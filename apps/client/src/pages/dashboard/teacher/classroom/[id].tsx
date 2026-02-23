@@ -182,10 +182,10 @@ export default function ClassroomId() {
 
                     <div className="absolute bottom-0 w-full p-6 text-white">
                       <h2 className="text-2xl font-extrabold tracking-wide">
-                        สร้างเกมเช็คชื่อ
+                        เกมสามัคคีคือพลัง
                       </h2>
                       <p className="mt-1 text-sm text-gray-200">
-                        สร้างเกมสนุกๆ เพื่อเพิ่มความสนุกในชั้นเรียน
+                        เกมสนุกๆ เพื่อเพิ่มความสนุกในชั้นเรียน
                       </p>
                     </div>
                   </div>

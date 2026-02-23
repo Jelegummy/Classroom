@@ -11,7 +11,8 @@ import {
   UpdateClassroomArgs,
 } from './internal.dto'
 import { Context, getUserFromContext } from '@app/common'
-import { nanoid } from 'nanoid'
+import { customAlphabet } from 'nanoid'
+
 
 @Injectable()
 export class ClassroomInternalService {
@@ -30,11 +31,13 @@ export class ClassroomInternalService {
       )
     }
 
+    const nonoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 6)
+
     let code = ''
     let isUnique = false
 
     while (!isUnique) {
-      code = nanoid(6).toUpperCase()
+      code = nonoid().toUpperCase()
       const existing = await this.db.classroom.findUnique({ where: { code } })
       if (!existing) isUnique = true
     }
