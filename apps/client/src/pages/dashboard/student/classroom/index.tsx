@@ -50,7 +50,7 @@ export default function Page() {
               <JoinButton />
             </div>
           </div>
-          <div className="flex flex-col items-center justify-center gap-8 p-4 sm:flex-row">
+          <div className="flex flex-col items-center justify-start gap-8 p-4 sm:flex-row">
             <div className="flex h-24 w-80 flex-col rounded-xl border border-primary p-4 shadow-md sm:w-96">
               <div className="flex flex-row items-center gap-2">
                 <SiGoogleclassroom className="h-5 w-5 text-primary" />
@@ -62,7 +62,7 @@ export default function Page() {
                 </h1>
               </div>
             </div>
-            <div className="flex h-24 w-80 flex-col rounded-xl border border-[#fbc02d] p-4 shadow-md sm:w-96">
+            {/* <div className="flex h-24 w-80 flex-col rounded-xl border border-[#fbc02d] p-4 shadow-md sm:w-96">
               <div className="flex flex-row items-center gap-2">
                 <HiUsers className="h-5 w-5 text-[#fbc02d]" />
                 <p className="text-sm">ผู้ใช้ทั้งหมด</p>
@@ -83,7 +83,7 @@ export default function Page() {
                   {uniqueUserCount}
                 </h1>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 md:grid-cols-3">
