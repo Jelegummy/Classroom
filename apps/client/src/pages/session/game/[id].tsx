@@ -30,10 +30,10 @@ interface Game {
   damageBoost?: number
   timeLimit?: number
   isActive: boolean
+  maxHpBoss?: number
   status: 'WAITING' | 'ONGOING' | 'FINISHED'
   character?: {
     timeLimit: number
-    maxHp: number
     imageUrl: string
     modelUrl: string
     bossName: string
@@ -228,7 +228,7 @@ export default function GameId() {
       </div>
     )
 
-  const maxHp = boss?.maxHp || 1
+  const maxHp = game?.maxHpBoss || 1
   const currentHp = activeSession?.currentHp || 0
   const hpPercentage = Math.max(0, (currentHp / maxHp) * 100)
   const sortedAttendances = [...attendances].sort(

@@ -54,10 +54,10 @@ export interface Game {
   description?: string
   isActive: boolean
   status: 'WAITING' | 'ONGOING' | 'FINISHED'
+  maxHpBoss?: number
   character?: {
     id: string
     bossName: string
-    maxHp: number
     timeLimit: number
     imageUrl: string
     modelUrl: string

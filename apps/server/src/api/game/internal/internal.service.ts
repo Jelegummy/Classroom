@@ -285,33 +285,44 @@ export class GameInternalService {
 
     const allAttackers = await tx.attendance.findMany({
       where: { activeGameId },
+      orderBy: { createdAt: 'asc' }
     })
 
+    let remainingPoints = bossPoints
+
     for (const attacker of allAttackers) {
+      if (remainingPoints <= 0) break
+
       const currentEarnedScore = attacker.scoreEarned || 0
       if (currentEarnedScore > 0) continue
 
       const rawScore = (attacker.damageDealt / bossMaxHp) * bossPoints
-      const finalScore = Math.floor(rawScore)
+      let finalScore = Math.floor(rawScore)
+
+      if (finalScore > remainingPoints) {
+        finalScore = remainingPoints
+      }
 
       if (finalScore > 0) {
-        await tx.user.update({
-          where: { id: attacker.userId },
-          data: { points: { increment: finalScore } },
-        })
+        remainingPoints -= finalScore
 
-        await tx.classroomOnUser.updateMany({
-          where: {
-            userId: attacker.userId,
-            classroomId: classroomId,
-          },
-          data: { score: { increment: finalScore } },
-        })
-
-        await tx.attendance.update({
-          where: { id: attacker.id },
-          data: { scoreEarned: finalScore },
-        })
+        await Promise.all([
+          tx.user.update({
+            where: { id: attacker.userId },
+            data: { points: { increment: finalScore } },
+          }),
+          tx.classroomOnUser.updateMany({
+            where: {
+              userId: attacker.userId,
+              classroomId: classroomId,
+            },
+            data: { score: { increment: finalScore } },
+          }),
+          tx.attendance.update({
+            where: { id: attacker.id },
+            data: { scoreEarned: finalScore },
+          })
+        ])
       }
     }
   }
@@ -334,7 +345,7 @@ export class GameInternalService {
         game: {
           include: {
             character: {
-              select: { maxHp: true, pointBoss: true },
+              select: { pointBoss: true },
             },
           },
         },
@@ -372,7 +383,7 @@ export class GameInternalService {
       })
 
       if (newHp === 0) {
-        const bossMaxHp = activeGame.game.character?.maxHp || 1
+        const bossMaxHp = activeGame.game.maxHpBoss || 1
         const bossPoints = activeGame.game.character?.pointBoss || 0
 
         await this.distributePoints(
