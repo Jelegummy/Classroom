@@ -1,12 +1,12 @@
-import CardCharacter from './components/card-charecter'
-import CardGame from './components/card-game'
-import CharacterScene from './components/character-scene'
+import CardCharacter from '../../../features/game/components/card-charecter'
+import CardGame from '../../../features/game/components/card-game'
+import CharacterScene from '../../../features/game/components/character-scene'
 import { useRouter } from 'next/router'
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllCharacters } from '@/services/charecter'
 import NavbarSession from '@/components/Navbar-Session'
-import CardUser from './components/card-user'
+import CardUser from '../../../features/game/components/card-user'
 
 export default function GameSession() {
   const router = useRouter()

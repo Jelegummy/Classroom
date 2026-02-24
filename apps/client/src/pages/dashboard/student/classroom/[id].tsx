@@ -10,11 +10,11 @@ import { SiGoogleclassroom } from 'react-icons/si'
 import { VscNotebook } from 'react-icons/vsc'
 // import CreateButtonAnnounce from './components/create-button-announce'
 // import Link from 'next/link'
-import MainTasks from '../../teacher/classroom/components/main-tasks' // เดี๋ยวทำให้เป็นของนักเรียน
-import JoinGame from './components/join-game'
+import MainTasks from '../../../../features/classroom/teacher/components/main-tasks' // เดี๋ยวทำให้เป็นของนักเรียน
+import JoinGame from '../../../../features/classroom/student/components/join-game'
 import TutorSession from '../tutor'
-import CreateButtonTutor from '../tutor/components/button-create'
-import RankingStudent from './components/ranking-student'
+import CreateButtonTutor from '../../../../features/tutor/components/button-create'
+import RankingStudent from '../../../../features/classroom/student/components/ranking-student'
 
 export default function ClassroomId() {
   const router = useRouter()

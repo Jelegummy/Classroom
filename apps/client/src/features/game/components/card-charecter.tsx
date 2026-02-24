@@ -1,10 +1,5 @@
 import Image from 'next/image'
-
-type CardCharacterProps = {
-  characters: any[]
-  selectedId: string
-  onSelect: (id: string) => void
-}
+import { CardCharacterProps } from '../types'
 
 export default function CardCharacter({
   characters,

@@ -5,11 +5,9 @@ import { getAllClassrooms } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { SiGoogleclassroom } from 'react-icons/si'
-import { HiUsers } from 'react-icons/hi2'
-import { VscNotebook } from 'react-icons/vsc'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
-import JoinButton from './components/join-button'
+import JoinButton from '../../../../features/classroom/student/components/join-button'
 
 export default function Page() {
   const [search, setSearch] = useState('')

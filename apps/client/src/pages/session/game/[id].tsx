@@ -13,7 +13,7 @@ import { getAllItems, buyItems } from '@/services/Items'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import Link from 'next/link'
-import CharacterScene from './components/character-scene'
+import CharacterScene from '../../../features/game/components/character-scene'
 
 interface Item {
   id: string

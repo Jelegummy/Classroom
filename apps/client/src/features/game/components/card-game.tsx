@@ -5,11 +5,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { RiSwordLine } from 'react-icons/ri'
 import { useRouter } from 'next/dist/client/components/navigation'
-
-type CardGameProps = {
-  classroomId: string
-  characterId: string
-}
+import { CardGameProps } from '../types'
 
 export default function CardGame({ classroomId, characterId }: CardGameProps) {
   const router = useRouter()

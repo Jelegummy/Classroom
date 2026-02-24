@@ -1,8 +1,4 @@
-type RankingProps = {
-  points: number[]
-  names: string[]
-  roles: string[]
-}
+import { RankingProps } from '../types'
 
 export default function RankingStudent({ points, names, roles }: RankingProps) {
   const combined = points

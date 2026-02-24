@@ -4,20 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { IoClose } from 'react-icons/io5'
 import { IoAddOutline } from 'react-icons/io5'
-
-type RankingProps = {
-  classroomId: string
-  studentIds: string[]
-  points: number[]
-  names: string[]
-  roles: string[]
-}
-
-type SelectedStudent = {
-  id: string
-  name: string
-  point: number
-} | null
+import { RankingProps, SelectedStudent } from '../types'
 
 export default function Ranking({
   classroomId,

@@ -1,8 +1,5 @@
 import { toast } from 'sonner'
-
-type Props = {
-  onClose: () => void
-}
+import { Props } from '../types'
 
 export default function StateLink({ onClose }: Props) {
   const generatedLink =

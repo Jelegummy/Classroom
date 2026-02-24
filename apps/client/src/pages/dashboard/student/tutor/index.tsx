@@ -1,7 +1,7 @@
 import { getAllTutors } from '@/services/tutor'
 import { useQuery } from '@tanstack/react-query'
 import { Video } from 'lucide-react'
-import StateLink from './components/state-link'
+import StateLink from '../../../../features/tutor/components/state-link'
 import { useState } from 'react'
 
 interface TutorSessionProps {
