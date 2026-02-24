@@ -1,14 +1,14 @@
-import { GoBook, GoHome } from 'react-icons/go'
+// import { GoBook, GoHome } from 'react-icons/go'
 import { SiGoogleclassroom } from 'react-icons/si'
-import { IoMdPaper } from 'react-icons/io'
+// import { IoMdPaper } from 'react-icons/io'
 import { TbLockPassword } from 'react-icons/tb'
 
 export const TEARCHER_ROUTES = [
-  {
-    title: 'หน้าแรก',
-    route: '/dashboard/teacher',
-    icon: <GoHome className="h-6 w-6" />,
-  },
+  // {
+  //   title: 'หน้าแรก',
+  //   route: '/dashboard/teacher',
+  //   icon: <GoHome className="h-6 w-6" />,
+  // },
   {
     title: 'ห้องเรียน',
     route: '/dashboard/teacher/classroom',
@@ -32,11 +32,11 @@ export const TEARCHER_ROUTES = [
 ]
 
 export const STUDENT_ROUTES = [
-  {
-    title: 'หน้าแรก',
-    route: '/dashboard/student',
-    icon: <GoHome className="h-6 w-6" />,
-  },
+  // {
+  //   title: 'หน้าแรก',
+  //   route: '/dashboard/student',
+  //   icon: <GoHome className="h-6 w-6" />,
+  // },
   {
     title: 'ห้องเรียน',
     route: '/dashboard/student/classroom',
