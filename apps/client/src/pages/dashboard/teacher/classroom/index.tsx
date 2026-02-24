@@ -3,14 +3,12 @@ import DashboardLayout from '@/components/Layouts/Dashboard'
 import NavbarContent from '@/components/NavbarContent'
 import { getAllClassrooms } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
-import CreateButton from '../../../../features/classroom/teacher/components/create-button'
 import { useState } from 'react'
 import { SiGoogleclassroom } from 'react-icons/si'
-import { HiUsers } from 'react-icons/hi2'
-import { VscNotebook } from 'react-icons/vsc'
 import { CiSettings } from 'react-icons/ci'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
+import CreateButton from '@/features/classroom/teacher/components/create-button'
 
 export default function Page() {
   const [search, setSearch] = useState('')
