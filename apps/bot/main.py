@@ -267,7 +267,7 @@ async def start(ctx, seconds: int):
         await ctx.send(f"**ไม่สามารถเริ่มอัดได้!**\nผู้ใช้ต่อไปนี้ยังไม่ได้ลงทะเบียนชื่อจริง: {mentions}\n*(ให้พิมพ์ `!join` อีกครั้งเพื่อเรียกปุ่มลงทะเบียน)*")
         return
 
-    discord_channel_id = str(ctx.channel.id)
+    discord_channel_id = str(ctx.author.voice.channel.id)
     tutor_id = None
 
     await ctx.send("กำลังตรวจสอบ Session จากระบบ...")
@@ -384,7 +384,7 @@ async def start(ctx, seconds: int):
                 "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
                 "summary": analysis_data.get('summary', '-'),
                 "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
-                "discordChannelId": str(ctx.channel.id),
+                "discordChannelId": str(ctx.author.voice.channel.id),
                 "commandRunnerDiscordId": str(ctx.author.id),
                 "dataContent": {
                     "roles": analysis_data.get('roles', {}),
@@ -393,7 +393,7 @@ async def start(ctx, seconds: int):
                 }
             }
 
-            patch_url = f"{NESTJS_BASE_URL}/{tutor_id}/bot/logs"
+            post_url = f"{NESTJS_BASE_URL}/{tutor_id}/bot/logs"
             headers = {
                 "x-bot-secret": BOT_API_SECRET,
                 "Content-Type": "application/json"
@@ -401,7 +401,7 @@ async def start(ctx, seconds: int):
 
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.patch(patch_url, json=payload, headers=headers) as response:
+                    async with session.post(post_url, json=payload, headers=headers) as response:
                         if response.status in (200, 201):
                             await ctx.send("ส่งข้อมูลบันทึกเข้าสู่ระบบฐานข้อมูล (NestJS) สำเร็จ!")
                         else:
