@@ -116,7 +116,6 @@ export default function GameId() {
       timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
     } else if (timeLeft === 0 && isStarted && !isGameOver) {
       setIsGameOver(true)
-
       console.log('Time is up! Distributing points...')
       timeoutMutation.mutate()
     }
@@ -244,54 +243,57 @@ export default function GameId() {
 
   return (
     <div
-      className="relative flex h-screen w-full select-none flex-col items-center overflow-hidden bg-cover bg-center"
+      className="relative flex h-[100dvh] w-full select-none flex-col items-center overflow-hidden bg-cover bg-center"
       style={{ backgroundImage: "url('/bg-game.png')" }}
     >
-      <div className="absolute left-10 top-10 z-10 flex flex-col drop-shadow-lg">
-        <span className="text-lg font-bold uppercase tracking-widest text-white/80">
-          เวลาเหลือ
-        </span>
-        <div
-          className={`text-7xl font-black ${timeLeft < 10 && isStarted ? 'animate-pulse text-red-500' : 'text-white'}`}
-        >
-          {timeLeft}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex w-full items-start justify-between p-3 md:p-6">
+        <div className="pointer-events-auto flex flex-col drop-shadow-lg">
+          <span className="text-xs font-bold uppercase tracking-widest text-white/80 md:text-lg">
+            เวลาเหลือ
+          </span>
+          <div
+            className={`text-5xl font-black md:text-7xl ${timeLeft < 10 && isStarted ? 'animate-pulse text-red-500' : 'text-white'}`}
+          >
+            {timeLeft}
+          </div>
         </div>
-      </div>
 
-      <div className="absolute right-10 top-10 z-10 w-80 rounded-3xl border border-white/30 bg-white/40 p-5 shadow-2xl backdrop-blur-md">
-        <div className="custom-scrollbar flex max-h-[50vh] flex-col gap-2 overflow-y-auto pr-2">
-          {sortedAttendances.length === 0 ? (
-            <div className="p-2 text-center text-sm font-bold text-gray-800">
-              กำลังรอนักเรียนเข้าร่วม...
-            </div>
-          ) : (
-            sortedAttendances.map((att, index) => (
-              <div
-                key={att.id}
-                className="flex justify-between rounded bg-white/80 p-2 text-sm"
-              >
-                <span>
-                  {index + 1}. {att.user.firstName}
-                </span>
-                <span className="font-bold">
-                  {att.damageDealt.toLocaleString()}
-                </span>
+        <div className="pointer-events-auto w-40 rounded-xl border border-white/30 bg-white/40 p-2 shadow-2xl backdrop-blur-md md:w-80 md:rounded-3xl md:p-5">
+          <div className="custom-scrollbar flex max-h-[20vh] flex-col gap-1 overflow-y-auto pr-1 md:max-h-[50vh] md:gap-2 md:pr-2">
+            {sortedAttendances.length === 0 ? (
+              <div className="p-1 text-center text-[10px] font-bold text-gray-800 md:p-2 md:text-sm">
+                กำลังรอนักเรียนเข้าร่วม...
               </div>
-            ))
-          )}
+            ) : (
+              sortedAttendances.map((att, index) => (
+                <div
+                  key={att.id}
+                  className="flex justify-between rounded bg-white/80 p-1 text-[10px] md:p-2 md:text-sm"
+                >
+                  <span className="truncate pr-1">
+                    {index + 1}. {att.user.firstName}
+                  </span>
+                  <span className="font-bold text-red-600">
+                    {att.damageDealt.toLocaleString()}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="z-0 mt-20 flex w-full max-w-4xl flex-col items-center">
-        <h1 className="mb-2 text-4xl font-black text-white drop-shadow-md">
+      <div className="z-0 flex min-h-0 w-full max-w-4xl flex-1 flex-col items-center justify-center px-4 pt-24 md:pt-0">
+        <h1 className="mb-1 text-2xl font-black text-white drop-shadow-md md:mb-2 md:text-4xl">
           {boss?.bossName}
         </h1>
-        <div className="relative mb-6 h-8 w-full max-w-2xl overflow-hidden rounded-full border-4 border-black bg-gray-900">
+
+        <div className="relative mb-2 h-6 w-full max-w-[250px] overflow-hidden rounded-full border-2 border-black bg-gray-900 md:mb-6 md:h-8 md:max-w-2xl md:border-4">
           <div
             className="h-full bg-gradient-to-r from-red-600 to-orange-500 transition-all duration-300"
             style={{ width: `${hpPercentage}%` }}
           />
-          <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-white">
+          <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white md:text-sm">
             {currentHp.toLocaleString()} / {maxHp.toLocaleString()}
           </div>
         </div>
@@ -303,38 +305,40 @@ export default function GameId() {
           <CharacterScene url={boss?.modelUrl || ''} />
 
           {isAttacking && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl">
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl md:text-6xl">
               💥
             </div>
           )}
         </div>
+      </div>
 
-        <div className="animate-slide-up mt-4 w-full rounded-t-3xl border-t border-white/20 bg-black/60 p-4 backdrop-blur-md">
-          <div className="mb-2 flex items-center justify-between px-4 text-white">
-            <div className="flex gap-6">
+      {session?.user.role === 'STUDENT' && (
+        <div className="animate-slide-up z-10 w-full shrink-0 rounded-t-2xl border-t border-white/20 bg-black/80 p-3 pb-4 backdrop-blur-md md:p-4">
+          <div className="mb-2 flex flex-col justify-between px-2 text-white md:flex-row md:items-center md:px-4">
+            <div className="flex w-full justify-between gap-4 md:w-auto md:justify-start md:gap-6">
               <div>
-                <span className="text-sm uppercase text-gray-400">
+                <span className="text-[10px] uppercase text-gray-400 md:text-sm">
                   เงินของคุณ
                 </span>
-                <div className="text-2xl font-bold text-yellow-400">
+                <div className="text-lg font-bold text-yellow-400 md:text-2xl">
                   💰 {currentUserData?.user.points?.toLocaleString() || 0}
                 </div>
               </div>
-              <div>
-                <span className="text-sm uppercase text-gray-400">
-                  ดาเมจต่อการโจมตี
+              <div className="text-right md:text-left">
+                <span className="text-[10px] uppercase text-gray-400 md:text-sm">
+                  ดาเมจต่อครั้ง
                 </span>
-                <div className="text-2xl font-bold text-red-400 transition-all duration-300">
+                <div className="text-lg font-bold text-red-400 transition-all duration-300 md:text-2xl">
                   ⚔️ {currentDamage.toLocaleString()}
                 </div>
               </div>
             </div>
-            <div className="text-xs text-gray-300">
+            <div className="mt-1 text-center text-[10px] text-gray-300 md:mt-0 md:text-xs">
               กดที่ไอเทมเพื่อซื้อ (จำกัด 1 ชิ้น)
             </div>
           </div>
 
-          <div className="custom-scrollbar flex gap-4 overflow-x-auto">
+          <div className="custom-scrollbar flex gap-2 overflow-x-auto pb-1 md:gap-4 md:pb-0">
             {shopItems?.map((item: any) => {
               const isOwned = checkIsOwned(item.id)
 
@@ -343,7 +347,7 @@ export default function GameId() {
                   key={item.id}
                   disabled={isOwned}
                   onClick={() => handleBuyItem(item)}
-                  className={`group relative flex h-36 w-28 flex-shrink-0 flex-col items-center rounded-xl border p-2 transition-all ${
+                  className={`group relative flex h-24 w-20 flex-shrink-0 flex-col items-center rounded-lg border p-1 transition-all md:h-36 md:w-28 md:rounded-xl md:p-2 ${
                     isOwned
                       ? 'cursor-not-allowed border-green-500 bg-green-900/40 opacity-90'
                       : 'cursor-pointer border-white/20 bg-white/10 hover:scale-105 hover:bg-white/20'
@@ -354,23 +358,23 @@ export default function GameId() {
                     alt={item.name}
                     width={100}
                     height={100}
-                    className={`mb-1 h-12 w-12 object-contain drop-shadow-md ${isOwned ? 'grayscale-[0.2]' : ''}`}
+                    className={`mb-1 h-8 w-8 object-contain drop-shadow-md md:h-12 md:w-12 ${isOwned ? 'grayscale-[0.2]' : ''}`}
                   />
-                  <div className="line-clamp-1 text-xs font-bold text-white">
+                  <div className="line-clamp-1 text-[10px] font-bold text-white md:text-xs">
                     {item.name}
                   </div>
-                  <div className="text-[10px] text-green-300">
+                  <div className="text-[8px] text-green-300 md:text-[10px]">
                     +{item.effectValue} ATK
                   </div>
 
                   <div
-                    className={`mt-2 w-full rounded px-2 py-0.5 text-xs font-bold shadow-sm ${isOwned ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'} `}
+                    className={`mt-auto w-full rounded px-1 py-0.5 text-[8px] font-bold shadow-sm md:mt-2 md:px-2 md:text-xs ${isOwned ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'} `}
                   >
-                    {isOwned ? 'กำลังใช้งาน' : `${item.price} 💰`}
+                    {isOwned ? 'ใช้งานอยู่' : `${item.price} 💰`}
                   </div>
 
                   {isOwned && (
-                    <div className="absolute right-2 top-2 text-xs text-green-400">
+                    <div className="absolute right-1 top-1 text-[8px] text-green-400 md:right-2 md:top-2 md:text-xs">
                       ✔
                     </div>
                   )}
@@ -379,22 +383,22 @@ export default function GameId() {
             })}
           </div>
         </div>
-      </div>
+      )}
 
       {(session?.user.role === 'TEACHER' || session?.user.role === 'ADMIN') &&
         !isStarted &&
         !isGameOver &&
         currentHp > 0 && (
-          <div className="absolute bottom-10 left-10 z-50">
+          <div className="absolute bottom-8 left-1/2 z-50 flex w-[90%] -translate-x-1/2 flex-col items-center md:bottom-10 md:left-10 md:w-auto md:translate-x-0 md:items-start">
             {attendances.length === 0 && (
-              <div className="mb-2 w-max rounded bg-black p-2 text-xs text-white">
+              <div className="mb-2 w-max rounded bg-black/80 px-3 py-2 text-xs text-white backdrop-blur-sm">
                 รอให้นักเรียนเข้าห้องก่อนนะครับอาจารย์
               </div>
             )}
             <button
               onClick={handleStartGame}
               disabled={attendances.length === 0}
-              className={`rounded-full px-8 py-4 text-2xl font-black text-white shadow-xl transition-all ${
+              className={`w-full rounded-full py-3 text-xl font-black text-white shadow-xl transition-all md:w-auto md:px-8 md:py-4 md:text-2xl ${
                 attendances.length > 0
                   ? 'animate-pulse bg-blue-600 hover:scale-105 hover:bg-blue-500'
                   : 'cursor-not-allowed bg-gray-600 opacity-50'
@@ -406,14 +410,16 @@ export default function GameId() {
         )}
 
       {isVictory && !isDefeat && (
-        <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md duration-500">
-          <h2 className="animate-bounce text-8xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)]">
+        <div className="animate-in fade-in absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 p-4 text-center backdrop-blur-md duration-500">
+          <h2 className="animate-bounce text-5xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)] md:text-8xl">
             VICTORY!
           </h2>
-          <p className="mt-4 text-2xl font-bold text-white">ภารกิจสำเร็จ!</p>
+          <p className="mt-4 text-xl font-bold text-white md:text-2xl">
+            ภารกิจสำเร็จ!
+          </p>
 
           <Link href={`/session/game/leader/${game.id}`}>
-            <button className="mt-8 rounded-full bg-white px-8 py-3 font-bold text-black transition-all hover:scale-105 hover:bg-gray-200">
+            <button className="mt-8 rounded-full bg-white px-6 py-3 text-sm font-bold text-black transition-all hover:scale-105 hover:bg-gray-200 md:px-8 md:text-base">
               สรุปผลคะแนน
             </button>
           </Link>
@@ -421,16 +427,16 @@ export default function GameId() {
       )}
 
       {isDefeat && (
-        <div className="animate-in fade-in absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md duration-500">
-          <h2 className="text-8xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)]">
+        <div className="animate-in fade-in absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4 text-center backdrop-blur-md duration-500">
+          <h2 className="text-5xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)] md:text-8xl">
             DEFEAT
           </h2>
-          <p className="mt-4 text-2xl font-bold text-white">
+          <p className="mt-4 text-xl font-bold text-white md:text-2xl">
             หมดเวลาแล้ว! บอสยังไม่ตาย
           </p>
 
           <Link href={`/session/game/leader/${game.id}`}>
-            <button className="mt-8 rounded-full bg-red-600 px-8 py-3 font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-red-500">
+            <button className="mt-8 rounded-full bg-red-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-red-500 md:px-8 md:text-base">
               สรุปผลคะแนน
             </button>
           </Link>

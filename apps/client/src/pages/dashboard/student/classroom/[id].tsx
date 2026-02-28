@@ -88,12 +88,12 @@ export default function ClassroomId() {
         </div>
         <div className="mt-3 flex flex-col p-4">
           <div className="flex flex-col sm:flex-row sm:justify-between">
-            <div className="tabs-box tabs flex flex-col gap-2 rounded-lg border bg-base-100 p-1 sm:flex-row">
+            <div className="tabs-box tabs flex flex-row gap-1 rounded-lg border bg-base-100 p-4 sm:gap-2 sm:p-1">
               <input
                 type="radio"
                 name="main_tabs"
                 aria-label="หน้าหลัก"
-                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                className="tab border-transparent text-xs checked:rounded-none checked:bg-primary checked:text-white sm:text-sm"
                 checked={activeTab === 'main_tabs'}
                 onChange={() => setActiveTab('main_tabs')}
               />
@@ -102,7 +102,7 @@ export default function ClassroomId() {
                 type="radio"
                 name="jobs_tabs"
                 aria-label="งานของชั้นเรียน"
-                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                className="tab border-transparent text-xs checked:rounded-none checked:bg-primary checked:text-white sm:text-sm"
                 checked={activeTab === 'jobs_tabs'}
                 onChange={() => setActiveTab('jobs_tabs')}
               />
@@ -111,7 +111,7 @@ export default function ClassroomId() {
                 type="radio"
                 name="game_tabs"
                 aria-label="เกมเช็คชื่อ"
-                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                className="tab border-transparent text-xs checked:rounded-none checked:bg-primary checked:text-white sm:text-sm"
                 checked={activeTab === 'game_tabs'}
                 onChange={() => setActiveTab('game_tabs')}
               />
@@ -119,7 +119,7 @@ export default function ClassroomId() {
                 type="radio"
                 name="tutor_tabs"
                 aria-label="การติว"
-                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                className="tab border-transparent text-xs checked:rounded-none checked:bg-primary checked:text-white sm:text-sm"
                 checked={activeTab === 'tutor_tabs'}
                 onChange={() => setActiveTab('tutor_tabs')}
               />
@@ -127,7 +127,7 @@ export default function ClassroomId() {
                 type="radio"
                 name="people_tabs"
                 aria-label="ผู้คนในชั้นเรียน"
-                className="tab border-transparent text-sm checked:rounded-none checked:bg-primary checked:text-white"
+                className="tab border-transparent text-xs checked:rounded-none checked:bg-primary checked:text-white sm:text-sm"
                 checked={activeTab === 'people_tabs'}
                 onChange={() => setActiveTab('people_tabs')}
               />

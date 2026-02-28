@@ -3,7 +3,6 @@ import { getGameLeaderboard } from '@/services/game-session'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-// import Image from 'next/image'
 
 export default function Leaderboard() {
   const router = useRouter()
@@ -48,20 +47,22 @@ export default function Leaderboard() {
     <div className="min-h-screen bg-gray-50 font-sans">
       <NavbarLeader />
 
-      <main className="mx-auto mt-10 max-w-7xl p-6">
-        <div className="mb-8 text-center">
-          <h1 className="text-5xl font-bold text-blue-500">เสร็จสิ้น</h1>
+      <main className="mx-auto mt-6 max-w-7xl p-4 md:mt-10 md:p-6">
+        <div className="mb-4 text-center md:mb-8">
+          <h1 className="text-3xl font-bold text-blue-500 md:text-5xl">
+            เสร็จสิ้น
+          </h1>
         </div>
 
-        <div className="mt-20 grid grid-cols-1 gap-8 lg:grid-cols-12">
+        <div className="mt-8 grid grid-cols-1 gap-6 md:mt-20 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-8 xl:col-span-9">
-            <div className="mb-8 flex items-end justify-center gap-4">
+            <div className="mb-8 flex items-end justify-center gap-2 md:gap-4">
               {secondPlace && (
-                <div className="relative flex h-48 w-48 flex-col items-center justify-center rounded-2xl bg-white p-4 shadow-md">
-                  <div className="absolute right-3 top-3 text-orange-300">
+                <div className="relative flex h-36 w-24 flex-col items-center justify-center rounded-xl bg-white p-2 shadow-md md:h-48 md:w-48 md:rounded-2xl md:p-4">
+                  <div className="absolute right-1 top-1 text-orange-300 md:right-3 md:top-3">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
+                      className="h-4 w-4 md:h-6 md:w-6"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -80,46 +81,46 @@ export default function Leaderboard() {
                         'User',
                     )}&background=random`}
                     alt="Profile"
-                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                    className="mb-1 h-10 w-10 overflow-hidden rounded-full border-2 border-yellow-400 object-cover shadow-sm md:mb-3 md:h-20 md:w-20 md:border-4"
                   />
-                  <div className="text-center">
-                    <p className="line-clamp-1 font-bold text-gray-800">
+                  <div className="w-full px-1 text-center">
+                    <p className="line-clamp-1 text-[10px] font-bold text-gray-800 md:text-base">
                       {secondPlace.user.firstName} {secondPlace.user.lastName}
                     </p>
-                    <p className="text-lg font-bold text-blue-500">
-                      ได้รับ {secondPlace.scoreEarned} พอยต์
+                    <p className="text-[9px] font-bold text-blue-500 md:text-lg">
+                      {secondPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
               )}
 
               {firstPlace && (
-                <div className="relative z-10 flex h-60 w-56 -translate-y-4 flex-col items-center justify-center rounded-2xl border-2 border-yellow-300 bg-yellow-50 p-4 shadow-xl">
+                <div className="relative z-10 flex h-44 w-28 -translate-y-2 flex-col items-center justify-center rounded-xl border-2 border-yellow-300 bg-yellow-50 p-2 shadow-xl md:h-60 md:w-56 md:-translate-y-4 md:rounded-2xl md:p-4">
                   <img
                     src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
                       `${firstPlace.user.firstName || ''} ${firstPlace.user.lastName || ''}`.trim() ||
                         'User',
                     )}&background=random`}
                     alt="Profile"
-                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                    className="mb-1 h-14 w-14 overflow-hidden rounded-full border-[3px] border-yellow-400 object-cover shadow-sm md:mb-3 md:h-24 md:w-24 md:border-4"
                   />
-                  <div className="text-center">
-                    <p className="line-clamp-1 text-lg font-bold text-gray-900">
+                  <div className="w-full px-1 text-center">
+                    <p className="line-clamp-1 text-xs font-bold text-gray-900 md:text-lg">
                       {firstPlace.user.firstName} {firstPlace.user.lastName}
                     </p>
-                    <p className="text-xl font-black text-yellow-600">
-                      ได้รับ {firstPlace.scoreEarned} พอยต์
+                    <p className="text-[10px] font-black text-yellow-600 md:text-xl">
+                      {firstPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
               )}
 
               {thirdPlace && (
-                <div className="relative flex h-48 w-48 flex-col items-center justify-center rounded-2xl bg-white p-4 shadow-md">
-                  <div className="absolute right-3 top-3 text-orange-700/50">
+                <div className="relative flex h-36 w-24 flex-col items-center justify-center rounded-xl bg-white p-2 shadow-md md:h-48 md:w-48 md:rounded-2xl md:p-4">
+                  <div className="absolute right-1 top-1 text-orange-700/50 md:right-3 md:top-3">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6"
+                      className="h-4 w-4 md:h-6 md:w-6"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -138,74 +139,79 @@ export default function Leaderboard() {
                         'User',
                     )}&background=random`}
                     alt="Profile"
-                    className="mb-3 h-20 w-20 overflow-hidden rounded-full border-4 border-yellow-400 object-cover shadow-sm"
+                    className="mb-1 h-10 w-10 overflow-hidden rounded-full border-2 border-yellow-400 object-cover shadow-sm md:mb-3 md:h-20 md:w-20 md:border-4"
                   />
-                  <div className="text-center">
-                    <p className="line-clamp-1 font-bold text-gray-800">
+                  <div className="w-full px-1 text-center">
+                    <p className="line-clamp-1 text-[10px] font-bold text-gray-800 md:text-base">
                       {thirdPlace.user.firstName} {thirdPlace.user.lastName}
                     </p>
-                    <p className="text-lg font-bold text-blue-500">
-                      ได้รับ {thirdPlace.scoreEarned} พอยต์
+                    <p className="text-[9px] font-bold text-blue-500 md:text-lg">
+                      {thirdPlace.scoreEarned} พอยต์
                     </p>
                   </div>
                 </div>
               )}
             </div>
-            {otherPlayers.length === 0 && (
-              <div className="hidden">
-                <div className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm">
-                  {otherPlayers.map((player, index) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center justify-between rounded-lg border border-gray-100 bg-white p-3 hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100 text-sm font-bold text-gray-500">
-                          {index + 4}
-                        </div>
-                        <div className="h-10 w-10 overflow-hidden rounded-full bg-gray-200">
-                          <div className="flex h-full w-full items-center justify-center bg-gray-300">
-                            👤
-                          </div>
-                        </div>
-                        <div>
-                          <p className="font-bold text-gray-800">
-                            {player.user.firstName}
-                          </p>
-                        </div>
+
+            {otherPlayers.length > 0 ? (
+              <div className="flex flex-col gap-2 rounded-xl bg-white p-3 shadow-sm md:p-4">
+                {otherPlayers.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between rounded-lg border border-gray-100 bg-white p-2 hover:bg-gray-50 md:p-3"
+                  >
+                    <div className="flex items-center gap-2 md:gap-4">
+                      <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100 text-xs font-bold text-gray-500 md:h-8 md:w-8 md:text-sm">
+                        {index + 4}
                       </div>
-                      <div className="font-bold text-blue-500">
-                        {player.scoreEarned.toLocaleString()} พอยต์
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          player.user.firstName || 'User',
+                        )}&background=random`}
+                        alt="Profile"
+                        className="h-8 w-8 overflow-hidden rounded-full object-cover md:h-10 md:w-10"
+                      />
+                      <div>
+                        <p className="text-xs font-bold text-gray-800 md:text-base">
+                          {player.user.firstName}
+                        </p>
                       </div>
                     </div>
-                  ))}
-
-                  <div className="hidden py-4 text-center text-gray-400">
-                    ไม่มีผู้เล่นอื่น
+                    <div className="text-xs font-bold text-blue-500 md:text-base">
+                      {player.scoreEarned.toLocaleString()} พอยต์
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-4 text-center text-sm text-gray-400 md:text-base">
+                {players.length > 0
+                  ? 'ไม่มีผู้เล่นอันดับอื่นเพิ่มเติม'
+                  : 'ยังไม่มีผู้เข้าร่วม'}
               </div>
             )}
           </div>
 
           <div className="lg:col-span-4 xl:col-span-3">
             <div className="flex flex-col gap-4">
-              <div className="flex aspect-square items-center justify-center rounded-2xl bg-white p-6 shadow-md">
+              <div className="mx-auto flex aspect-square w-48 items-center justify-center rounded-2xl bg-white p-4 shadow-md md:w-full md:p-6">
                 <div className="relative h-full w-full">
-                  <div className="flex h-full w-full items-center justify-center text-6xl">
-                    <Image src={bossInfo.imageUrl} alt="Boss" fill />
-                  </div>
+                  <Image
+                    src={bossInfo.imageUrl}
+                    alt="Boss"
+                    fill
+                    className="object-contain"
+                  />
                 </div>
               </div>
-
-              <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 text-sm shadow-md">
-                <div className="flex justify-between border-b border-gray-100 py-3">
+              <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 text-xs shadow-md md:text-sm">
+                <div className="flex justify-between border-b border-gray-100 py-2 md:py-3">
                   <span className="font-bold text-gray-600">เลือดบอส</span>
                   <span className="font-bold text-gray-800">
                     {bossInfo.hp} HP
                   </span>
                 </div>
-                <div className="flex justify-between border-b border-gray-100 py-3">
+                <div className="flex justify-between border-b border-gray-100 py-2 md:py-3">
                   <span className="font-bold text-gray-600">
                     จำนวนพ้อยต์ของบอส
                   </span>
@@ -213,13 +219,13 @@ export default function Leaderboard() {
                     {bossInfo.pointBoss} พอยต์
                   </span>
                 </div>
-                <div className="flex justify-between border-b border-gray-100 py-3">
+                <div className="flex justify-between border-b border-gray-100 py-2 md:py-3">
                   <span className="font-bold text-gray-600">ระยะเวลา</span>
                   <span className="font-bold text-gray-800">
                     {bossInfo.duration}
                   </span>
                 </div>
-                <div className="flex justify-between py-3">
+                <div className="flex justify-between py-2 md:py-3">
                   <span className="font-bold text-gray-600">เข้าร่วม</span>
                   <span className="font-bold text-gray-800">
                     {bossInfo.participants} คน
