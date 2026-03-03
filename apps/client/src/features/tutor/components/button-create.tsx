@@ -76,7 +76,7 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
             <div className="mb-3">
               <label className="label">
                 <span className="label-text">
-                  Discord Channel ID <span className="text-error">*</span>
+                  เปิดห้องติว (chanal id) <span className="text-error">*</span>
                 </span>
               </label>
               <input
@@ -128,7 +128,7 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
             </h3>
             <p className="mb-4 text-sm text-gray-600">
               กรุณาคัดลอกลิ้งก์ด้านล่างเพื่อนำไปเชิญ Bot เข้าสู่ Discord Channel
-              ของคุณ
+              ของคุณ ที่ Application Discord
             </p>
 
             <div className="mb-2 flex gap-2">

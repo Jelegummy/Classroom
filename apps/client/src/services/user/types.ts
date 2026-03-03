@@ -4,6 +4,7 @@ export type RegisterArgs = {
   email: string
   password: string
   phoneNumber?: string
+  discordId?: string
   schoolName: string
 }
 

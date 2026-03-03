@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { IoChevronBackSharp, IoMail } from 'react-icons/io5'
-import { FaLock } from 'react-icons/fa6'
+import { FaDiscord, FaLock } from 'react-icons/fa6'
 import { toast } from 'sonner'
 import { useState } from 'react'
 
@@ -59,6 +59,7 @@ const Register = () => {
         email: args.email,
         password: args.password,
         phoneNumber: args.phoneNumber,
+        discordId: args.discordId,
         schoolName: args.schoolName,
       })
 
@@ -134,6 +135,16 @@ const Register = () => {
                   {...register('lastName', { required: true })}
                 />
               </div>
+
+              <label className="input input-bordered flex items-center gap-2">
+                <FaDiscord />
+                <input
+                  type="discordId"
+                  className="grow"
+                  placeholder="Discord ID"
+                  {...register('discordId', { required: false })}
+                />
+              </label>
 
               <label className="input input-bordered flex items-center gap-2">
                 <IoMail />
