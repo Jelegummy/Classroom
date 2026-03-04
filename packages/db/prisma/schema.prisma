@@ -200,9 +200,10 @@ model TutorVoiceLog {
     id      String @id @default(uuid())
     tutorId String @map("tutor_id")
 
-    topic       String?
-    summary     String?
-    dataContent Json    @map("data_content")
+    voiceChannelName String? @map("voice_channel_name")
+    topic            String?
+    summary          String?
+    dataContent      Json    @map("data_content")
 
     createdAt DateTime @default(now()) @map("created_at")
 

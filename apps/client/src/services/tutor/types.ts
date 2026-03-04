@@ -8,6 +8,7 @@ export type CreateTutorArgs = {
 
 export type Tutor = {
   id: string
+  voiceChannelName: string
   topic: string
   summary: string
   botLink?: string
@@ -20,11 +21,15 @@ export type Tutor = {
     firstName: string
     lastName: string
   }
+  voiceLogs: {
+    voiceChannelName: string
+  }
 }
 
 export type TutorContent = {
   id: string
   topic: string
+  voiceChannelName: string
   summary: string
   dataContent: {
     roles: {

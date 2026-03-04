@@ -147,8 +147,8 @@ async def analyze_session(blocks, all_participants):
             "summary": "สรุปเนื้อหา", 
             "roles": {{
                 "main_speaker": "ผู้สอน", 
-                "active_participants": ["นักเรียนที่ถาม/ตอบ"], 
-                "silent_participants": ["นักเรียนที่ฟังอย่างเดียว"]
+                "active_participants": ["ชื่อคนที่ร่วมพูดคุย"],
+                "silent_participants": ["ชื่อคนที่อยู่ในห้องแต่ไม่พูด (ไม่รวมผู้พูดหลัก)"]
             }}
         }}
     """
@@ -164,7 +164,7 @@ async def analyze_session(blocks, all_participants):
         return "{}"
 
 
-async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict):
+async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict, voice_name: str):
     await text_channel.send(f"บันทึกเสียงเสร็จสิ้น กำลังให้ AI ประมวลผลและสรุปบทเรียน (อาจใช้เวลาสักครู่)...")
 
     record_dir = session_data["record_dir"]
@@ -210,6 +210,7 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
     try:
         analysis_data = json.loads(analysis_json_str)
         payload = {
+            "voiceChannelName": voice_name,
             "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
             "summary": analysis_data.get('summary', '-'),
             "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
@@ -408,6 +409,8 @@ class ClassroomControlView(discord.ui.View):
 
         channel_id_str = str(interaction.user.voice.channel.id)
         session_data = active_sessions.get(channel_id_str)
+        voice_channel = interaction.user.voice.channel
+        voice_name = voice_channel.name
 
         if not session_data or session_data.get("status") == "starting":
             await interaction.response.send_message("ห้องนี้ไม่ได้กำลังบันทึกเสียงอยู่ครับ", ephemeral=True)
@@ -429,7 +432,7 @@ class ClassroomControlView(discord.ui.View):
         await vc.disconnect(force=True)
 
         asyncio.create_task(process_session_data(
-            channel_id_str, interaction.channel, session_data))
+            channel_id_str, interaction.channel, session_data, voice_name))
         await interaction.followup.send("⏹️ หยุดบันทึกแล้ว ระบบกำลังนำไปประมวลผลสรุปเนื้อหาคลาสเรียนครับ...")
 
 
