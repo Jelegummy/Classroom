@@ -1,71 +1,64 @@
 from dotenv import load_dotenv
 import os
 import discord
-from discord.ext import commands, voice_recv
 from faster_whisper import WhisperModel
+from discord.ext import commands, voice_recv
 import wave
-import asyncio
 from ollama import AsyncClient
-import datetime
-import json
-from pythainlp.util import normalize as normalize
+import asyncio
+from pythainlp.util import normalize
+import shutil
 import aiohttp
+import json
 
-# Setup environment variables and constants
+
+# Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-MODEL_SIZE = os.getenv("MODEL_SIZE")
-DEVICE = os.getenv("DEVICE")
-LANGUAGE = os.getenv("LANGUAGE")
+MODEL_SIZE = os.getenv("MODEL_SIZE", "large")
+DEVICE = os.getenv("DEVICE", "cpu")
+LANGUAGE = os.getenv("LANGUAGE", "th")
 BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
-NESTJS_BASE_URL = os.getenv(
-    "NESTJS_BASE_URL", "http://localhost:4000/tutor/public")
+NESTJS_BASE_URL = os.getenv("NESTJS_BASE_URL", "http://localhost:4000")
 
-MAX_RECORD_SECONDS = 3600  # max recording 1 hour
-SAMPLE_RATE = 48000
-SAMPLE_WIDTH = 2
-CHANNELS = 2
-
-RECORD_DIR = "recordings"
-os.makedirs(RECORD_DIR, exist_ok=True)
-
-LOGFILE_DIR = "session_logs"
-os.makedirs(LOGFILE_DIR, exist_ok=True)
+BASE_RECORD_DIR = "recordings"
+os.makedirs(BASE_RECORD_DIR, exist_ok=True)
 
 
-# Load library and model
+# Opus
 if not discord.opus.is_loaded():
-    for path in [
-        "libopus.dylib",
+    opus_paths = [
         "/opt/homebrew/lib/libopus.dylib",
         "/usr/local/lib/libopus.dylib",
-        "libopus.so",
-    ]:
+        "libopus.dylib",
+    ]
+    for path in opus_paths:
         try:
             discord.opus.load_opus(path)
             break
-        except OSError:
-            pass
+        except Exception:
+            continue
 
-print(f"กำลังโหลด Whisper)")
+# Load Model
 model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
 print("Whisper พร้อมใช้งาน")
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
+intents.guilds = True
+intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
+active_sessions = {}
+registered_names = {}
 
-
-# function to format time in MM:SS
-def format_time(seconds: float) -> str:
-    """แปลงวินาทีเป็นรูปแบบ นาที:วินาที (MM:SS)"""
-    m, s = divmod(int(seconds), 60)
-    return f"{m:02d}:{s:02d}"
+# Sink Voice Client
 
 
 class MultiUserSink(voice_recv.AudioSink):
-    def __init__(self):
+    def __init__(self, output_dir):
+        self.output_dir = output_dir
+        os.makedirs(self.output_dir, exist_ok=True)
         self.files = {}
 
     def wants_opus(self):
@@ -74,74 +67,43 @@ class MultiUserSink(voice_recv.AudioSink):
     def write(self, user, data):
         if not user:
             return
-
         uid = user.id
         if uid not in self.files:
-            path = os.path.join(RECORD_DIR, f"{uid}.wav")
+            path = os.path.join(self.output_dir, f"{uid}.wav")
             wf = wave.open(path, "wb")
-            wf.setnchannels(CHANNELS)
-            wf.setsampwidth(SAMPLE_WIDTH)
-            wf.setframerate(SAMPLE_RATE)
+            wf.setnchannels(2)
+            wf.setsampwidth(2)
+            wf.setframerate(48000)
             self.files[uid] = wf
-
         self.files[uid].writeframes(data.pcm)
 
     def cleanup(self):
-        for wf in self.files.values():
+        for wf in list(self.files.values()):
             wf.close()
+        self.files.clear()
 
 
-def transcribe_with_timestamp(path: str):
+# AI and Data Processing
+
+def format_time(seconds: float) -> str:
+    m, s = divmod(int(seconds), 60)
+    return f"{m:02d}:{s:02d}"
+
+
+def transcribe_with_whisper(path: str):
     segments, _ = model.transcribe(
         path,
         language=LANGUAGE,
         vad_filter=True,
-        beam_size=5
+        beam_size=5,
     )
-
-    results = []
-    for seg in segments:
-        results.append({
-            "start": seg.start,
-            "end": seg.end,
-            "text": seg.text.strip()
-        })
-    return results
+    return [{
+        "start": seg.start,
+        "end": seg.end,
+        "text": seg.text.strip()
+    } for seg in segments]
 
 
-# Registered names mapping: user_id -> real_name
-registered_names = {}
-
-
-class NameRegistrationModal(discord.ui.Modal, title='ลงทะเบียนชื่อจริง'):
-    name_input = discord.ui.TextInput(
-        label='ชื่อ-นามสกุล',
-        placeholder='พิมพ์ชื่อของคุณที่นี่',
-        required=True,
-        max_length=50
-    )
-
-    async def on_submit(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        real_name = self.name_input.value
-        registered_names[user_id] = real_name
-
-        await interaction.response.send_message(
-            f"บันทึกชื่อ **{real_name}** ให้กับ {interaction.user.mention} เรียบร้อยแล้ว!",
-            ephemeral=True
-        )
-
-
-class RegistrationView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="ลงทะเบียนชื่อจริง", style=discord.ButtonStyle.primary, custom_id="register_real_name_btn")
-    async def register_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(NameRegistrationModal())
-
-
-# LLM 1 Refine Thai text
 async def refine_thai(text: str) -> str:
     if not text.strip():
         return ""
@@ -161,293 +123,393 @@ async def refine_thai(text: str) -> str:
         {text}
         \"\"\"
     """
+    try:
+        client = AsyncClient()
+        res = await client.chat(
+            model="scb10x/typhoon-translate1.5-4b",
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.2}
+        )
+        return res["message"]["content"].strip()
+    except:
+        return text
 
-    client = AsyncClient()
-    res = await client.chat(
-        model="scb10x/typhoon-translate1.5-4b",
-        messages=[{"role": "user", "content": prompt}],
-        options={"temperature": 0.2}
-    )
 
-    return res["message"]["content"].strip()
-
-
-# LLM 2 Analyze and summarize session
 async def analyze_session(blocks, all_participants):
-    convo = ""
-    for b in blocks:
-        convo += f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}\n"
-
+    convo = "\n".join(
+        [f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}" for b in blocks])
     participants_str = ", ".join(all_participants)
-
     prompt = f"""
-        คุณคือ AI ผู้ช่วยสรุปการประชุมและบทสนทนา
-        
-        ข้อมูลบริบท:
-        - ผู้เข้าร่วมทั้งหมดในห้อง: {participants_str}
-        
-        บทสนทนา:
-        \"\"\"
-        {convo}
-        \"\"\"
-
-        คำสั่ง:
-        1. วิเคราะห์ว่าบทสนทนานี้เป็นประเภทใด: "Tutoring" (การเรียน/สอน) หรือ "General" (คุยเล่น/ทั่วไป)
-        2. สรุปเนื้อหาใจความสำคัญ
-        3. ถ้าเป็น Tutoring ให้ระบุผู้สอน(Instructor) และผู้เรียน(Students)
-        4. ตอบกลับเป็น JSON Format เท่านั้น ตามโครงสร้างนี้:
-        
-        {{
-            "session_type": "Tutoring หรือ General",
-            "topic": "หัวข้อหลัก",
-            "summary": "สรุปเนื้อหา...",
+        คุณคือ AI ผู้ช่วยสรุปการสอน ผู้เข้าร่วม: {participants_str} บทสนทนา:\n{convo}
+        ตอบเป็น JSON: {{
+            "session_type": "Tutoring/General", 
+            "topic": "หัวข้อที่สอน", 
+            "summary": "สรุปเนื้อหา", 
             "roles": {{
-                "main_speaker": "ชื่อผู้พูดหลัก/ผู้สอน (ถ้ามี)",
-                "active_participants": ["ชื่อคนที่ร่วมพูดคุย"],
-                "silent_participants": ["ชื่อคนที่อยู่ในห้องแต่ไม่พูด (ไม่รวมผู้พูดหลัก)"]
+                "main_speaker": "ผู้สอน", 
+                "active_participants": ["นักเรียนที่ถาม/ตอบ"], 
+                "silent_participants": ["นักเรียนที่ฟังอย่างเดียว"]
             }}
         }}
     """
-
-    client = AsyncClient()
-    res = await client.chat(
-        model="scb10x/typhoon-translate1.5-4b",
-        messages=[{"role": "user", "content": prompt}],
-        options={"temperature": 0.3, "format": "json"}
-    )
-
-    return res["message"]["content"]
-
-
-# Setup Discord bot commands
-@bot.command()
-async def join(ctx):
-    if not ctx.author.voice:
-        await ctx.send("ต้องอยู่ในห้องเสียงก่อนนะถึงจะเรียกบอทได้")
-        return
-
-    channel = ctx.author.voice.channel
-
-    if not ctx.voice_client:
-        await channel.connect(cls=voice_recv.VoiceRecvClient)
-
-    members_in_vc = [m for m in channel.members if not m.bot]
-
-    unregistered_members = [
-        m for m in members_in_vc if m.id not in registered_names]
-
-    if unregistered_members:
-        mentions = " ".join([m.mention for m in unregistered_members])
-        view = RegistrationView()
-        await ctx.send(
-            f"บอทเข้าห้องแล้ว!\n"
-            f"**ผู้เข้าร่วมต่อไปนี้ กรุณากดปุ่มลงทะเบียนชื่อจริงก่อนเริ่มอัดเสียง:**\n{mentions}",
-            view=view
-        )
-    else:
-        await ctx.send("เข้าห้องเรียบร้อย! ทุกคนลงทะเบียนชื่อจริงครบแล้ว พิมพ์ `!start` เพื่อเริ่มได้เลย")
-
-
-@bot.command()
-async def start(ctx, seconds: int):
-    if seconds > MAX_RECORD_SECONDS:
-        await ctx.send("อัดเสียงได้สูงสุด 1 ชั่วโมงนะครับ")
-        return
-
-    if not ctx.author.voice:
-        await ctx.send("ต้องอยู่ในห้องเสียงก่อนนะครับ")
-        return
-
-    channel = ctx.author.voice.channel
-    members_in_vc = [m for m in channel.members if not m.bot]
-    unregistered = [m for m in members_in_vc if m.id not in registered_names]
-
-    if unregistered:
-        mentions = " ".join([m.mention for m in unregistered])
-        await ctx.send(f"**ไม่สามารถเริ่มอัดได้!**\nผู้ใช้ต่อไปนี้ยังไม่ได้ลงทะเบียนชื่อจริง: {mentions}\n*(ให้พิมพ์ `!join` อีกครั้งเพื่อเรียกปุ่มลงทะเบียน)*")
-        return
-
-    discord_channel_id = str(ctx.author.voice.channel.id)
-    tutor_id = None
-
-    await ctx.send("กำลังตรวจสอบ Session จากระบบ...")
-
     try:
-        get_url = f"{NESTJS_BASE_URL}/channel/{discord_channel_id}/active"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(get_url) as response:
-                if response.status == 200:
-                    res_json = await response.json()
-                    tutor_id = res_json.get("data", {}).get("tutorId")
-
-                    if not tutor_id:
-                        await ctx.send("เกิดข้อผิดพลาด: ได้รับข้อมูลจาก API แต่ไม่พบ Tutor ID")
-                        return
-                else:
-                    await ctx.send(f"**ไม่พบ Session สำหรับห้องนี้**\nกรุณาสร้าง Session บนหน้าเว็บโดยระบุ Discord Channel ID: `{discord_channel_id}` ให้ถูกต้องครับ")
-                    return
-    except Exception as api_err:
-        print(f"API Error (Get Tutor ID): {api_err}")
-        await ctx.send("การเชื่อมต่อกับฐานข้อมูลล้มเหลว (ตรวจสอบว่า NestJS รันอยู่หรือไม่)")
-        return
-
-    try:
-        vc = ctx.voice_client or await ctx.author.voice.channel.connect(
-            cls=voice_recv.VoiceRecvClient
+        client = AsyncClient()
+        res = await client.chat(
+            model="scb10x/typhoon-translate1.5-4b",
+            messages=[{"role": "user", "content": prompt}],
+            options={"temperature": 0.3, "format": "json"}
         )
+        return res["message"]["content"]
+    except Exception as e:
+        return "{}"
 
-        sink = MultiUserSink()
-        vc.listen(sink)
 
-        await ctx.send(f"เริ่มอัดเสียงเป็นเวลา {seconds} วินาที...")
-        await asyncio.sleep(seconds)
+async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict):
+    await text_channel.send(f"บันทึกเสียงเสร็จสิ้น กำลังให้ AI ประมวลผลและสรุปบทเรียน (อาจใช้เวลาสักครู่)...")
 
-        await ctx.send("หมดเวลาอัดเสียง! กำลังถอดเสียงและประมวลผล (อาจใช้เวลาสักครู่)...")
+    record_dir = session_data["record_dir"]
+    members_map = session_data["members_map"]
+    tutor_id = session_data["tutor_id"]
+    command_runner_id = session_data["command_runner_id"]
 
-        members_map = {
-            member.id: registered_names.get(member.id, member.display_name)
-            for member in members_in_vc
-        }
-        members_in_channel_names = list(members_map.values())
-
-        vc.stop_listening()
-        sink.cleanup()
-
-        try:
-            await asyncio.wait_for(vc.disconnect(), timeout=3.0)
-        except asyncio.TimeoutError:
-            print("แจ้งเตือน: ปิดการเชื่อมต่อช้ากว่าปกติ ข้ามไปขั้นตอนถัดไป")
-
-        has_files = any(f.endswith(".wav") for f in os.listdir(RECORD_DIR))
-        if not has_files:
-            await ctx.send("ไม่มีใครพูดเลยในระหว่างอัดเสียง จึงไม่มีผลสรุปครับ")
-            return
-
-        speaker_blocks = []
-        recorded_speakers = set()
-
-        for file in os.listdir(RECORD_DIR):
+    speaker_blocks = []
+    if os.path.exists(record_dir):
+        for file in os.listdir(record_dir):
             if not file.endswith(".wav"):
                 continue
-
             user_id_str = file.replace(".wav", "")
-            try:
-                user_id = int(user_id_str)
-                speaker_name = members_map.get(user_id, f"Unknown-{user_id}")
-            except ValueError:
-                speaker_name = user_id_str
+            speaker_name = members_map.get(
+                int(user_id_str), f"Unknown-{user_id_str}"
+            )
 
-            recorded_speakers.add(speaker_name)
-            full_path = os.path.join(RECORD_DIR, file)
-
-            loop = asyncio.get_running_loop()
-            segments = await loop.run_in_executor(None, transcribe_with_timestamp, full_path)
+            full_path = os.path.join(record_dir, file)
+            loop = asyncio.get_event_loop()
+            segments = await loop.run_in_executor(None, transcribe_with_whisper, full_path)
 
             for seg in segments:
                 clean = normalize(seg["text"])
-                refined = await refine_thai(clean)
-
-                if refined:
+                refiled = await refine_thai(clean)
+                if refiled:
                     speaker_blocks.append({
                         "speaker": speaker_name,
                         "start": seg["start"],
                         "end": seg["end"],
-                        "text": refined
+                        "text": refiled
                     })
+    shutil.rmtree(record_dir, ignore_errors=True)
 
-            os.remove(full_path)
+    if not speaker_blocks:
+        await text_channel.send(f"❌ ไม่มีเสียงพูดในคลาสเรียนนี้ครับ")
+        return
 
-        speaker_blocks.sort(key=lambda x: x["start"])
+    speaker_blocks.sort(key=lambda x: x["start"])
+    all_names = list(members_map.values())
 
-        # unique timestamp for filenames
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        txt_filename = os.path.join(LOGFILE_DIR, f"{timestamp}_transcript.txt")
-        json_filename = os.path.join(LOGFILE_DIR, f"{timestamp}_summary.json")
+    analysis_json_str = await analyze_session(speaker_blocks, all_names)
 
-        with open(txt_filename, "w", encoding="utf-8") as f:
-            f.write(
-                f"ผู้เข้าร่วมทั้งหมด: {', '.join(members_in_channel_names)}\n")
-            f.write("="*50 + "\n\n")
-            for b in speaker_blocks:
-                f.write(
-                    f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}\n")
-
-        analysis_json_str = await analyze_session(speaker_blocks, members_in_channel_names)
-
-        try:
-            analysis_data = json.loads(analysis_json_str)
-
-            with open(json_filename, "w", encoding="utf-8") as f:
-                json.dump(analysis_data, f, ensure_ascii=False, indent=4)
-
-            payload = {
-                "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
-                "summary": analysis_data.get('summary', '-'),
-                "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
-                "discordChannelId": str(ctx.author.voice.channel.id),
-                "commandRunnerDiscordId": str(ctx.author.id),
-                "dataContent": {
-                    "roles": analysis_data.get('roles', {}),
-                    "participants": members_in_channel_names,
-                    "transcript": speaker_blocks
-                }
+    try:
+        analysis_data = json.loads(analysis_json_str)
+        payload = {
+            "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
+            "summary": analysis_data.get('summary', '-'),
+            "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
+            "discordChannelId": str(channel_id),
+            "commandRunnerDiscordId": str(command_runner_id),
+            "dataContent": {
+                "roles": analysis_data.get('roles', {}),
+                "participants": all_names,
+                "transcript": speaker_blocks
             }
+        }
 
-            post_url = f"{NESTJS_BASE_URL}/{tutor_id}/bot/logs"
-            headers = {
-                "x-bot-secret": BOT_API_SECRET,
-                "Content-Type": "application/json"
-            }
+        post_url = f"{NESTJS_BASE_URL}/tutor/public/{tutor_id}/bot/logs"
+        headers = {"x-bot-secret": BOT_API_SECRET,
+                   "Content-Type": "application/json"}
 
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(post_url, json=payload, headers=headers) as response:
-                        if response.status in (200, 201):
-                            await ctx.send("ส่งข้อมูลบันทึกเข้าสู่ระบบฐานข้อมูล (NestJS) สำเร็จ!")
-                        else:
-                            error_text = await response.text()
-                            await ctx.send(f"ไม่สามารถบันทึกลง Database ได้ (Status: {response.status})\n```{error_text}```")
-            except Exception as api_err:
-                print(f"API Error: {api_err}")
-                await ctx.send("การเชื่อมต่อกับ Backend ล้มเหลว (ตรวจสอบว่า NestJS รันอยู่หรือไม่)")
+        async with aiohttp.ClientSession() as session:
+            async with session.post(post_url, json=payload, headers=headers) as response:
+                print(f"API Response: {response.status}")
 
-            embed = discord.Embed(
-                title=f"สรุปผล: {analysis_data.get('topic', 'ไม่ระบุ')}",
-                color=discord.Color.green() if analysis_data.get(
-                    'session_type') == 'Tutoring' else discord.Color.blue()
-            )
-            embed.add_field(name="ประเภท", value=analysis_data.get(
-                'session_type', 'ทั่วไป'), inline=True)
-            embed.add_field(name="สรุปเนื้อหา", value=analysis_data.get(
-                'summary', '-'), inline=False)
+        embed = discord.Embed(
+            title=f"สรุปผลการเรียน: {analysis_data.get('topic', 'ไม่ระบุ')}", color=discord.Color.green())
+        embed.add_field(name="สรุปเนื้อหา", value=analysis_data.get(
+            'summary', '-'), inline=False)
+        roles = analysis_data.get('roles', {})
+        if roles.get('main_speaker'):
+            embed.add_field(
+                name="ผู้สอน", value=roles['main_speaker'], inline=True)
 
-            roles = analysis_data.get('roles', {})
-            if roles.get('main_speaker'):
-                embed.add_field(name="ผู้พูดหลัก/ผู้สอน",
-                                value=roles['main_speaker'], inline=True)
-
-            silent = [
-                m for m in members_in_channel_names if m not in recorded_speakers]
-            if silent:
-                embed.add_field(name="ผู้ฟัง (ไม่ได้เปิดไมค์)",
-                                value=", ".join(silent), inline=False)
-
-            await ctx.send(embed=embed)
-
-        except json.JSONDecodeError:
-            error_filename = os.path.join(
-                LOGFILE_DIR, f"{timestamp}_summary_error.txt")
-            with open(error_filename, "w", encoding="utf-8") as f:
-                f.write(analysis_json_str)
-            await ctx.send(f"**สรุปจาก AI (รูปแบบข้อความดิบ):**\n```json\n{analysis_json_str}\n```")
+        await text_channel.send(embed=embed)
 
     except Exception as e:
-        print(f"พบข้อผิดพลาดร้ายแรง: {e}")
-        await ctx.send(f"ระบบเกิดข้อผิดพลาด:\n```\n{e}\n```")
+        await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการสรุปผล: {e}")
+
+
+# UI Discord Events
+
+class RegistrationModal(discord.ui.Modal, title='ผูกบัญชีผู้เรียน'):
+    discord_id_input = discord.ui.TextInput(
+        label='Discord ID (ระบบดึงให้อัตโนมัติ)',
+        style=discord.TextStyle.short,
+        required=True,
+    )
+    real_name_input = discord.ui.TextInput(
+        label='ชื่อ-นามสกุล (ที่ใช้ในระบบเว็บไซต์)',
+        placeholder='เช่น สมชาย เรียนดี',
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=100
+    )
+
+    def __init__(self, user_id: int):
+        super().__init__()
+        self.discord_id_input.default = str(user_id)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        real_name = self.real_name_input.value
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            payload = {
+                "discordId": str(user_id),
+                "realName": real_name
+            }
+            post_url = f"{NESTJS_BASE_URL}/user/public/users/register-discord"
+            headers = {"x-bot-secret": BOT_API_SECRET,
+                       "Content-Type": "application/json"}
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(post_url, json=payload, headers=headers) as response:
+                    if response.status in (200, 201):
+                        registered_names[user_id] = real_name
+                        print(
+                            f"ลงทะเบียน Discord ID {user_id} กับชื่อ {real_name} สำเร็จ")
+                        await interaction.followup.send(
+                            f"ลงทะเบียนชื่อ **{real_name}** สำเร็จ!\n*(ระบบจำบัญชีของคุณแล้ว ไม่ต้องกดซ้ำในคาบเรียนต่อๆ ไป)*",
+                            ephemeral=True
+                        )
+                    else:
+                        error_data = await response.json()
+                        error_msg = error_data.get(
+                            "message", "เกิดข้อผิดพลาดในการตรวจสอบข้อมูล")
+                        await interaction.followup.send(f"**ลงทะเบียนไม่สำเร็จ**\n{error_msg}", ephemeral=True)
+        except Exception as e:
+            await interaction.followup.send("ระบบขัดข้อง: ไม่สามารถเชื่อมต่อกับฐานข้อมูลเว็บไซต์ได้", ephemeral=True)
+
+
+class ClassroomControlView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="📝 ลงทะเบียนชื่อ", style=discord.ButtonStyle.primary, custom_id="btn_register")
+    async def register_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id in registered_names:
+            await interaction.response.send_message("✅ คุณได้ทำการลงทะเบียนและผูกบัญชีเรียบร้อยแล้ว ไม่ต้องทำซ้ำครับ!", ephemeral=True)
+            return
+        await interaction.response.send_modal(RegistrationModal(user_id=interaction.user.id))
+
+    @discord.ui.button(label="▶️ เริ่มอัดเสียง", style=discord.ButtonStyle.green, custom_id="btn_start_record")
+    async def start_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.voice:
+            await interaction.response.send_message("❌ คุณต้องอยู่ในห้องเสียงก่อนครับ", ephemeral=True)
+            return
+
+        voice_channel = interaction.user.voice.channel
+        channel_id_str = str(voice_channel.id)
+
+        if channel_id_str in active_sessions:
+            await interaction.response.send_message("⚠️ ห้องนี้กำลังดำเนินการอยู่ครับ โปรดรอสักครู่", ephemeral=True)
+            return
+
+        active_sessions[channel_id_str] = {"status": "starting"}
+        await interaction.response.defer(ephemeral=True)
+
+        tutor_id = None
+        members_map = {}
+        api_users = {}
+
+        try:
+            get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(get_url) as response:
+                    if response.status == 200:
+                        res_json = await response.json()
+                        data = res_json.get("data", {})
+                        tutor_id = data.get("tutorId")
+                        api_users = data.get("mapped_users", {})
+                    else:
+                        active_sessions.pop(channel_id_str, None)
+                        await interaction.followup.send("ไม่พบ Session สำหรับห้องนี้ กรุณาสร้างบนเว็บก่อนครับ")
+                        return
+        except Exception:
+            active_sessions.pop(channel_id_str, None)
+            await interaction.followup.send("การเชื่อมต่อกับฐานข้อมูลล้มเหลว")
+            return
+
+        api_users.update({str(k): v for k, v in registered_names.items()})
+
+        members_in_vc = [m for m in voice_channel.members if not m.bot]
+        unregistered = []
+        for member in members_in_vc:
+            if str(member.id) in api_users:
+                members_map[member.id] = api_users[str(member.id)]
+            else:
+                members_map[member.id] = member.display_name
+                unregistered.append(member.mention)
+
+        if unregistered:
+            warning_msg = f"⚠️ ระบบตรวจพบผู้เรียนที่ยังไม่ลงทะเบียน: {', '.join(unregistered)}\n*(บอทจะใช้ชื่อ Discord ของผู้ใช้แทนชั่วคราว)*"
+            await interaction.channel.send(warning_msg)
+
+        try:
+            vc = voice_channel.guild.voice_client
+            if vc is None:
+                vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
+            elif vc.channel != voice_channel:
+                await vc.move_to(voice_channel)
+            elif not vc.is_connected():
+                await vc.disconnect(force=True)
+                vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
+
+            record_dir = os.path.join(BASE_RECORD_DIR, channel_id_str)
+            os.makedirs(record_dir, exist_ok=True)
+
+            sink = MultiUserSink(output_dir=record_dir)
+
+            session_data = {
+                "vc": vc,
+                "sink": sink,
+                "tutor_id": tutor_id,
+                "record_dir": record_dir,
+                "members_map": members_map,
+                "command_runner_id": interaction.user.id,
+                "status": "recording"
+            }
+
+            active_sessions[channel_id_str] = session_data
+
+            vc.listen(sink)
+            await interaction.followup.send(f"เริ่มบันทึกการเรียนการสอนห้อง **{voice_channel.name}** แล้วครับ!")
+
+        except Exception as e:
+            active_sessions.pop(channel_id_str, None)
+            if voice_channel.guild.voice_client:
+                await voice_channel.guild.voice_client.disconnect(force=True)
+            await interaction.followup.send(f"ระบบเสียงขัดข้อง: บอทไม่สามารถเข้าห้องเสียงได้ ({e})")
+            # traceback.print_exc()
+
+    @discord.ui.button(label="⏹️ หยุดและสรุปผล", style=discord.ButtonStyle.red, custom_id="btn_stop_record")
+    async def stop_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not interaction.user.voice:
+            await interaction.response.send_message("คุณต้องอยู่ในห้องเสียงเพื่อสั่งหยุดครับ", ephemeral=True)
+            return
+
+        channel_id_str = str(interaction.user.voice.channel.id)
+        session_data = active_sessions.get(channel_id_str)
+
+        if not session_data or session_data.get("status") == "starting":
+            await interaction.response.send_message("ห้องนี้ไม่ได้กำลังบันทึกเสียงอยู่ครับ", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        active_sessions.pop(channel_id_str, None)
+
+        vc = session_data["vc"]
+        sink = session_data["sink"]
+
+        try:
+            vc.stop_listening()
+            sink.cleanup()
+            await asyncio.sleep(0.5)
+        except Exception as e:
+            print(f"เกิดข้อผิดพลาดตอนหยุดอัด: {e}")
+
+        await vc.disconnect(force=True)
+
+        asyncio.create_task(process_session_data(
+            channel_id_str, interaction.channel, session_data))
+        await interaction.followup.send("⏹️ หยุดบันทึกแล้ว ระบบกำลังนำไปประมวลผลสรุปเนื้อหาคลาสเรียนครับ...")
+
+
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+
+    if after.channel is not None and before.channel != after.channel:
+        voice_channel = after.channel
+        guild = voice_channel.guild
+
+        text_channel_name = f"คลาสเรียน-{voice_channel.name}".lower().replace(
+            " ", "-")
+        existing_text_channel = discord.utils.get(
+            guild.text_channels, name=text_channel_name)
+
+        if not existing_text_channel:
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                guild.me: discord.PermissionOverwrite(read_messages=True),
+                member: discord.PermissionOverwrite(read_messages=True)
+            }
+            new_channel = await guild.create_text_channel(
+                name=text_channel_name,
+                category=voice_channel.category,
+                overwrites=overwrites
+            )
+
+            embed = discord.Embed(
+                title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
+                description=(
+                    "**สำหรับผู้เรียน:** กรุณากดปุ่ม `ลงทะเบียนชื่อ` (ทำครั้งเดียว)\n"
+                    "**สำหรับผู้สอน:** กดปุ่ม `เริ่มอัดเสียง` เมื่อพร้อมสอน"
+                ),
+                color=discord.Color.blue()
+            )
+
+            view = ClassroomControlView()
+            await new_channel.send(content=f"🔔 สวัสดีครับ {member.mention}", embed=embed, view=view)
+        else:
+            await existing_text_channel.set_permissions(member, read_messages=True)
+            if member.id not in registered_names:
+                await existing_text_channel.send(f"👋 {member.mention} เข้าร่วมห้องเรียน อย่าลืมกดปุ่มลงทะเบียนด้านบนนะครับ!", delete_after=30)
+
+    if before.channel is not None and before.channel != after.channel:
+        voice_channel = before.channel
+        guild = voice_channel.guild
+        text_channel_name = f"คลาสเรียน-{voice_channel.name}".lower().replace(
+            " ", "-")
+
+        existing_text_channel = discord.utils.get(
+            guild.text_channels, name=text_channel_name)
+
+        if existing_text_channel:
+            await existing_text_channel.set_permissions(member, overwrite=None)
+            members_in_vc = [m for m in voice_channel.members if not m.bot]
+
+            if len(members_in_vc) == 0:
+                await existing_text_channel.delete()
+                vc = guild.voice_client
+                if vc and vc.channel == voice_channel:
+                    channel_id_str = str(voice_channel.id)
+                    if channel_id_str in active_sessions:
+                        session_data = active_sessions.pop(channel_id_str)
+                        try:
+                            vc.stop_listening()
+                            session_data["sink"].cleanup()
+                        except Exception:
+                            pass
+                        if session_data.get("status") == "recording":
+                            asyncio.create_task(process_session_data(
+                                channel_id_str, existing_text_channel, session_data))
+
+                    await vc.disconnect(force=True)
 
 
 @bot.event
 async def on_ready():
-    print(f"บอท {bot.user} พร้อมใช้งานและเชื่อมต่อแล้ว!")
+    print(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
+    bot.add_view(ClassroomControlView())
 
 bot.run(TOKEN)
