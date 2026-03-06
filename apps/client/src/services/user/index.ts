@@ -4,6 +4,7 @@ import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 import {
   LoginArgs,
+  LoginDiscordArgs,
   RegisterArgs,
   UpdatePasswordArgs,
   UpdateUserArgs,
@@ -74,6 +75,18 @@ export const updatePassword = async (args: UpdatePasswordArgs) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
+}
+
+export const loginDiscord = async (args: LoginDiscordArgs) => {
+  const res = await fetchers.Post<{ accessToken: string }>(
+    `${ENDPOINT}/user/public/users/discord`,
+    { data: args },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data as { accessToken: string }
 }
 
 export * from './types'

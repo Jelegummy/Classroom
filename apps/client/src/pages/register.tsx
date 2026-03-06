@@ -3,9 +3,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { SubmitHandler, useForm } from 'react-hook-form'
 import { IoChevronBackSharp, IoMail } from 'react-icons/io5'
-import { FaDiscord, FaLock } from 'react-icons/fa6'
+import { FaLock } from 'react-icons/fa6'
 import { toast } from 'sonner'
-import { useState } from 'react'
 
 import {
   RegisterArgs as BaseRegisterArgs,
@@ -18,7 +17,6 @@ type RegisterForm = BaseRegisterArgs & {
 
 const Register = () => {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2>(1)
 
   const {
     register,
@@ -32,17 +30,6 @@ const Register = () => {
   const registerMutation = useMutation({
     mutationFn: (args: BaseRegisterArgs) => registerFn(args),
   })
-
-  const handleNextStep = () => {
-    const schoolName = getValues('schoolName')
-
-    if (!schoolName || schoolName.length < 2) {
-      toast.error('กรุณากรอกชื่อโรงเรียนให้ถูกต้อง')
-      return
-    }
-
-    setStep(2)
-  }
 
   const onSubmit: SubmitHandler<RegisterForm> = async args => {
     try {
@@ -59,8 +46,7 @@ const Register = () => {
         email: args.email,
         password: args.password,
         phoneNumber: args.phoneNumber,
-        discordId: args.discordId,
-        schoolName: args.schoolName,
+        schoolName: 'kmutnb',
       })
 
       toast.success('สมัครสมาชิกสำเร็จ')
@@ -83,115 +69,65 @@ const Register = () => {
       </div>
       <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white p-8 px-4 shadow-xl">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          {step === 1 && (
-            <>
-              <h1 className="text-center text-2xl font-bold">
-                ข้อมูลโรงเรียน/มหาวิทยาลัย
-              </h1>
+          <h1 className="text-center text-2xl font-bold">ข้อมูลผู้ใช้งาน</h1>
 
-              <div className="flex flex-col gap-1">
-                <p className="text-sm">ชื่อโรงเรียน/มหาวิทยาลัย</p>
-                <input
-                  className="input input-bordered"
-                  placeholder="กรุณากรอกชื่อโรงเรียน/มหาวิทยาลัย"
-                  {...register('schoolName', { required: true })}
-                />
-              </div>
+          <div className="flex gap-4">
+            <input
+              className="input input-bordered w-full"
+              placeholder="ชื่อ"
+              {...register('firstName', { required: true })}
+            />
+            <input
+              className="input input-bordered w-full"
+              placeholder="นามสกุล"
+              {...register('lastName', { required: true })}
+            />
+          </div>
 
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="mt-4 rounded-full bg-blue-500 py-2 font-semibold text-white hover:bg-blue-600"
-              >
-                ถัดไป
-              </button>
-            </>
-          )}
+          <label className="input input-bordered flex items-center gap-2">
+            <IoMail />
+            <input
+              type="email"
+              className="grow"
+              placeholder="อีเมล"
+              {...register('email', { required: true })}
+            />
+          </label>
 
-          {step === 2 && (
-            <>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="flex items-center gap-1 text-sm text-gray-500"
-              >
-                <IoChevronBackSharp />
-                ย้อนกลับ
-              </button>
+          <label className="input input-bordered flex items-center gap-2">
+            <FaLock />
+            <input
+              type="password"
+              className="grow"
+              placeholder="รหัสผ่าน"
+              {...register('password', { required: true })}
+            />
+          </label>
 
-              <h1 className="text-center text-2xl font-bold">
-                ข้อมูลผู้ใช้งาน
-              </h1>
+          <label className="input input-bordered flex items-center gap-2">
+            <FaLock />
+            <input
+              type="password"
+              className="grow"
+              placeholder="ยืนยันรหัสผ่าน"
+              {...register('confirmPassword', { required: true })}
+            />
+          </label>
 
-              <div className="flex gap-4">
-                <input
-                  className="input input-bordered w-full"
-                  placeholder="ชื่อ"
-                  {...register('firstName', { required: true })}
-                />
-                <input
-                  className="input input-bordered w-full"
-                  placeholder="นามสกุล"
-                  {...register('lastName', { required: true })}
-                />
-              </div>
+          <button
+            type="submit"
+            disabled={!isValid || isSubmitting}
+            className="mt-4 rounded-full bg-primary py-2 font-semibold text-white disabled:bg-gray-400"
+          >
+            สมัครสมาชิก
+          </button>
 
-              <label className="input input-bordered flex items-center gap-2">
-                <FaDiscord />
-                <input
-                  type="discordId"
-                  className="grow"
-                  placeholder="Discord ID"
-                  {...register('discordId', { required: false })}
-                />
-              </label>
-
-              <label className="input input-bordered flex items-center gap-2">
-                <IoMail />
-                <input
-                  type="email"
-                  className="grow"
-                  placeholder="อีเมล"
-                  {...register('email', { required: true })}
-                />
-              </label>
-
-              <label className="input input-bordered flex items-center gap-2">
-                <FaLock />
-                <input
-                  type="password"
-                  className="grow"
-                  placeholder="รหัสผ่าน"
-                  {...register('password', { required: true })}
-                />
-              </label>
-
-              <label className="input input-bordered flex items-center gap-2">
-                <FaLock />
-                <input
-                  type="password"
-                  className="grow"
-                  placeholder="ยืนยันรหัสผ่าน"
-                  {...register('confirmPassword', { required: true })}
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                className="mt-4 rounded-full bg-blue-500 py-2 font-semibold text-white disabled:bg-gray-400"
-              >
-                สมัครสมาชิก
-              </button>
-
-              <p className="mt-3 text-center text-sm">
-                มีบัญชีแล้ว?{' '}
-                <Link href="/login" className="text-blue-500 hover:underline">
-                  เข้าสู่ระบบ
-                </Link>
-              </p>
-            </>
-          )}
+          <p className="mt-3 text-center text-sm">
+            มีบัญชีแล้ว?{' '}
+            <Link href="/login" className="text-primary hover:underline">
+              เข้าสู่ระบบ
+            </Link>
+          </p>
         </form>
       </div>
     </div>

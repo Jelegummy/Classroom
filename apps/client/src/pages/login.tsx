@@ -1,15 +1,17 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { getSession, signIn } from 'next-auth/react'
+import { getSession, signIn, useSession } from 'next-auth/react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { FaLock, FaUser } from 'react-icons/fa6'
+import { FaLock, FaUser, FaDiscord } from 'react-icons/fa6'
 import { toast } from 'sonner'
 import { LoginArgs } from '@/services/user'
 import { IoChevronBackSharp } from 'react-icons/io5'
 import Image from 'next/image'
+import { useEffect } from 'react'
 
 const Login = () => {
   const router = useRouter()
+  const { data: session, status } = useSession()
 
   const {
     register,
@@ -18,6 +20,21 @@ const Login = () => {
   } = useForm<LoginArgs>({
     mode: 'onChange',
   })
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      localStorage.setItem('accessToken', session.user.accessToken ?? '')
+      const userRole = session.user.role
+
+      if (userRole === 'TEACHER') {
+        router.push('/dashboard/teacher/classroom')
+      } else if (userRole === 'ADMIN') {
+        router.push('/dashboard/admin')
+      } else {
+        router.push('/dashboard/student/classroom')
+      }
+    }
+  }, [status, session, router])
 
   const onSubmit: SubmitHandler<LoginArgs> = async data => {
     try {
@@ -31,10 +48,14 @@ const Login = () => {
           res?.error ?? 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ โปรดลองอีกครั้ง',
         )
       }
-      const session = await getSession()
 
-      localStorage.setItem('accessToken', session?.user.accessToken ?? '')
-      const userRole = session?.user?.role
+      const currentSession = await getSession()
+
+      localStorage.setItem(
+        'accessToken',
+        currentSession?.user.accessToken ?? '',
+      )
+      const userRole = currentSession?.user?.role
 
       if (userRole === 'TEACHER') {
         router.push('/dashboard/teacher/classroom')
@@ -104,10 +125,11 @@ const Login = () => {
                 />
               </label>
             </div>
+
             <button
               type="submit"
               disabled={!isValid || isSubmitting}
-              className={`mt-6 rounded-full py-3 text-sm font-semibold text-white transition ${
+              className={`mt-4 rounded-full py-3 text-sm font-semibold text-white transition ${
                 !isValid || isSubmitting
                   ? 'cursor-not-allowed bg-gray-400'
                   : 'bg-primary hover:opacity-90'
@@ -116,7 +138,25 @@ const Login = () => {
               เข้าสู่ระบบ
             </button>
           </form>
-          <div className="mt-6 flex justify-center gap-2 text-sm">
+
+          <div className="relative mt-6 flex items-center py-2">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="mx-4 flex-shrink-0 text-sm text-gray-400">
+              หรือเข้าสู่ระบบด้วย
+            </span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => signIn('discord')}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#5865F2] py-3 text-sm font-semibold text-white transition hover:bg-[#4752C4]"
+          >
+            <FaDiscord className="text-xl" />
+            Discord
+          </button>
+
+          <div className="mt-8 flex justify-center gap-2 text-sm">
             <span className="text-gray-600">ยังไม่มีบัญชี?</span>
             <Link
               href="/register"

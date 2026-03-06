@@ -10,7 +10,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -64,7 +64,7 @@ export class UserInternalService {
 
     const isPasswordValid = await this.authService.verifyPassword(
       oldpassword,
-      user.password,
+      user.password || '',
     )
     if (!isPasswordValid) {
       throw new Error('Invalid password')
