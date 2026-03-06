@@ -144,12 +144,26 @@ export class TutorPublicService {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        host: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            discordId: true,
+          },
+        }
+      }
     })
 
     if (!activeSession) {
       throw new NotFoundException('ไม่พบ Session ที่กำลังทำงานสำหรับห้องนี้')
     }
 
-    return { tutorId: activeSession.id }
+    return {
+      tutorId: activeSession.id,
+      discordId: activeSession.host.discordId,
+      hostName: `${activeSession.host.firstName} ${activeSession.host.lastName}`
+    }
   }
 }
