@@ -16,7 +16,7 @@ import { Context } from '@app/common'
 @ApiTags('Tutor - Internal')
 @Controller('tutor/internal')
 export class TutorInternalController {
-  constructor(private readonly service: TutorInternalService) { }
+  constructor(private readonly service: TutorInternalService) {}
 
   @Post('/create')
   async createTutor(@Body() args: CreateTutorArgs, @Req() ctx: Context) {

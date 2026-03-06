@@ -1,6 +1,11 @@
 import { AuthService } from '@app/auth'
 import { PrismaService } from '@app/db'
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common'
 
 import { LoginArgs, RegisterArgs, RegisterDiscordArgs } from './public.dto'
 
@@ -9,7 +14,7 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -77,12 +82,12 @@ export class UserPublicService {
 
   async registerDiscord(args: RegisterDiscordArgs, botSecret: string) {
     if (botSecret !== 'super-secret-bot-key') {
-      throw new UnauthorizedException('Invalid bot secret');
+      throw new UnauthorizedException('Invalid bot secret')
     }
 
-    const nameParts = args.realName.trim().split(/\s+/);
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    const nameParts = args.realName.trim().split(/\s+/)
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
 
     const user = await this.db.user.findFirst({
       where: {
@@ -90,12 +95,12 @@ export class UserPublicService {
         firstName: firstName,
         ...(lastName ? { lastName: lastName } : {}),
       },
-    });
+    })
 
     if (!user) {
       throw new NotFoundException(
-        'ไม่พบข้อมูลของคุณในระบบ โปรดตรวจสอบว่าคุณได้สมัครสมาชิกบนเว็บไซต์ และสะกดชื่อถูกต้อง'
-      );
+        'ไม่พบข้อมูลของคุณในระบบ โปรดตรวจสอบว่าคุณได้สมัครสมาชิกบนเว็บไซต์ และสะกดชื่อถูกต้อง',
+      )
     }
 
     const updatedUser = await this.db.user.update({
@@ -103,8 +108,8 @@ export class UserPublicService {
       data: {
         discordId: args.discordId,
       },
-    });
+    })
 
-    return updatedUser;
+    return updatedUser
   }
 }

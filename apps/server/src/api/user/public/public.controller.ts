@@ -7,7 +7,7 @@ import { UserPublicService } from './public.service'
 @ApiTags('User - Public')
 @Controller('user/public')
 export class UserPublicController {
-  constructor(private readonly service: UserPublicService) { }
+  constructor(private readonly service: UserPublicService) {}
 
   @Post('/register')
   async register(@Body() args: RegisterArgs) {
@@ -24,7 +24,10 @@ export class UserPublicController {
   }
 
   @Post('/users/register-discord')
-  async registerDiscord(@Body() args: RegisterDiscordArgs, @Headers('x-bot-secret') botSecret: 'super-secret-bot-key',) {
+  async registerDiscord(
+    @Body() args: RegisterDiscordArgs,
+    @Headers('x-bot-secret') botSecret: 'super-secret-bot-key',
+  ) {
     const res = await this.service.registerDiscord(args, botSecret)
 
     return { statusCode: HttpStatus.CREATED, data: res }

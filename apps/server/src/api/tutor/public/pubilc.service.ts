@@ -8,7 +8,7 @@ import { CreateTutorVoiceLogArgs } from './pubilc.dto'
 
 @Injectable()
 export class TutorPublicService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createTutorBot(
     id: string,
@@ -152,8 +152,8 @@ export class TutorPublicService {
             lastName: true,
             discordId: true,
           },
-        }
-      }
+        },
+      },
     })
 
     if (!activeSession) {
@@ -163,7 +163,7 @@ export class TutorPublicService {
     return {
       tutorId: activeSession.id,
       discordId: activeSession.host.discordId,
-      hostName: `${activeSession.host.firstName} ${activeSession.host.lastName}`
+      hostName: `${activeSession.host.firstName} ${activeSession.host.lastName}`,
     }
   }
 }
