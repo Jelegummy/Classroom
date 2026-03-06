@@ -23,9 +23,9 @@ model School {
 }
 
 model User {
-    id       String @id @default(uuid())
-    email    String @unique
-    password String
+    id       String  @id @default(uuid())
+    email    String  @unique
+    password String?
 
     role Role @default(STUDENT)
 
