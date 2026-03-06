@@ -48,7 +48,7 @@ export function PaginationDemo({
                 isActive={page === currentPage}
                 className={`rounded-xl transition-colors ${
                   page === currentPage
-                    ? 'border-blue-200 bg-blue-50 font-semibold text-blue-600 hover:bg-blue-100'
+                    ? 'border-blue-200 bg-blue-50 font-semibold text-primary hover:bg-blue-100'
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >

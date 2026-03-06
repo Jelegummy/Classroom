@@ -400,7 +400,7 @@ export default function GameId() {
               disabled={attendances.length === 0}
               className={`w-full rounded-full py-3 text-xl font-black text-white shadow-xl transition-all md:w-auto md:px-8 md:py-4 md:text-2xl ${
                 attendances.length > 0
-                  ? 'animate-pulse bg-blue-600 hover:scale-105 hover:bg-blue-500'
+                  ? 'animate-pulse bg-primary hover:scale-105 hover:bg-blue-500'
                   : 'cursor-not-allowed bg-gray-600 opacity-50'
               }`}
             >
@@ -410,7 +410,7 @@ export default function GameId() {
         )}
 
       {isVictory && !isDefeat && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 p-4 text-center backdrop-blur-md duration-500 animate-in fade-in">
+        <div className="animate-in fade-in absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 p-4 text-center backdrop-blur-md duration-500">
           <h2 className="animate-bounce text-5xl font-black text-yellow-400 drop-shadow-[0_0_25px_rgba(250,204,21,0.6)] md:text-8xl">
             VICTORY!
           </h2>
@@ -427,7 +427,7 @@ export default function GameId() {
       )}
 
       {isDefeat && (
-        <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4 text-center backdrop-blur-md duration-500 animate-in fade-in">
+        <div className="animate-in fade-in absolute inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4 text-center backdrop-blur-md duration-500">
           <h2 className="text-5xl font-black text-red-600 drop-shadow-[0_0_25px_rgba(220,38,38,0.6)] md:text-8xl">
             DEFEAT
           </h2>

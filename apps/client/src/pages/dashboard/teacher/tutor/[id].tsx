@@ -174,7 +174,7 @@ export default function Content() {
                                     )}
                                   </div>
                                 </div>
-                                <div className="text-sm font-bold text-blue-600">
+                                <div className="text-sm font-bold text-primary">
                                   {user.scoreEarnedInSession || 0} Pt
                                 </div>
                               </div>

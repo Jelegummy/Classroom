@@ -82,7 +82,7 @@ const SidebarMobile = ({ isOpen, onClose }: SidebarMobileProps) => {
               signOut({ redirect: false })
               router.push('/')
             }}
-            className="btn w-full bg-[#1F57CF] text-white hover:bg-[#194bb5]"
+            className="btn w-full bg-primary text-white hover:bg-[#194bb5]"
           >
             ออกจากระบบ
           </button>

@@ -25,7 +25,7 @@ export default function CardUser({ classroomId }: CardUserProps) {
         <h2 className="text-sm font-bold text-gray-800 lg:text-lg">
           นักเรียนในห้อง
         </h2>
-        <p className="text-sm font-medium text-blue-600 lg:text-sm">
+        <p className="text-sm font-medium text-primary lg:text-sm">
           มีนักเรียนอยู่ : {userCount} คน
         </p>
       </div>

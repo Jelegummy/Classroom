@@ -23,7 +23,7 @@ const SidebarItem = ({
       onClick={onClick}
       className={`flex items-center rounded-xl p-2 transition-all ${isOpen ? 'justify-start gap-2' : 'justify-center'} ${
         route === currentRoute
-          ? 'bg-[#1F57CF] text-white'
+          ? 'bg-primary text-white'
           : 'text-gray-700 hover:bg-gray-100'
       }`}
     >

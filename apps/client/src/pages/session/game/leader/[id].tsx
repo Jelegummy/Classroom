@@ -49,7 +49,7 @@ export default function Leaderboard() {
 
       <main className="mx-auto mt-6 max-w-7xl p-4 md:mt-10 md:p-6">
         <div className="mb-4 text-center md:mb-8">
-          <h1 className="text-3xl font-bold text-blue-500 md:text-5xl">
+          <h1 className="text-3xl font-bold text-primary md:text-5xl">
             เสร็จสิ้น
           </h1>
         </div>
@@ -87,7 +87,7 @@ export default function Leaderboard() {
                     <p className="line-clamp-1 text-[10px] font-bold text-gray-800 md:text-base">
                       {secondPlace.user.firstName} {secondPlace.user.lastName}
                     </p>
-                    <p className="text-[9px] font-bold text-blue-500 md:text-lg">
+                    <p className="text-[9px] font-bold text-primary md:text-lg">
                       {secondPlace.scoreEarned} พอยต์
                     </p>
                   </div>
@@ -145,7 +145,7 @@ export default function Leaderboard() {
                     <p className="line-clamp-1 text-[10px] font-bold text-gray-800 md:text-base">
                       {thirdPlace.user.firstName} {thirdPlace.user.lastName}
                     </p>
-                    <p className="text-[9px] font-bold text-blue-500 md:text-lg">
+                    <p className="text-[9px] font-bold text-primary md:text-lg">
                       {thirdPlace.scoreEarned} พอยต์
                     </p>
                   </div>
@@ -177,7 +177,7 @@ export default function Leaderboard() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-xs font-bold text-blue-500 md:text-base">
+                    <div className="text-xs font-bold text-primary md:text-base">
                       {player.scoreEarned.toLocaleString()} พอยต์
                     </div>
                   </div>

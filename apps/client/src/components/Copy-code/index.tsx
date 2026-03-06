@@ -63,7 +63,7 @@ export default function CopyCode({ text }: { text: string }) {
                 className={`flex w-full max-w-sm items-center justify-center gap-3 rounded-2xl py-4 text-xl font-bold text-white transition-all duration-300 active:scale-95 ${
                   isCopied
                     ? 'bg-green-500 shadow-lg shadow-green-500/30'
-                    : 'bg-primary shadow-lg shadow-primary/30 hover:bg-blue-600'
+                    : 'bg-primary shadow-lg shadow-primary/30 hover:bg-blue-500'
                 }`}
               >
                 {isCopied ? (

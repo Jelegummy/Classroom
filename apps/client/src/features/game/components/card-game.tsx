@@ -124,7 +124,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
         <button
           onClick={onSubmit}
           disabled={createGame.isPending}
-          className={`mt-1 flex w-full items-center justify-center gap-1 rounded-lg border-[1.5px] border-black py-1 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-y-[1px] active:shadow-none lg:mt-2 lg:gap-2 lg:rounded-xl lg:border-[3px] lg:py-3 lg:shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] ${characterId ? 'cursor-pointer bg-[#3b82f6] hover:bg-blue-600' : 'cursor-not-allowed bg-gray-400 opacity-70'}`}
+          className={`mt-1 flex w-full items-center justify-center gap-1 rounded-lg border-[1.5px] border-black py-1 shadow-[0px_2px_0px_0px_rgba(0,0,0,1)] transition-all active:translate-y-[1px] active:shadow-none lg:mt-2 lg:gap-2 lg:rounded-xl lg:border-[3px] lg:py-3 lg:shadow-[0px_4px_0px_0px_rgba(0,0,0,1)] ${characterId ? 'cursor-pointer bg-[#3b82f6] hover:bg-blue-500' : 'cursor-not-allowed bg-gray-400 opacity-70'}`}
         >
           <RiSwordLine className="h-3 w-3 text-white lg:h-6 lg:w-6" />
           <span className="text-sm font-bold text-white drop-shadow-lg lg:text-xl">
@@ -153,7 +153,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
                 ยังไม่เริ่ม
               </button>
               <button
-                className="flex-1 rounded-lg bg-blue-600 py-1.5 text-sm font-semibold text-white hover:bg-blue-700 lg:rounded-xl lg:py-2 lg:text-base"
+                className="flex-1 rounded-lg bg-primary py-1.5 text-sm font-semibold text-white hover:bg-blue-500 lg:rounded-xl lg:py-2 lg:text-base"
                 onClick={() => {
                   if (!createdGameId) return
                   router.push(`/session/game/${createdGameId}`)

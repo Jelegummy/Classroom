@@ -47,7 +47,7 @@ export default function RankingStudent({ points, names, roles }: RankingProps) {
 
               <p
                 className={`text-xs font-bold md:text-lg ${
-                  isFirst ? 'text-orange-500' : 'text-blue-500'
+                  isFirst ? 'text-orange-500' : 'text-primary'
                 }`}
               >
                 {user.point} Pt

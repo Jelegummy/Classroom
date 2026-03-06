@@ -121,7 +121,7 @@ export default function Setting() {
                 <button
                   type="button"
                   onClick={() => setIsEditingProfile(true)}
-                  className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-1.5 text-sm text-blue-600 transition hover:bg-blue-200 sm:px-4 sm:py-2 sm:text-base"
+                  className="flex items-center gap-2 rounded-lg bg-blue-100 px-3 py-1.5 text-sm text-primary transition hover:bg-blue-200 sm:px-4 sm:py-2 sm:text-base"
                 >
                   <SquarePen size={18} />
                   <span>แก้ไข</span>
@@ -213,7 +213,7 @@ export default function Setting() {
                 <button
                   type="submit"
                   disabled={updateUserMutation.isPending}
-                  className="flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 text-blue-600 transition hover:bg-blue-200 disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 text-primary transition hover:bg-blue-200 disabled:opacity-50"
                 >
                   <Save size={18} />
                   <span>
@@ -269,7 +269,7 @@ export default function Setting() {
               <button
                 type="submit"
                 disabled={updatePasswordMutation.isPending}
-                className="flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 text-blue-600 transition hover:bg-blue-200 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-blue-100 px-4 py-2 text-primary transition hover:bg-blue-200 disabled:opacity-50"
               >
                 <Save size={18} />
                 <span>
