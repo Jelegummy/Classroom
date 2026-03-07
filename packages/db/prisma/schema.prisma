@@ -23,15 +23,16 @@ model School {
 }
 
 model User {
-    id       String @id @default(uuid())
-    email    String @unique
-    password String
+    id       String  @id @default(uuid())
+    email    String  @unique
+    password String?
 
     role Role @default(STUDENT)
 
     firstName   String  @map("first_name")
     lastName    String  @map("last_name")
     phoneNumber String? @map("phone_number")
+    discordId   String? @map("discord_id")
     studentId   String? @map("student_id")
     teacherId   String? @map("teacher_id")
 
@@ -177,11 +178,12 @@ model ClassroomOnGame {
 
 model Tutor {
     id               String   @id @default(uuid())
-    topic            String?
-    summary          String?
+    topic            String? //not used
+    summary          String? //not used
     dataContent      Json     @map("data_content")
     discordChannelId String   @map("discord_channel_id")
-    botLink          String?  @map("bot_link")
+    inviteLink       String?  @map("invite_link")
+    botLink          String?  @map("bot_link") //not used
     startTime        DateTime @default(now()) @map("start_time")
 
     hostId String @map("host_id")
@@ -199,9 +201,10 @@ model TutorVoiceLog {
     id      String @id @default(uuid())
     tutorId String @map("tutor_id")
 
-    topic       String?
-    summary     String?
-    dataContent Json    @map("data_content")
+    voiceChannelName String? @map("voice_channel_name")
+    topic            String?
+    summary          String?
+    dataContent      Json    @map("data_content")
 
     createdAt DateTime @default(now()) @map("created_at")
 

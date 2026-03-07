@@ -10,3 +10,4 @@ deployment
 generated
 .venv
 /bin/**
+test.py

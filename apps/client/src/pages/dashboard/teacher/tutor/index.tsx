@@ -44,7 +44,10 @@ export default function TutorSessionTeacher({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-800">
-                    {tutor.discordChannelId || 'Calculus Problem Set'}
+                    {Array.isArray(tutor.voiceLogs) &&
+                    tutor.voiceLogs.length > 0
+                      ? tutor.voiceLogs[0].voiceChannelName
+                      : 'ไม่พบชื่อห้องเสียง'}
                   </h3>
                   <p className="text-gray-500">
                     {tutor.host.firstName}{' '}

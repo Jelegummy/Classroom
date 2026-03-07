@@ -4,6 +4,7 @@ export type RegisterArgs = {
   email: string
   password: string
   phoneNumber?: string
+  discordId?: string
   schoolName: string
 }
 
@@ -27,7 +28,16 @@ export type UpdateUserArgs = {
   address?: string
   phoneNumber?: string
 }
+
 export type UpdatePasswordArgs = {
   oldpassword: string
   newPassword: string
+}
+
+export type LoginDiscordArgs = {
+  discordId: string
+  email: string
+  firstName?: string
+  lastName?: string
+  schoolId?: string
 }

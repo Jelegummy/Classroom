@@ -10,7 +10,7 @@ import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class TutorInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createTutor(args: CreateTutorArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -25,6 +25,7 @@ export class TutorInternalService {
         startTime: args.startTime,
         dataContent: args.dataContent || '',
         discordChannelId: args.discordChannelId || '',
+        inviteLink: args.inviteLink || '',
         host: {
           connect: { id: user.id },
         },
@@ -67,6 +68,11 @@ export class TutorInternalService {
           },
           include: {
             classroom: true,
+          },
+        },
+        voiceLogs: {
+          select: {
+            voiceChannelName: true,
           },
         },
       },

@@ -8,16 +8,34 @@ export class RegisterArgs extends createZodDto(
     firstName: z.string().min(1),
     lastName: z.string().min(1),
     phoneNumber: z.string().optional(),
+    discordId: z.string().optional(),
     schoolId: z.string().min(1).optional(),
     schoolName: z.string().min(1).optional(),
   }),
-) {}
+) { }
 
 export class LoginArgs extends createZodDto(
   z.object({
     email: z.string().email(),
     password: z.string().min(8),
   }),
-) {}
+) { }
+
+export class RegisterDiscordArgs extends createZodDto(
+  z.object({
+    discordId: z.string().min(1),
+    realName: z.string().min(1),
+  }),
+) { }
+
+export class LoginDiscordArgs extends createZodDto(
+  z.object({
+    discordId: z.string().min(1),
+    email: z.string().email(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    schoolId: z.string().optional(),
+  }),
+) { }
 
 patchNestJsSwagger()

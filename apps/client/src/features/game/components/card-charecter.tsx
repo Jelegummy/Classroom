@@ -7,33 +7,34 @@ export default function CardCharacter({
   onSelect,
 }: CardCharacterProps) {
   return (
-    <div className="flex h-screen w-72 items-start justify-center overflow-y-auto rounded-r-xl bg-gray-200/80 p-6 backdrop-blur-sm">
-      <div className="flex w-full max-w-sm flex-col gap-4 pb-20">
-        <div className="flex">
-          <p className="text-lg font-bold">เลือกตัวละคร</p>
+    <div className="flex h-full w-full items-start justify-center overflow-y-auto bg-transparent p-1 lg:rounded-r-xl lg:p-6">
+      <div className="flex w-full flex-col gap-1.5 pb-10 lg:max-w-sm lg:gap-4 lg:pb-20">
+        <div className="flex justify-center lg:justify-start">
+          <p className="text-md font-bold text-gray-800 lg:text-lg">
+            เลือกตัวละคร
+          </p>
         </div>
         {characters?.map(character => (
           <div
             key={character.id}
             onClick={() => onSelect(character.id)}
-            className={`relative cursor-pointer rounded-2xl border-4 bg-white p-4 shadow-lg transition-all hover:scale-105 ${
+            className={`relative cursor-pointer rounded-lg border-2 bg-white p-1 shadow-lg transition-all hover:scale-105 lg:rounded-2xl lg:border-4 lg:p-4 lg:shadow-lg ${
               character.id === selectedId
-                ? 'border-blue-500 ring-2 ring-blue-300'
+                ? 'border-blue-500 ring-1 ring-blue-300 lg:ring-2'
                 : 'border-transparent'
             }`}
           >
             <div className="flex aspect-square w-full items-center justify-center overflow-hidden">
               <Image
                 src={character.imageUrl || '/catIcon.jpg'}
-                // src={'/catIcon.jpg'}
                 alt={character.bossName}
                 width={100}
                 height={100}
-                className="h-full w-full object-contain drop-shadow-2xl"
+                className="h-32 w-32 object-contain drop-shadow-lg lg:h-full lg:w-full lg:drop-shadow-2xl"
               />
             </div>
 
-            <div className="mt-2 text-center font-bold text-gray-700">
+            <div className="mt-0.5 truncate text-center text-sm font-bold text-gray-700 lg:mt-2 lg:text-base">
               {character.bossName}
             </div>
           </div>

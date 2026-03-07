@@ -146,7 +146,7 @@ export default function Home() {
             {session?.user ? (
               <Link
                 href={dashboardUrl}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-[#1F57CF] px-8 py-4 text-lg font-semibold text-white shadow-[0_8px_20px_-6px_rgba(31,87,207,0.5)] transition-all hover:-translate-y-1 hover:bg-blue-700 hover:shadow-[0_12px_25px_-6px_rgba(31,87,207,0.6)] sm:w-auto"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-white shadow-[0_8px_20px_-6px_rgba(31,87,207,0.5)] transition-all hover:-translate-y-1 hover:bg-blue-500 hover:shadow-[0_12px_25px_-6px_rgba(31,87,207,0.6)] sm:w-auto"
               >
                 ไปที่ Dashboard ของคุณ
                 <LayoutDashboard className="h-5 w-5" />
@@ -154,7 +154,7 @@ export default function Home() {
             ) : (
               <>
                 <Link href="/register" className="w-full sm:w-auto">
-                  <button className="w-full rounded-full bg-[#1F57CF] px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:-translate-y-1 hover:bg-blue-700 hover:shadow-lg sm:w-48">
+                  <button className="w-full rounded-full bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:-translate-y-1 hover:bg-blue-500 hover:shadow-lg sm:w-48">
                     ติดต่อเรา
                   </button>
                 </Link>

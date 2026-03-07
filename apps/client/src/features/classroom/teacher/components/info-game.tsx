@@ -48,7 +48,7 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-3">
                   <div className="h-fit rounded-lg bg-blue-100 p-2.5">
-                    <Gamepad2 className="h-6 w-6 text-blue-500" />
+                    <Gamepad2 className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">

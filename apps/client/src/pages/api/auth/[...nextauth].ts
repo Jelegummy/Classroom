@@ -1,8 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import NextAuth, { NextAuthOptions } from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import DiscordProvider from 'next-auth/providers/discord'
 
-import { User as BaseUser, getMe, login } from '@/services/user'
+import { User as BaseUser, getMe, login, loginDiscord } from '@/services/user'
 
 declare module 'next-auth' {
   interface User {
@@ -23,6 +24,10 @@ declare module 'next-auth' {
 
 const options: NextAuthOptions = {
   providers: [
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID as string,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET as string,
+    }),
     Credentials({
       id: 'credentials',
       credentials: {
@@ -69,23 +74,45 @@ const options: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    jwt: async ({ token, user, trigger }) => {
+    jwt: async ({ token, user, account, trigger }) => {
       if (trigger === 'update') {
         const _user = await getMe(
           (token as { accessToken: string }).accessToken,
           {},
         )
-
         return { ...token, ...user, ..._user }
       }
 
-      return { ...token, ...user }
+      if (account?.provider === 'discord' && user) {
+        try {
+          const nameParts = user.name?.split(' ') || ['Discord', 'User']
+          const firstName = nameParts[0]
+          const lastName = nameParts.slice(1).join(' ') || ''
+
+          const backendData = await loginDiscord({
+            discordId: account.providerAccountId,
+            email: user.email || '',
+            firstName: firstName,
+            lastName: lastName,
+          })
+          const _fullUser = await getMe(backendData.accessToken, {})
+
+          return { ...token, ...backendData, ..._fullUser }
+        } catch (error) {
+          console.error('Failed to login with Discord via backend:', error)
+          throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Discord ได้ในขณะนี้')
+        }
+      }
+
+      if (user) {
+        return { ...token, ...user }
+      }
+
+      return token
     },
     session: async ({ session, token }) => {
       const _token = token as BaseUser & { accessToken: string }
-
       session.user = _token
-
       return session
     },
   },

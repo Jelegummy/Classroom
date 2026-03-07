@@ -85,3 +85,15 @@ export const getTutorContentUserById = async (id: string) => {
 
   return res.data
 }
+
+export const deleteTutor = async (id: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Delete(`${ENDPOINT}/tutor/internal/delete/${id}`, {
+    token: session?.user.accessToken,
+  })
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+}

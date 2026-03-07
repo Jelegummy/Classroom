@@ -33,7 +33,11 @@ const SidebarMobile = ({ isOpen, onClose }: SidebarMobileProps) => {
         <div className="flex h-full flex-col justify-between px-6 py-6">
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-3 rounded-xl border p-3">
-              <div className="h-10 w-10 rounded-full bg-gray-300" />
+              <img
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(`${session?.user?.firstName || ''} ${session?.user?.lastName || ''}`.trim() || 'User')}&background=random`}
+                alt="avatar"
+                className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+              />
               <div className="flex flex-col">
                 <span className="font-semibold">{session?.user.name}</span>
                 <span className="text-xs text-gray-500">
@@ -78,7 +82,7 @@ const SidebarMobile = ({ isOpen, onClose }: SidebarMobileProps) => {
               signOut({ redirect: false })
               router.push('/')
             }}
-            className="btn w-full bg-[#1F57CF] text-white hover:bg-[#194bb5]"
+            className="btn w-full bg-primary text-white hover:bg-[#194bb5]"
           >
             ออกจากระบบ
           </button>

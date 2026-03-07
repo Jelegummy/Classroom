@@ -6,3 +6,4 @@ pythainlp
 python-dotenv
 scipy
 transformers
+langchain_openai
