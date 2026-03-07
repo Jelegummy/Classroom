@@ -18,11 +18,12 @@ import { AnnounceModule } from './api/announce/announce.module'
 import { AttendanceModule } from './api/attendance/attendance.module'
 import { CharacterModule } from './api/character/character.module'
 import { TutorModule } from './api/tutor/tuter.module'
+import { AssignmentModule } from './api/assignment/assignment.module'
 
 @Module({
   imports: [
     UserModule,
-    SchoolModule, //Not used yet
+    SchoolModule,
     ClassroomModule,
     TutorModule,
     GameModule,
@@ -31,6 +32,7 @@ import { TutorModule } from './api/tutor/tuter.module'
     ItemsModule,
     AnnounceModule,
     AuthModule,
+    AssignmentModule,
     PrismaModule,
     MailerModule.forRoot(mailerConfig),
     // MinioModule.register({

@@ -116,7 +116,6 @@ export default function Page() {
                 <div className="flex h-12 flex-col p-4">
                   {session?.user?.role === 'STUDENT' && (
                     <div className="flex items-center justify-end text-sm text-gray-500">
-                      {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
                       นักเรียน
                     </div>
                   )}

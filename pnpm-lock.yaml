@@ -17,6 +17,9 @@ importers:
       csv-parser:
         specifier: ^3.2.0
         version: 3.2.0
+      dayjs:
+        specifier: 1.11.13
+        version: 1.11.13
       lucide-react:
         specifier: ^0.555.0
         version: 0.555.0(react@19.1.0)
@@ -69,6 +72,8 @@ importers:
       vitest:
         specifier: 4.0.14
         version: 4.0.14(@types/node@24.10.1)(jiti@2.4.2)(lightningcss@1.29.2)(terser@5.39.0)(yaml@2.7.1)
+
+  apps/assignment-bot: {}
 
   apps/bot: {}
 

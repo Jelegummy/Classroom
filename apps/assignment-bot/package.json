@@ -1,0 +1,11 @@
+{
+  "name": "@assignment-bot/bot",
+  "scripts": {
+    "dev": "source venv/bin/activate && python -m fastapi dev ./main.py",
+    "start": "concurrently 'python ./main.py'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.4"
+}
