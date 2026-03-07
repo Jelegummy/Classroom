@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
@@ -104,7 +104,7 @@ export default function Setting() {
               </div>
               <div>
                 <h2 className="break-all text-lg font-semibold sm:text-xl">
-                  {user?.name || `${user?.firstName} ${user?.lastName}`}
+                  {`${user?.firstName} ${user?.lastName}`}
                 </h2>
                 <p className="text-sm text-gray-500">
                   {user?.role || 'Teacher'}
