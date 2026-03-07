@@ -46,6 +46,10 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
       toast.error('กรุณากรอก Discord Channel ID')
       return
     }
+    if (!form.inviteLink) {
+      toast.error('กรุณากรอกลิ้งก์เชิญผู้ร่วมติวเข้าร่วม Discord Channel')
+      return
+    }
     createTutorMutation.mutate(form)
   }
 
@@ -65,18 +69,21 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
           className="btn btn-primary btn-sm"
           onClick={() => setOpen(true)}
         >
-          + ขอรับลิ้งก์
+          + ขอรับลิ้งก์ Bot Discord
         </button>
       </div>
 
       {open && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="mb-4 text-lg font-bold">ขอรับลิ้งก์ Bot Discord</h3>
+            <h3 className="mb-4 text-lg font-bold">
+              ขอรับลิ้งก์ Bot Discord เพื่อเชิญ​ Bot เข้าสู่ Discord Channel
+            </h3>
             <div className="mb-3">
               <label className="label">
                 <span className="label-text">
-                  เปิดห้องติว (chanal id) <span className="text-error">*</span>
+                  เปิดห้องติว (voice chat id){' '}
+                  <span className="text-error">*</span>
                 </span>
               </label>
               <input
@@ -87,6 +94,22 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
                 onChange={e =>
                   setForm({ ...form, discordChannelId: e.target.value })
                 }
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="label">
+                <span className="label-text">
+                  ลิ้งก์เชิญผู้ร่วมติวเข้าร่วม Discord Channel{' '}
+                  <span className="text-error">*</span>
+                </span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                placeholder="เช่น https://discord.gg/abc123xyz"
+                value={form.inviteLink || ''}
+                onChange={e => setForm({ ...form, inviteLink: e.target.value })}
               />
             </div>
 

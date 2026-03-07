@@ -4,6 +4,7 @@ export type CreateTutorArgs = {
   dataContent?: string
   discordChannelId?: string
   classroomId: string
+  inviteLink?: string
 }
 
 export type Tutor = {
@@ -12,6 +13,7 @@ export type Tutor = {
   topic: string
   summary: string
   botLink?: string
+  inviteLink?: string
   startTime?: Date
   dataContent?: string
   discordChannelId?: string
