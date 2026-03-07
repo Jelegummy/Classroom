@@ -73,9 +73,9 @@ export class UserPublicService {
       args.password,
       user.password || '',
     )
-    if (user.password) {
-      throw new BadRequestException('บัญชีนี้เชื่อมต่อกับ Discord ไว้ กรุณาเข้าสู่ระบบด้วย Discord')
-    }
+    // if (user.password) {
+    //   throw new BadRequestException('บัญชีนี้เชื่อมต่อกับ Discord ไว้ กรุณาเข้าสู่ระบบด้วย Discord')
+    // }
     if (!isPassword) {
       throw new BadRequestException('Invalid email or password.')
     }
