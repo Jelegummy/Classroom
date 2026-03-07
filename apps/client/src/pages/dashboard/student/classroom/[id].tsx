@@ -15,9 +15,14 @@ import JoinGame from '../../../../features/classroom/student/components/join-gam
 import TutorSession from '../tutor'
 import CreateButtonTutor from '../../../../features/tutor/components/button-create'
 import RankingStudent from '../../../../features/classroom/student/components/ranking-student'
+import AssignmentTaskStudent from '../assignment'
+import AssignmentFilterDropdown from '@/features/classroom/student/components/change-mode-assignment'
+
+type Mode = 'all' | 'pending' | 'overdue' | 'submitted'
 
 export default function ClassroomId() {
   const router = useRouter()
+  const [mode, setMode] = useState<Mode>('all')
   const [activeTab, setActiveTab] = useState<
     'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
   >('main_tabs')
@@ -139,7 +144,11 @@ export default function ClassroomId() {
                   {/* <CreateButtonAnnounce classroomId={classroom?.id ?? ''} /> */}
                 </div>
               )}
-              {activeTab === 'jobs_tabs' && <div>button create job</div>}
+              {activeTab === 'jobs_tabs' && (
+                <div>
+                  <AssignmentFilterDropdown mode={mode} setMode={setMode} />
+                </div>
+              )}
               {activeTab === 'tutor_tabs' && (
                 <CreateButtonTutor classroomId={classroom?.id ?? ''} />
               )}
@@ -152,8 +161,15 @@ export default function ClassroomId() {
                 announcesId={classroom?.announces.map(a => a.id) ?? []}
               />
             )}
-            {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
-            {/* connect model aong */}
+            {activeTab === 'jobs_tabs' && (
+              <div>
+                <AssignmentTaskStudent
+                  classroomId={classroom?.id || ''}
+                  mode={mode}
+                />
+              </div>
+            )}
+
             {activeTab === 'game_tabs' && (
               <JoinGame classroomId={classroom?.id ?? ''} />
             )}

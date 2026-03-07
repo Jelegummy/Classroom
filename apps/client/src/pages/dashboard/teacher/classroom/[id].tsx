@@ -16,6 +16,9 @@ import InfoGame from '../../../../features/classroom/teacher/components/info-gam
 import Image from 'next/image'
 import NavbarPoints from '@/components/NavbarContent/navbarPoints'
 import TutorSessionTeacher from '../tutor'
+import CreateButtonAssignment from '@/features/classroom/teacher/components/create-buttun-assignment'
+import AssignmentTask from '../assignment'
+import AssignmentTaskTeacher from '../assignment'
 
 export default function ClassroomId() {
   const router = useRouter()
@@ -89,7 +92,7 @@ export default function ClassroomId() {
             </div>
           </div>
         </div>
-        <div className="mt-3 flex flex-col p-4">
+        <div className="flex flex-col p-4">
           <div className="flex flex-col sm:flex-row sm:justify-between">
             <div className="tabs-box tabs flex flex-col gap-2 rounded-lg border bg-base-100 p-1 sm:flex-row">
               <input
@@ -136,13 +139,17 @@ export default function ClassroomId() {
               />
             </div>
 
-            <div className="mt-3 flex sm:mt-0">
+            <div className="flex sm:mt-0">
               {activeTab === 'main_tabs' && (
                 <div>
                   <CreateButtonAnnounce classroomId={classroom?.id ?? ''} />
                 </div>
               )}
-              {activeTab === 'jobs_tabs' && <div>button create job</div>}
+              {activeTab === 'jobs_tabs' && (
+                <div className="h-full">
+                  <CreateButtonAssignment classroomId={classroom?.id ?? ''} />
+                </div>
+              )}
             </div>
           </div>
           <hr className="mt-3" />
@@ -152,8 +159,9 @@ export default function ClassroomId() {
                 announcesId={classroom?.announces.map(a => a.id) ?? []}
               />
             )}
-            {activeTab === 'jobs_tabs' && <div>make components jobs</div>}
-            {/* connect model aong */}
+            {activeTab === 'jobs_tabs' && (
+              <AssignmentTaskTeacher classroomId={classroomId} />
+            )}
             {activeTab === 'game_tabs' && (
               <>
                 <Link

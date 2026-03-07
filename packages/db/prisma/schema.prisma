@@ -231,6 +231,7 @@ model Assignment {
     chatHistory Json?   @map("chat_history")
     filePdf     String? @map("file_pdf")
     textContent String? @map("text_content")
+    description String?
 
     generatedContent String? @map("generated_content")
     generatedFileTxt String? @map("generated_file_txt")
@@ -250,8 +251,8 @@ model Assignment {
 }
 
 model ClassroomOnAssignment {
-    id      String   @id @default(uuid())
-    dueDate DateTime @map("due_date")
+    id      String    @id @default(uuid())
+    dueDate DateTime? @map("due_date")
 
     classroomId  String     @map("classroom_id")
     classroom    Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
@@ -271,8 +272,9 @@ model HomeworkSubmission {
 
     transcription String?
 
-    aiFeedback String? @map("ai_feedback")
-    score      Int?    @default(0)
+    aiFeedback    String? @map("ai_feedback")
+    answerHistory Json?   @map("answer_history")
+    score         Int?    @default(0)
 
     classroomAssignmentId String                @map("assignment_id")
     classroomAssignment   ClassroomOnAssignment @relation(fields: [classroomAssignmentId], references: [id])
