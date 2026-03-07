@@ -2,7 +2,8 @@
   "name": "@app/monorepo",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "dev": "dotenvx run -- turbo dev",
+    "dev": "dotenvx run -- turbo dev --filter=\"!./apps/assignment-bot\"",
+    "dev:aong": "dotenvx run -- turbo dev",
     "dev:client": "dotenvx run -- turbo dev --filter=\"./apps/client\"",
     "dev:server": "dotenvx run -- turbo dev --filter=\"./apps/server\"",
     "build": "dotenvx run -- turbo build",

@@ -1,8 +1,8 @@
 {
   "name": "@assignment-bot/bot",
   "scripts": {
-    "dev": "source venv/bin/activate && python -m fastapi dev ./main.py",
-    "start": "concurrently 'python ./main.py'"
+    "dev": "source .venv/bin/activate && python3.13 -m fastapi dev ./main.py",
+    "start": "concurrently 'python3.13 ./main.py'"
   },
   "keywords": [],
   "author": "",

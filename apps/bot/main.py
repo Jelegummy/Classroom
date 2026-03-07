@@ -12,6 +12,7 @@ import aiohttp
 import json
 
 
+
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -584,4 +585,7 @@ async def on_ready():
     print(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
     bot.add_view(MainEntryPointView())
 
-bot.run(TOKEN)
+
+
+if __name__ == "__main__":
+    bot.run(TOKEN)

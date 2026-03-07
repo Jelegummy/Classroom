@@ -11,3 +11,5 @@ generated
 .venv
 /bin/**
 test.py
+__pycache__/
+*.pyc
