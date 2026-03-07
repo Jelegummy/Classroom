@@ -178,11 +178,12 @@ model ClassroomOnGame {
 
 model Tutor {
     id               String   @id @default(uuid())
-    topic            String?
-    summary          String?
+    topic            String? //not used
+    summary          String? //not used
     dataContent      Json     @map("data_content")
     discordChannelId String   @map("discord_channel_id")
-    botLink          String?  @map("bot_link")
+    inviteLink       String?  @map("invite_link")
+    botLink          String?  @map("bot_link") //not used
     startTime        DateTime @default(now()) @map("start_time")
 
     hostId String @map("host_id")
