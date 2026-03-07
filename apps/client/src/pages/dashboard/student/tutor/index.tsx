@@ -96,12 +96,14 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
                   {tutor.host?.lastName || 'Teeraphan Sukjai'}
                 </p>
               </div>
-              <DeleteCard
-                id={tutor.id}
-                discordChannelId={
-                  tutor.discordChannelId || 'Calculus Problem Set'
-                }
-              />
+              <div className="ml-1 flex justify-end sm:ml-6">
+                <DeleteCard
+                  id={tutor.id}
+                  discordChannelId={
+                    tutor.discordChannelId || 'Calculus Problem Set'
+                  }
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-3 rounded-xl border border-gray-100/50 bg-gray-50 p-4">
