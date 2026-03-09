@@ -1,7 +1,9 @@
 // import { GoBook, GoHome } from 'react-icons/go'
 import { SiGoogleclassroom } from 'react-icons/si'
 // import { IoMdPaper } from 'react-icons/io'
-import { TbLockPassword } from 'react-icons/tb'
+import { TbBrandGoogleHome, TbLockPassword } from 'react-icons/tb'
+import { GiFragmentedSword } from 'react-icons/gi'
+import { SiNodemon } from 'react-icons/si'
 
 export const TEARCHER_ROUTES = [
   // {
@@ -62,6 +64,29 @@ export const STUDENT_ROUTES = [
   //   route: '/dashboard/student/inventory',
   //   icon: <GoBook className="h-6 w-6" />,
   // },
+]
+
+export const ADMIN_ROUTES = [
+  {
+    title: 'หน้าแรก',
+    route: '/dashboard/admin',
+    icon: <TbBrandGoogleHome className="h-6 w-6" />,
+  },
+  {
+    title: 'ไอเทมในเกม',
+    route: '/dashboard/admin/items',
+    icon: <GiFragmentedSword className="h-6 w-6" />,
+  },
+  {
+    title: 'ตัวละครสำหรับเกม',
+    route: '/dashboard/admin/characters',
+    icon: <SiNodemon className="h-6 w-6" />,
+  },
+  {
+    title: 'ตั้งค่า',
+    route: '/dashboard/setting',
+    icon: <TbLockPassword className="h-6 w-6" />,
+  },
 ]
 
 // export const USER_MANAGE = [

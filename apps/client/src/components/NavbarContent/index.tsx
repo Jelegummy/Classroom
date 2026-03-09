@@ -6,9 +6,14 @@ import { IoLogOutOutline } from 'react-icons/io5'
 type Props = {
   search: string
   onSearch: (value: string) => void
+  placeholder?: string
 }
 
-export default function NavbarContent({ search, onSearch }: Props) {
+export default function NavbarContent({
+  search,
+  onSearch,
+  placeholder,
+}: Props) {
   const { data: session } = useSession()
   const [open, setOpen] = useState(false)
   return (
@@ -21,7 +26,7 @@ export default function NavbarContent({ search, onSearch }: Props) {
                 <FaMagnifyingGlass />
                 <input
                   type="text"
-                  placeholder="ค้นหาชั้นเรียน..."
+                  placeholder={placeholder || 'ค้นหาชั้นเรียน...'}
                   value={search}
                   onChange={e => onSearch(e.target.value)}
                 />
