@@ -100,7 +100,7 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
             <div className="mb-3">
               <label className="label">
                 <span className="label-text">
-                  ลิ้งก์เชิญผู้ร่วมติวเข้าร่วม Discord Channel{' '}
+                  ลิ้งก์เชิญผู้ร่วมติวเข้าร่วม Discord Channel Voice Chat{' '}
                   <span className="text-error">*</span>
                 </span>
               </label>
