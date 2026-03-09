@@ -1,11 +1,18 @@
 import Image from 'next/image'
 import { CardCharacterProps } from '../types'
+import { useGLTF } from '@react-three/drei/core/Gltf'
 
 export default function CardCharacter({
   characters,
   selectedId,
   onSelect,
 }: CardCharacterProps) {
+  characters?.forEach(char => {
+    if (char.modelUrl) {
+      useGLTF.preload(char.modelUrl)
+    }
+  })
+
   return (
     <div className="flex h-full w-full items-start justify-center overflow-y-auto bg-transparent p-1 lg:rounded-r-xl lg:p-6">
       <div className="flex w-full flex-col gap-1.5 pb-10 lg:max-w-sm lg:gap-4 lg:pb-20">
