@@ -5,8 +5,21 @@ import {
   Environment,
   ContactShadows,
   Center,
+  Html,
+  useProgress,
 } from '@react-three/drei'
 import { Suspense } from 'react'
+
+function Loader() {
+  const { progress } = useProgress()
+  return (
+    <Html center>
+      <div className="text-sm font-bold text-gray-700">
+        กำลังโหลด... {progress.toFixed(0)}%
+      </div>
+    </Html>
+  )
+}
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url)
@@ -27,7 +40,7 @@ export default function CharacterScene({ url }: { url: string | null }) {
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
         <Environment preset="city" />
 
-        <Suspense fallback={null}>
+        <Suspense fallback={<Loader />}>
           {url && <Model url={url} key={url} />}
         </Suspense>
 
