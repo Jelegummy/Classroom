@@ -52,3 +52,20 @@ export const getCharacter = async (id: string) => {
 
   return res.data
 }
+
+export const deleteCharacter = async (id: string) => {
+  const session = await getSession()
+
+  const res = await fetchers.Delete(
+    `${ENDPOINT}/character/internal/delete/${id}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}

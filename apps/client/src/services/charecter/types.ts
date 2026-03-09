@@ -1,7 +1,8 @@
 export type CreateCharacter = {
   bossName: string
-  maxHp: number
-  timeLimit: number
+  maxHp?: number
+  pointBoss?: number
+  timeLimit?: number
   description?: string
   modelUrl?: string
   imageUrl?: string

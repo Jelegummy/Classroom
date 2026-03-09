@@ -5,7 +5,7 @@ import { Context, getUserFromContext } from '@app/common/dist/utils'
 
 @Injectable()
 export class CharacterInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createCharacter(args: CreateCharacterDto, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -16,8 +16,9 @@ export class CharacterInternalService {
     const character = await this.db.character.create({
       data: {
         bossName: args.bossName,
-        maxHp: args.maxHp,
-        timeLimit: args.timeLimit,
+        pointBoss: args.pointBoss || 0,
+        maxHp: args.maxHp || 0,
+        timeLimit: args.timeLimit || 0,
         description: args.description,
         modelUrl: args.modelUrl,
         imageUrl: args.imageUrl,
@@ -65,5 +66,28 @@ export class CharacterInternalService {
     }
 
     return character
+  }
+
+  async deleteCharacter(ctx: Context, args: { id: string }) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    const character = await this.db.character.findFirst({
+      where: {
+        id: args.id,
+      },
+    })
+
+    if (!character) {
+      throw new Error('Character not found')
+    }
+
+    await this.db.character.delete({
+      where: {
+        id: args.id,
+      },
+    })
   }
 }
