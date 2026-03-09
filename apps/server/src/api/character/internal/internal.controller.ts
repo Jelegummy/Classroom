@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -16,7 +17,7 @@ import { Context } from '@app/common'
 @ApiTags('character-internal')
 @Controller('character/internal')
 export class CharacterInternalController {
-  constructor(private readonly service: CharacterInternalService) {}
+  constructor(private readonly service: CharacterInternalService) { }
 
   @Post('/create/character')
   async createCharacter(@Body() args: CreateCharacterDto, @Req() ctx: Context) {
@@ -35,6 +36,13 @@ export class CharacterInternalController {
   @Get('/character/:id')
   async getCharacter(@Req() ctx: Context, @Param('id') id: string) {
     const res = await this.service.getCharacter(ctx, { id })
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Delete('/delete/:id')
+  async deleteCharacter(@Req() ctx: Context, @Param('id') id: string) {
+    const res = await this.service.deleteCharacter(ctx, { id })
 
     return { statusCode: HttpStatus.OK, data: res }
   }
