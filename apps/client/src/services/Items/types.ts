@@ -12,3 +12,11 @@ export type Items = {
   effectValue?: number
   type: 'ATTACK_BOOST' | 'TIME_EXTEND'
 }
+
+export type CreateItemsArgs = {
+  name: string
+  description?: string
+  price: number
+  effectValue?: number
+  type: 'ATTACK_BOOST' | 'TIME_EXTEND'
+}
