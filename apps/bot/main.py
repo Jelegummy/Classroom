@@ -12,7 +12,6 @@ import aiohttp
 import json
 
 
-
 # Load environment variables
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -180,7 +179,9 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
                 continue
             user_id_str = file.replace(".wav", "")
             speaker_name = members_map.get(
-                int(user_id_str), f"Unknown-{user_id_str}"
+                int(user_id_str), f"Unknown-{user_id_str}",
+                registered_names.get(
+                    int(user_id_str), f"Unknown-{user_id_str}")
             )
 
             full_path = os.path.join(record_dir, file)
@@ -463,7 +464,7 @@ class MainEntryPointView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="🧑🏻‍🏫 เข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
+    @discord.ui.button(label="🧑🏻‍🏫 ยืนยันการเข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
     async def open_panel_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.user.voice:
             await interaction.response.send_message("❌ คุณต้องอยู่ในห้องเสียงก่อนครับ", ephemeral=True)
@@ -584,7 +585,6 @@ async def on_voice_state_update(member, before, after):
 async def on_ready():
     print(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
     bot.add_view(MainEntryPointView())
-
 
 
 if __name__ == "__main__":
