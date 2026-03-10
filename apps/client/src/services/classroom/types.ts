@@ -45,7 +45,8 @@ export type JoinClassroomArgs = {
 
 export type RewardDataResponse = {
   statusCode: number
-  data: number
+  rewardedScore: number
+  pointsUser: number
 }
 
 export type UserInClassroom = {

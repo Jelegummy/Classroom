@@ -11,7 +11,8 @@ type Props = {
 
 export type RewardDataResponse = {
   statusCode: number
-  data: number
+  rewardedScore: number
+  pointsUser: number
 }
 
 export default function NavbarPoints({ classroomId }: Props) {
@@ -34,9 +35,7 @@ export default function NavbarPoints({ classroomId }: Props) {
           <div className="flex w-full items-center justify-end gap-3">
             <div className="flex flex-row items-center gap-2 rounded-lg bg-[#EA9000] p-2 px-4 py-1 text-white">
               <FaCoins className="text-sm" />
-              <h1 className="font-bold">
-                {typeof reward === 'number' ? reward : (reward?.data ?? 0)}
-              </h1>
+              <h1 className="font-bold">{reward?.pointsUser ?? 0}</h1>
             </div>
             <div className="relative">
               <div
