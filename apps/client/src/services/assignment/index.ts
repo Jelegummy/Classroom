@@ -1,5 +1,5 @@
 import { getSession } from 'next-auth/react'
-import { api8000,api4000 } from '../api-client'
+import { api8000, api4000 } from '../api-client'
 import {
   AnalyzeAssignmentResponse,
   CreateAssignmentArgs,
@@ -18,9 +18,8 @@ export async function analyzeAssignment(
   file: File,
   classroomId: string,
   creatorId: string,
-  dueDate?: string
+  dueDate?: string,
 ): Promise<AnalyzeAssignmentResponse> {
-
   const formData = new FormData()
   formData.append('file', file)
 
@@ -36,52 +35,43 @@ export async function analyzeAssignment(
       filePdf: uploadRes.filePdf,
       classroomId,
       creatorId,
-      dueDate: dueDate ? new Date(dueDate).toISOString() : null
-    }
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+    },
   )
 
-  return result  
+  return result
 }
 
 export async function createAssignment(
-  args: CreateAssignmentArgs
+  args: CreateAssignmentArgs,
 ): Promise<CreateAssignmentResponse> {
-  return api8000.post<CreateAssignmentResponse>(
-    '/api/assignments/upsert',
-    {
-      title: args.title,
-      description: args.description,
-      classroomId: args.classroomId,
-      generatedFileTxt: args.generatedFileTxt,
-      chatHistory: args.chatHistory,
-      filePdf: args.filePdf,     
-      creatorId: args.creatorId,
-      dueDate: args.dueDate
-        ? new Date(args.dueDate).toISOString()
-        : null,
-      status: args.status ?? 'DRAFT',
-    }
-  )
+  return api8000.post<CreateAssignmentResponse>('/api/assignments/upsert', {
+    title: args.title,
+    description: args.description,
+    classroomId: args.classroomId,
+    generatedFileTxt: args.generatedFileTxt,
+    chatHistory: args.chatHistory,
+    filePdf: args.filePdf,
+    creatorId: args.creatorId,
+    dueDate: args.dueDate ? new Date(args.dueDate).toISOString() : null,
+    status: args.status ?? 'DRAFT',
+  })
 }
 
 export async function startSession(assignmentId: string) {
-  return api8000.post<{ session_id: string }>(
-    '/api/session/start',
-    { assignment_id: assignmentId }
-  )
+  return api8000.post<{ session_id: string }>('/api/session/start', {
+    assignment_id: assignmentId,
+  })
 }
 
 export async function pauseSession(sessionId: string) {
-  return api8000.post<{ status: string }>(
-    `/api/session/${sessionId}/pause`,
-    {}
-  )
+  return api8000.post<{ status: string }>(`/api/session/${sessionId}/pause`, {})
 }
 
 export async function resumeSession(sessionId: string) {
   return api8000.post<{ status: string }>(
     `/api/session/${sessionId}/resume`,
-    {}
+    {},
   )
 }
 
@@ -90,7 +80,7 @@ export async function checkFace(frame: Blob) {
   formData.append('frame', frame, 'frame.jpg')
   return api8000.postForm<{ face_detected: boolean }>(
     '/api/check-face',
-    formData
+    formData,
   )
 }
 
@@ -132,7 +122,7 @@ export const getAllAssignments = async (args: { classroomId?: string }) => {
 export async function deleteAssignment(assignmentId: string) {
   return api4000.post<DeleteAssignmentResponse>(
     '/assignment/internal/delete-assignment',
-    { assignmentId }
+    { assignmentId },
   )
 }
 
@@ -171,8 +161,5 @@ export async function getAnswerHistory(submissionId: string) {
 }
 
 export async function stopSession(sessionId: string) {
-  return api8000.post<{ status: string }>(
-    `/api/session/${sessionId}/stop`,
-    {}
-  )
+  return api8000.post<{ status: string }>(`/api/session/${sessionId}/stop`, {})
 }

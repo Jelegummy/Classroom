@@ -16,7 +16,14 @@ const main = async () => {
       trustProxy: true,
       bodyLimit: 20 * 1024 * 1024,
     }),
-    { bodyParser: true, cors: { origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], credentials: true, methods: '*' } },
+    {
+      bodyParser: true,
+      cors: {
+        origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+        credentials: true,
+        methods: '*',
+      },
+    },
   )
 
   await app.register(multipart as any, {

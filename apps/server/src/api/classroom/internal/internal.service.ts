@@ -15,7 +15,7 @@ import { customAlphabet } from 'nanoid'
 
 @Injectable()
 export class ClassroomInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createClassroom(args: CreateClassroomArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -342,28 +342,27 @@ export class ClassroomInternalService {
         score: true,
         user: {
           select: {
-            points: true
-          }
-        }
+            points: true,
+          },
+        },
       },
     })
 
-    const scoreToReward = userInClass?.score || 0;
-    let totalPoints = userInClass?.user?.points || 0;
+    const scoreToReward = userInClass?.score || 0
+    let totalPoints = userInClass?.user?.points || 0
 
     if (scoreToReward > 0) {
       const [updatedUser, updatedClassroom] = await this.db.$transaction([
-
         this.db.user.update({
           where: { id: user.id },
           data: {
             points: {
-              increment: scoreToReward
-            }
+              increment: scoreToReward,
+            },
           },
           select: {
-            points: true
-          }
+            points: true,
+          },
         }),
 
         this.db.classroomOnUser.update({
@@ -374,17 +373,17 @@ export class ClassroomInternalService {
             },
           },
           data: {
-            score: 0
-          }
-        })
-      ]);
+            score: 0,
+          },
+        }),
+      ])
 
-      totalPoints = updatedUser.points;
+      totalPoints = updatedUser.points
     }
 
     return {
       rewardedScore: scoreToReward,
-      pointsUser: totalPoints
+      pointsUser: totalPoints,
     }
   }
 

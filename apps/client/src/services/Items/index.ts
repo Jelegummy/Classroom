@@ -23,13 +23,10 @@ export const buyItems = async (args: BuyItems) => {
 export const createItems = async (args: CreateItemsArgs) => {
   const session = await getSession()
 
-  const res = await fetchers.Post<Items>(
-    `${ENDPOINT}/items/internal/create`,
-    {
-      data: args,
-      token: session?.user.accessToken,
-    },
-  )
+  const res = await fetchers.Post<Items>(`${ENDPOINT}/items/internal/create`, {
+    data: args,
+    token: session?.user.accessToken,
+  })
 
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)

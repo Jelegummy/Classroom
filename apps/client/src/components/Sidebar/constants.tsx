@@ -4,6 +4,7 @@ import { SiGoogleclassroom } from 'react-icons/si'
 import { TbBrandGoogleHome, TbLockPassword } from 'react-icons/tb'
 import { GiFragmentedSword } from 'react-icons/gi'
 import { SiNodemon } from 'react-icons/si'
+import { MdOutlineGeneratingTokens } from 'react-icons/md'
 
 export const TEARCHER_ROUTES = [
   // {
@@ -20,6 +21,11 @@ export const TEARCHER_ROUTES = [
     title: 'ตั้งค่า',
     route: '/dashboard/setting',
     icon: <TbLockPassword className="h-6 w-6" />,
+  },
+  {
+    title: 'ซื้อ Tokens',
+    route: '/dashboard/teacher/token',
+    icon: <MdOutlineGeneratingTokens className="h-6 w-6" />,
   },
   // {
   //   title: 'การบ้าน',

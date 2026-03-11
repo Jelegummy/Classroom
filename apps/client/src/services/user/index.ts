@@ -89,4 +89,19 @@ export const loginDiscord = async (args: LoginDiscordArgs) => {
   return res.data as { accessToken: string }
 }
 
+export const getUserPoint = async (id: string) => {
+  const session = await getSession()
+  const res = await fetchers.Get<{ points: number }>(
+    `${ENDPOINT}/user/internal/point/${id}`,
+    {
+      token: session?.user.accessToken,
+    },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
 export * from './types'

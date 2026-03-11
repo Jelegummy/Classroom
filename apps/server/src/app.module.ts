@@ -19,6 +19,7 @@ import { AttendanceModule } from './api/attendance/attendance.module'
 import { CharacterModule } from './api/character/character.module'
 import { TutorModule } from './api/tutor/tuter.module'
 import { AssignmentModule } from './api/assignment/assignment.module'
+import { PaymentModule } from './api/payment/payment.module'
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AssignmentModule } from './api/assignment/assignment.module'
     TutorModule,
     GameModule,
     AttendanceModule,
+    PaymentModule,
     CharacterModule,
     ItemsModule,
     AnnounceModule,

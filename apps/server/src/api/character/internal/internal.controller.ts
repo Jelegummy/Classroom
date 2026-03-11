@@ -17,7 +17,7 @@ import { Context } from '@app/common'
 @ApiTags('character-internal')
 @Controller('character/internal')
 export class CharacterInternalController {
-  constructor(private readonly service: CharacterInternalService) { }
+  constructor(private readonly service: CharacterInternalService) {}
 
   @Post('/create/character')
   async createCharacter(@Body() args: CreateCharacterDto, @Req() ctx: Context) {

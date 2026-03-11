@@ -12,21 +12,21 @@ export class RegisterArgs extends createZodDto(
     schoolId: z.string().min(1).optional(),
     schoolName: z.string().min(1).optional(),
   }),
-) { }
+) {}
 
 export class LoginArgs extends createZodDto(
   z.object({
     email: z.string().email(),
     password: z.string().min(8),
   }),
-) { }
+) {}
 
 export class RegisterDiscordArgs extends createZodDto(
   z.object({
     discordId: z.string().min(1),
     realName: z.string().min(1),
   }),
-) { }
+) {}
 
 export class LoginDiscordArgs extends createZodDto(
   z.object({
@@ -36,6 +36,6 @@ export class LoginDiscordArgs extends createZodDto(
     lastName: z.string().optional(),
     schoolId: z.string().optional(),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

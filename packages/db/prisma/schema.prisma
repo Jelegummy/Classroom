@@ -56,8 +56,23 @@ model User {
     createdAt          DateTime            @default(now()) @map("created_at")
     updatedAt          DateTime            @updatedAt @map("updated_at")
     classroomAnnounces ClassroomAnnounce[]
+    transactions       Transaction[]
 
     @@map("users")
+}
+
+model Transaction {
+    id String @id @default(uuid())
+
+    amount       Int
+    tokensPoints Int           @map("tokens_points")
+    referenceId  String?       @unique @map("reference_id")
+    status       PaymentStatus @default(PENDING)
+
+    userId String @map("user_id")
+    user   User   @relation(fields: [userId], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
 }
 
 model Classroom {
@@ -385,4 +400,11 @@ enum GameStatus {
     WAITING
     ONGOING
     FINISHED
+}
+
+enum PaymentStatus {
+    PENDING
+    SUCCESS
+    FAILED
+    CANCELED
 }

@@ -1,4 +1,4 @@
 export type DeleteCharacterProps = {
-    id: string
-    bossName: string
+  id: string
+  bossName: string
 }

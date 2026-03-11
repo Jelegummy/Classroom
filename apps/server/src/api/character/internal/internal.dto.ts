@@ -11,6 +11,6 @@ export class CreateCharacterDto extends createZodDto(
     modelUrl: z.string().optional(),
     imageUrl: z.string().optional(),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

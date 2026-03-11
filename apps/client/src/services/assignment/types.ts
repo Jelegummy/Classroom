@@ -95,11 +95,13 @@ export type ApproveSubmissionResponse = {
 
 export type GetAnswerHistoryResponse = {
   id: string
-  answerHistory: {
-    role: 'bot' | 'student'
-    content: string
-    timestamp?: string
-  }[] | null
+  answerHistory:
+    | {
+        role: 'bot' | 'student'
+        content: string
+        timestamp?: string
+      }[]
+    | null
   user: {
     firstName: string
     lastName: string

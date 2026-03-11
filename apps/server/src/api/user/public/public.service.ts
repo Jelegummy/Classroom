@@ -7,14 +7,19 @@ import {
   UnauthorizedException,
 } from '@nestjs/common'
 
-import { LoginArgs, LoginDiscordArgs, RegisterArgs, RegisterDiscordArgs } from './public.dto'
+import {
+  LoginArgs,
+  LoginDiscordArgs,
+  RegisterArgs,
+  RegisterDiscordArgs,
+} from './public.dto'
 
 @Injectable()
 export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -27,7 +32,7 @@ export class UserPublicService {
     const hashedPassword = await this.authService.hashPassword(password)
 
     return this.db.$transaction(async tx => {
-      let finalSchoolId = "6c18f70e-9457-4f2b-904c-29927997ad69" // hardcode now - will fix this later (wait mail to be sent to user before creating school and user)
+      let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69' // hardcode now - will fix this later (wait mail to be sent to user before creating school and user)
 
       // if (!finalSchoolId) {
       //   if (!schoolName) {
@@ -125,10 +130,7 @@ export class UserPublicService {
 
     let user = await this.db.user.findFirst({
       where: {
-        OR: [
-          { discordId: discordId },
-          { email: email },
-        ],
+        OR: [{ discordId: discordId }, { email: email }],
       },
     })
 
@@ -141,7 +143,7 @@ export class UserPublicService {
 
     if (!user) {
       user = await this.db.$transaction(async tx => {
-        let finalSchoolId = "6c18f70e-9457-4f2b-904c-29927997ad69" // hardcode now
+        let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69' // hardcode now
 
         return await tx.user.create({
           data: {
@@ -162,7 +164,7 @@ export class UserPublicService {
     return {
       accessToken,
       userId: user.id,
-      schoolId: user.schoolId
+      schoolId: user.schoolId,
     }
   }
 }

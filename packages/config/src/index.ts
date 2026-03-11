@@ -9,6 +9,8 @@ const MINIO_BUCKET = process.env.MINIO_BUCKET ?? ''
 const MINIO_ACCESS_KEY = process.env.MINIO_ACCESS_KEY ?? ''
 const MINIO_SECRET_KEY = process.env.MINIO_SECRET_KEY ?? ''
 const GOOGLE_MAP_API = process.env.GOOGLE_MAP_API ?? ''
+const SLIP_VERIFY_CLIENT_SECRET = process.env.SLIP_VERIFY_CLIENT_SECRET ?? ''
+const SLIP_VERIFY_CLIENT_ID = process.env.SLIP_VERIFY_CLIENT_ID ?? ''
 
 export const env = {
   NODE_ENV,
@@ -22,6 +24,8 @@ export const env = {
   MINIO_ACCESS_KEY,
   MINIO_SECRET_KEY,
   GOOGLE_MAP_API,
+  SLIP_VERIFY_CLIENT_SECRET,
+  SLIP_VERIFY_CLIENT_ID,
 }
 
 export const mailerConfig = {

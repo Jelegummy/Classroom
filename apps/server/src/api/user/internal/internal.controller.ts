@@ -53,4 +53,11 @@ export class UserInternalController {
 
     return { statusCode: HttpStatus.OK }
   }
+
+  @Get('/point/:id')
+  async getUserPoint(@Param('id') id: string, @Req() ctx: Context) {
+    const res = await this.service.getUserPoint({ id }, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
 }

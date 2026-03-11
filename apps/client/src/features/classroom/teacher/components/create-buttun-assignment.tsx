@@ -169,7 +169,7 @@ export default function CreateButtonAssignment({
             </div>
 
             {step === 1 && (
-              <div className="animate-in fade-in grid duration-300">
+              <div className="grid duration-300 animate-in fade-in">
                 <input
                   type="text"
                   className="input input-bordered w-full"
@@ -239,7 +239,7 @@ export default function CreateButtonAssignment({
             )}
 
             {step === 3 && (
-              <div className="animate-in slide-in-from-right duration-300">
+              <div className="duration-300 animate-in slide-in-from-right">
                 <div className="max-h-[350px] space-y-3 overflow-y-auto pr-2">
                   {questions.length > 0 ? (
                     questions.map((question, index) => (
