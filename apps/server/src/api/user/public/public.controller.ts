@@ -1,13 +1,18 @@
 import { Body, Controller, Headers, HttpStatus, Post } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
-import { LoginArgs, LoginDiscordArgs, RegisterArgs, RegisterDiscordArgs } from './public.dto'
+import {
+  LoginArgs,
+  LoginDiscordArgs,
+  RegisterArgs,
+  RegisterDiscordArgs,
+} from './public.dto'
 import { UserPublicService } from './public.service'
 
 @ApiTags('User - Public')
 @Controller('user/public')
 export class UserPublicController {
-  constructor(private readonly service: UserPublicService) { }
+  constructor(private readonly service: UserPublicService) {}
 
   @Post('/register')
   async register(@Body() args: RegisterArgs) {

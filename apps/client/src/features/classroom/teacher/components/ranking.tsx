@@ -178,7 +178,7 @@ export default function Ranking({
 
       {isDialogOpen && selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
-          <div className="animate-in fade-in zoom-in relative w-full max-w-xs overflow-hidden rounded-2xl bg-white shadow-2xl duration-200 md:w-80">
+          <div className="relative w-full max-w-xs overflow-hidden rounded-2xl bg-white shadow-2xl duration-200 animate-in fade-in zoom-in md:w-80">
             <div className="relative z-10 h-20 w-full bg-blue-500 md:h-24 md:bg-primary">
               <button
                 onClick={() => setIsDialogOpen(false)}

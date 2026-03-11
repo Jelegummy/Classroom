@@ -10,7 +10,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -26,6 +26,7 @@ export class UserInternalService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        points: true,
         studentId: true,
         teacherId: true,
         major: true,
@@ -92,6 +93,7 @@ export class UserInternalService {
         lastName: true,
         phoneNumber: true,
         studentId: true,
+        points: true,
         teacherId: true,
         major: true,
         role: true,
@@ -119,5 +121,26 @@ export class UserInternalService {
     await this.db.user.delete({
       where: { id: args.id },
     })
+  }
+
+  async getUserPoint(args: { id: string }, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+      throw new Error('Only admins can access user points')
+    }
+
+    const res = await this.db.user.findUnique({
+      where: { id: args.id },
+      select: {
+        points: true,
+      },
+    })
+
+    if (!res) {
+      throw new Error('User not found')
+    }
+
+    return res
   }
 }

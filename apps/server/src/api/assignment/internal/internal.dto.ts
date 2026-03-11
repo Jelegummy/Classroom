@@ -18,7 +18,7 @@ export class GetAssignmentsByClassroomArgs extends createZodDto(
   z.object({
     classroomId: z.string().uuid(),
   }),
-) { }
+) {}
 
 export class GetSubmissionsByAssignmentArgs extends createZodDto(
   z.object({
