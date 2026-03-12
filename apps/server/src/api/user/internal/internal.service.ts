@@ -3,14 +3,14 @@ import { Context, getUserFromContext } from '@app/common'
 import { PrismaService } from '@app/db'
 import { Injectable } from '@nestjs/common'
 
-import { UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
+import { CreateUserArgs, UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
 
 @Injectable()
 export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -142,5 +142,38 @@ export class UserInternalService {
     }
 
     return res
+  }
+
+  async createUser(args: CreateUserArgs, ctx: Context) {
+    const user = getUserFromContext(ctx)
+
+    if (user.role !== 'ADMIN') {
+      throw new Error('Only admins can create users')
+    }
+
+    const { email, password, schoolId, schoolName, ...rest } = args
+
+    const exist = await this.db.user.findUnique({ where: { email } })
+    if (exist) {
+      throw new Error('User already exists')
+    }
+
+    const hashedPassword = await this.authService.hashPassword(password)
+
+    return this.db.$transaction(async tx => {
+      let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69'
+      const user = await tx.user.create({
+        data: {
+          ...rest,
+          email,
+          password: hashedPassword,
+          role: 'STUDENT',
+          schoolId: finalSchoolId,
+        },
+      })
+
+      return { userId: user.id, schoolId: finalSchoolId }
+    })
+
   }
 }

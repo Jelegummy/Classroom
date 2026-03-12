@@ -7,17 +7,18 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
-import { UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
+import { CreateUserArgs, UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
 import { UserInternalService } from './internal.service'
 
 @ApiTags('User - Internal')
 @Controller('user/internal')
 export class UserInternalController {
-  constructor(private readonly service: UserInternalService) {}
+  constructor(private readonly service: UserInternalService) { }
 
   @Get('/me')
   async getMe(@Req() ctx: Context) {
@@ -59,5 +60,12 @@ export class UserInternalController {
     const res = await this.service.getUserPoint({ id }, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
+  }
+
+  @Post('/create-user')
+  async createUser(@Body() args: CreateUserArgs, @Req() ctx: Context) {
+    const res = await this.service.createUser(args, ctx)
+
+    return { statusCode: HttpStatus.CREATED, data: res }
   }
 }

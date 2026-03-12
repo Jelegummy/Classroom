@@ -41,3 +41,13 @@ export type LoginDiscordArgs = {
   lastName?: string
   schoolId?: string
 }
+
+export type CreateUserArgs = {
+  email: string
+  password: string
+  firstName: string
+  lastName: string
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN'
+  schoolId?: string
+  schoolName?: string
+}

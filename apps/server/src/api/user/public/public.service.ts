@@ -19,7 +19,7 @@ export class UserPublicService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
@@ -57,7 +57,7 @@ export class UserPublicService {
           ...rest,
           email,
           password: hashedPassword,
-          role: 'ADMIN',
+          role: 'STUDENT',
           schoolId: finalSchoolId,
         },
       })

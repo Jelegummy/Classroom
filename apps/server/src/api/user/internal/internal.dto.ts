@@ -10,13 +10,25 @@ export class UpdateUserArgs extends createZodDto(
     teacherId: z.string().optional(),
     major: z.string().optional(),
   }),
-) {}
+) { }
 
 export class UpdatePasswordArgs extends createZodDto(
   z.object({
     oldpassword: z.string().min(8),
     newPassword: z.string().min(8),
   }),
-) {}
+) { }
+
+export class CreateUserArgs extends createZodDto(
+  z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    firstName: z.string(),
+    lastName: z.string(),
+    role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']),
+    schoolId: z.string().min(1).optional(),
+    schoolName: z.string().min(1).optional(),
+  }),
+) { }
 
 patchNestJsSwagger()
