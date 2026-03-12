@@ -4,13 +4,14 @@ import discord
 from faster_whisper import WhisperModel
 from discord.ext import commands, voice_recv
 import wave
-from ollama import AsyncClient
 import asyncio
 from pythainlp.util import normalize
 import shutil
 import aiohttp
 import json
-
+import re
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage
 
 # Load environment variables
 load_dotenv()
@@ -20,6 +21,7 @@ DEVICE = os.getenv("DEVICE", "cpu")
 LANGUAGE = os.getenv("LANGUAGE", "th")
 BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
 NESTJS_BASE_URL = os.getenv("NESTJS_BASE_URL", "http://localhost:4000")
+TYPHOON_KEY = os.getenv("TYPHOON_KEY")
 
 BASE_RECORD_DIR = "recordings"
 os.makedirs(BASE_RECORD_DIR, exist_ok=True)
@@ -39,6 +41,15 @@ if not discord.opus.is_loaded():
         except Exception:
             continue
 
+# Load LLM
+llm = ChatOpenAI(
+    base_url="https://api.opentyphoon.ai/v1",
+    api_key=TYPHOON_KEY,
+    model='typhoon-v2.5-30b-a3b-instruct',
+    temperature=0.3,
+    max_tokens=4000,
+)
+
 # Load Model
 model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
 print("Whisper พร้อมใช้งาน")
@@ -51,6 +62,8 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 active_sessions = {}
 registered_names = {}
+
+ai_processing_queue = asyncio.Queue()
 
 # Sink Voice Client
 
@@ -90,12 +103,27 @@ def format_time(seconds: float) -> str:
     return f"{m:02d}:{s:02d}"
 
 
+def extract_json_from_text(text: str) -> str:
+    text = text.strip()
+    match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    match = re.search(r'(\{.*\})', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return text
+
+
 def transcribe_with_whisper(path: str):
+    if os.path.getsize(path) < 100000:
+        return []
+
     segments, _ = model.transcribe(
         path,
         language=LANGUAGE,
         vad_filter=True,
-        beam_size=5,
+        beam_size=2,
+        condition_on_previous_text=False
     )
     return [{
         "start": seg.start,
@@ -104,68 +132,53 @@ def transcribe_with_whisper(path: str):
     } for seg in segments]
 
 
-async def refine_thai(text: str) -> str:
-    if not text.strip():
-        return ""
-
-    prompt = f"""
-        คุณคือผู้ช่วยปรับข้อความภาษาไทยจากการถอดเสียงพูด
-
-        กฎ:
-        - ลบคำฟุ่มเฟือย
-        - แก้คำสะกดผิดทั่วไป
-        - ห้ามเพิ่มข้อมูล
-        - ห้ามเดาชื่อเฉพาะ
-        - ใช้ภาษาไทยเท่านั้น
-
-        ข้อความ:
-        \"\"\"
-        {text}
-        \"\"\"
-    """
-    try:
-        client = AsyncClient()
-        res = await client.chat(
-            model="scb10x/typhoon-translate1.5-4b",
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.2}
-        )
-        return res["message"]["content"].strip()
-    except:
-        return text
-
-
 async def analyze_session(blocks, all_participants):
     convo = "\n".join(
         [f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}" for b in blocks])
     participants_str = ", ".join(all_participants)
-    prompt = f"""
-        คุณคือ AI ผู้ช่วยสรุปการสอน ผู้เข้าร่วม: {participants_str} บทสนทนา:\n{convo}
-        ตอบเป็น JSON: {{
+    prompt = f"ผู้เข้าร่วม: {participants_str}\nหมายเหตุ: ถอดเสียงอัตโนมัติ ให้ประมวลผลข้ามคำผิดและสรุปใจความสำคัญ\n\nบทสนทนา:\n{convo}"
+
+    messages = [
+        SystemMessage(content="""คุณคือ AI ผู้ช่วยสรุปการสอน 
+        ตอบกลับเป็น JSON format เท่านั้น ห้ามมีข้อความอื่น โครงสร้าง:
+        {
             "session_type": "Tutoring/General", 
             "topic": "หัวข้อที่สอน", 
             "summary": "สรุปเนื้อหา", 
-            "roles": {{
+            "roles": {
                 "main_speaker": "ผู้สอน", 
-                "active_participants": ["ชื่อคนที่ร่วมพูดคุย"],
-                "silent_participants": ["ชื่อคนที่อยู่ในห้องแต่ไม่พูด (ไม่รวมผู้พูดหลัก)"]
-            }}
-        }}
-    """
+                "active_participants": ["ชื่อคนที่พูด"],
+                "silent_participants": ["ชื่อคนที่ไม่พูด"]
+            }
+        }"""),
+        HumanMessage(content=prompt)
+    ]
+
     try:
-        client = AsyncClient()
-        res = await client.chat(
-            model="scb10x/typhoon-translate1.5-4b",
-            messages=[{"role": "user", "content": prompt}],
-            options={"temperature": 0.3, "format": "json"}
-        )
-        return res["message"]["content"]
+        response = await llm.ainvoke(messages)
+        return extract_json_from_text(response.content)
     except Exception as e:
-        return "{}"
+        print(f"LLM Error: {e}")
+        return None
+
+
+# Background Task to Process Session Data
+
+async def ai_worker():
+    await bot.wait_until_ready()
+    print("Background AI Worker สแตนด์บายพร้อมรับงาน!")
+    while not bot.is_closed():
+        task = await ai_processing_queue.get()
+        try:
+            await process_session_data(task["channel_id"], task["text_channel"], task["session_data"], task["voice_name"])
+        except Exception as e:
+            print(f"Worker Error: {e}")
+        finally:
+            ai_processing_queue.task_done()
 
 
 async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict, voice_name: str):
-    await text_channel.send(f"บันทึกเสียงเสร็จสิ้น กำลังให้ AI ประมวลผลและสรุปบทเรียน (อาจใช้เวลาสักครู่)...")
+    status_msg = await text_channel.send(f"** บันทึกเสียงเสร็จสิ้น กำลังถอดรหัสเสียง** (ขั้นตอน 1/2)...")
 
     record_dir = session_data["record_dir"]
     members_map = session_data["members_map"]
@@ -173,42 +186,44 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
     command_runner_id = session_data["command_runner_id"]
 
     speaker_blocks = []
+    loop = asyncio.get_event_loop()
+
     if os.path.exists(record_dir):
-        for file in os.listdir(record_dir):
-            if not file.endswith(".wav"):
-                continue
+        files = [f for f in os.listdir(record_dir) if f.endswith(".wav")]
+        for idx, file in enumerate(files, 1):
             user_id_str = file.replace(".wav", "")
-            speaker_name = members_map.get(
-                int(user_id_str), f"Unknown-{user_id_str}",
-                registered_names.get(
-                    int(user_id_str), f"Unknown-{user_id_str}")
-            )
-
+            speaker_name = members_map.get(int(user_id_str), registered_names.get(
+                int(user_id_str), f"Unknown-{user_id_str}"))
             full_path = os.path.join(record_dir, file)
-            loop = asyncio.get_event_loop()
-            segments = await loop.run_in_executor(None, transcribe_with_whisper, full_path)
 
-            for seg in segments:
-                clean = normalize(seg["text"])
-                refiled = await refine_thai(clean)
-                if refiled:
-                    speaker_blocks.append({
-                        "speaker": speaker_name,
-                        "start": seg["start"],
-                        "end": seg["end"],
-                        "text": refiled
-                    })
+            print(f"[{voice_name}] ถอดเสียง {speaker_name} ({idx}/{len(files)})...")
+            try:
+                segments = await loop.run_in_executor(None, transcribe_with_whisper, full_path)
+                for seg in segments:
+                    clean = normalize(seg["text"])
+                    if len(clean) > 2:
+                        speaker_blocks.append({
+                            "speaker": speaker_name, "start": seg["start"],
+                            "end": seg["end"], "text": clean
+                        })
+            except Exception as e:
+                print(f"Error STT: {e}")
+
     shutil.rmtree(record_dir, ignore_errors=True)
 
     if not speaker_blocks:
-        await text_channel.send(f"❌ ไม่มีเสียงพูดในคลาสเรียนนี้ครับ")
+        await status_msg.edit(content=f"❌ ไม่มีเสียงพูดในคลาสเรียนนี้ครับ")
         return
 
     speaker_blocks.sort(key=lambda x: x["start"])
     all_names = list(members_map.values())
-    print(f"กำลังวิเคราะห์บทเรียนด้วย AI... ผู้เข้าร่วม: {all_names}")
+    await status_msg.edit(content=f"**ถอดเสียงเสร็จสิ้น!**\nกำลังให้ AI สรุปเนื้อหาและส่งเข้าฐานข้อมูล (ขั้นตอน 2/2)...")
 
     analysis_json_str = await analyze_session(speaker_blocks, all_names)
+
+    if not analysis_json_str:
+        await status_msg.edit(content=f"**ขัดข้อง:** เชื่อมต่อกับ AI ไม่สำเร็จ")
+        return
 
     try:
         analysis_data = json.loads(analysis_json_str)
@@ -301,18 +316,6 @@ class RegistrationModal(discord.ui.Modal, title='ยืนยันการเ�
                         await interaction.followup.send(f"**ยืนยันไม่สำเร็จ**\n{error_msg}", ephemeral=True)
         except Exception as e:
             await interaction.followup.send("ระบบขัดข้อง: ไม่สามารถเชื่อมต่อกับฐานข้อมูลเว็บไซต์ได้", ephemeral=True)
-
-
-# class StudentView(discord.ui.View):
-#     def __init__(self):
-#         super().__init__(timeout=None)
-
-#     @discord.ui.button(label="📝 ยืนยันการเข้าร่วม", style=discord.ButtonStyle.primary, custom_id="btn_register")
-#     async def register_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-#         if interaction.user.id in registered_names:
-#             await interaction.response.send_message("✅ คุณได้ยืนยันการเข้าร่วมเรียบร้อยแล้ว ไม่ต้องทำซ้ำครับ!", ephemeral=True)
-#             return
-#         await interaction.response.send_modal(RegistrationModal(user_id=interaction.user.id))
 
 
 class HostView(discord.ui.View):
@@ -516,53 +519,27 @@ async def on_voice_state_update(member, before, after):
 
     if after.channel and before.channel != after.channel:
         voice_channel = after.channel
-
-        members_in_after_vc = [m for m in voice_channel.members if not m.bot]
-
-        if len(members_in_after_vc) == 1:
-            embed = discord.Embed(
-                title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
-                description=(
-                    "**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง) \n"
-                ),
-                color=discord.Color.blue()
-            )
-            view = MainEntryPointView()
-
-            await voice_channel.send(
-                content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว",
-                embed=embed,
-                view=view
-            )
+        if len([m for m in voice_channel.members if not m.bot]) == 1:
+            embed = discord.Embed(title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
+                                  description="**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง)", color=discord.Color.blue())
+            await voice_channel.send(content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว", embed=embed, view=MainEntryPointView())
 
         if member.id not in registered_names:
-            await voice_channel.send(
-                f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**",
-                delete_after=30
-            )
+            await voice_channel.send(f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**", delete_after=30)
 
     if before.channel and before.channel != after.channel:
         voice_channel = before.channel
-        guild = voice_channel.guild
-
-        members_in_vc = [m for m in voice_channel.members if not m.bot]
-
-        if len(members_in_vc) == 0:
+        if len([m for m in voice_channel.members if not m.bot]) == 0:
             try:
                 await voice_channel.purge(limit=None, bulk=False)
-            except discord.Forbidden:
-                print(
-                    f"ไม่มี Permission ในการลบข้อความห้อง {voice_channel.name}")
-            except Exception as e:
-                print(f"เกิดข้อผิดพลาดในการล้างแชท: {e}")
+            except Exception:
+                pass
 
-            vc = guild.voice_client
+            vc = voice_channel.guild.voice_client
             if vc and vc.channel == voice_channel:
                 channel_id_str = str(voice_channel.id)
-
-                if channel_id_str in active_sessions:
-                    session_data = active_sessions.pop(channel_id_str)
-
+                session_data = active_sessions.pop(channel_id_str, None)
+                if session_data:
                     try:
                         vc.stop_listening()
                         session_data["sink"].cleanup()
@@ -570,14 +547,12 @@ async def on_voice_state_update(member, before, after):
                         pass
 
                     if session_data.get("status") == "recording":
-                        asyncio.create_task(
-                            process_session_data(
-                                channel_id_str,
-                                voice_channel,
-                                session_data
-                            )
-                        )
-
+                        await ai_processing_queue.put({
+                            "channel_id": channel_id_str,
+                            "text_channel": voice_channel,
+                            "session_data": session_data,
+                            "voice_name": voice_channel.name
+                        })
                 await vc.disconnect(force=True)
 
 
@@ -585,6 +560,7 @@ async def on_voice_state_update(member, before, after):
 async def on_ready():
     print(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
     bot.add_view(MainEntryPointView())
+    bot.loop.create_task(ai_worker())
 
 
 if __name__ == "__main__":

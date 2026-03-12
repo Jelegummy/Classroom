@@ -3,6 +3,7 @@ import { getSession } from 'next-auth/react'
 import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 import {
+  CreateUserArgs,
   LoginArgs,
   LoginDiscordArgs,
   RegisterArgs,
@@ -97,6 +98,42 @@ export const getUserPoint = async (id: string) => {
       token: session?.user.accessToken,
     },
   )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
+export const getAllUsers = async () => {
+  const session = await getSession()
+  const res = await fetchers.Get<User[]>(`${ENDPOINT}/user/internal/all`, {
+    token: session?.user.accessToken,
+  })
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data as User[]
+}
+
+export const deleteUser = async (id: string) => {
+  const session = await getSession()
+  const res = await fetchers.Delete(`${ENDPOINT}/user/internal/${id}`, {
+    token: session?.user.accessToken,
+  })
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+}
+
+export const createUser = async (args: CreateUserArgs) => {
+  const session = await getSession()
+
+  const res = await fetchers.Post(`${ENDPOINT}/user/internal/create-user`, {
+    data: args,
+    token: session?.user.accessToken,
+  })
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }

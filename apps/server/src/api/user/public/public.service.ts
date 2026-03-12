@@ -57,7 +57,7 @@ export class UserPublicService {
           ...rest,
           email,
           password: hashedPassword,
-          role: 'ADMIN',
+          role: 'STUDENT',
           schoolId: finalSchoolId,
         },
       })

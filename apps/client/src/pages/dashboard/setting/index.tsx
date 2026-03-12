@@ -183,12 +183,12 @@ export default function Setting() {
                   </p>
                 )}
               </div>
-              <div>
+              {/* <div>
                 <label className="mb-1 block text-sm text-gray-400">
                   โรงเรียน
                 </label>
                 <p className="font-medium text-gray-800">school name</p>
-              </div>
+              </div> */}
               <div>
                 <label className="mb-1 block text-sm text-gray-400">
                   บทบาท
