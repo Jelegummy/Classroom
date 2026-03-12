@@ -10,6 +10,7 @@ import {
   RegisterArgs as BaseRegisterArgs,
   register as registerFn,
 } from '@/services/user'
+import Image from 'next/image'
 
 type RegisterForm = BaseRegisterArgs & {
   confirmPassword: string
@@ -67,68 +68,95 @@ const Register = () => {
           กลับ
         </Link>
       </div>
-      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white p-8 px-4 shadow-xl">
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-          <h1 className="text-center text-2xl font-bold">ข้อมูลผู้ใช้งาน</h1>
-
-          <div className="flex gap-4">
-            <input
-              className="input input-bordered w-full"
-              placeholder="ชื่อ"
-              {...register('firstName', { required: true })}
+      <div className="grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-xl md:grid-cols-2">
+        <div className="flex flex-col justify-center px-8 py-12 md:px-12">
+          <div className="flex flex-col items-center gap-4">
+            <Image
+              src="/learnify-logo.png"
+              alt="Learnify Logo"
+              width={56}
+              height={56}
             />
-            <input
-              className="input input-bordered w-full"
-              placeholder="นามสกุล"
-              {...register('lastName', { required: true })}
-            />
+            <h1 className="text-3xl font-bold tracking-tight text-gray-800">
+              สร้างบัญชีใหม่
+            </h1>
+            <p className="text-center text-sm text-gray-500">
+              กรอกข้อมูลด้านล่างเพื่อสร้างบัญชีของคุณและเริ่มต้นใช้งานได้เลย
+            </p>
           </div>
 
-          <label className="input input-bordered flex items-center gap-2">
-            <IoMail />
-            <input
-              type="email"
-              className="grow"
-              placeholder="อีเมล"
-              {...register('email', { required: true })}
-            />
-          </label>
-
-          <label className="input input-bordered flex items-center gap-2">
-            <FaLock />
-            <input
-              type="password"
-              className="grow"
-              placeholder="รหัสผ่าน"
-              {...register('password', { required: true })}
-            />
-          </label>
-
-          <label className="input input-bordered flex items-center gap-2">
-            <FaLock />
-            <input
-              type="password"
-              className="grow"
-              placeholder="ยืนยันรหัสผ่าน"
-              {...register('confirmPassword', { required: true })}
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={!isValid || isSubmitting}
-            className="mt-4 rounded-full bg-primary py-2 font-semibold text-white disabled:bg-gray-400"
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="mt-10 flex flex-col gap-4"
           >
-            สมัครสมาชิก
-          </button>
+            <div className="flex gap-4">
+              <input
+                className="input input-bordered w-full"
+                placeholder="ชื่อ"
+                {...register('firstName', { required: true })}
+              />
+              <input
+                className="input input-bordered w-full"
+                placeholder="นามสกุล"
+                {...register('lastName', { required: true })}
+              />
+            </div>
 
-          <p className="mt-3 text-center text-sm">
-            มีบัญชีแล้ว?{' '}
-            <Link href="/login" className="text-primary hover:underline">
-              เข้าสู่ระบบ
-            </Link>
-          </p>
-        </form>
+            <label className="input input-bordered flex items-center gap-2">
+              <IoMail />
+              <input
+                type="email"
+                className="grow"
+                placeholder="อีเมล"
+                {...register('email', { required: true })}
+              />
+            </label>
+
+            <label className="input input-bordered flex items-center gap-2">
+              <FaLock />
+              <input
+                type="password"
+                className="grow"
+                placeholder="รหัสผ่าน"
+                {...register('password', { required: true })}
+              />
+            </label>
+
+            <label className="input input-bordered flex items-center gap-2">
+              <FaLock />
+              <input
+                type="password"
+                className="grow"
+                placeholder="ยืนยันรหัสผ่าน"
+                {...register('confirmPassword', { required: true })}
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={!isValid || isSubmitting}
+              className="mt-4 rounded-full bg-primary py-2 font-semibold text-white disabled:bg-gray-400"
+            >
+              สมัครสมาชิก
+            </button>
+
+            <p className="mt-3 text-center text-sm">
+              มีบัญชีแล้ว?{' '}
+              <Link href="/login" className="text-primary hover:underline">
+                เข้าสู่ระบบ
+              </Link>
+            </p>
+          </form>
+        </div>
+        <div className="relative hidden items-center justify-center md:flex">
+          <Image
+            src="/loginImage.jpg"
+            alt="Login Illustration"
+            width={800}
+            height={800}
+            className="rounded-3xl object-cover"
+          />
+        </div>
       </div>
     </div>
   )
