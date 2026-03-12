@@ -3,14 +3,18 @@ import { Context, getUserFromContext } from '@app/common'
 import { PrismaService } from '@app/db'
 import { Injectable } from '@nestjs/common'
 
-import { CreateUserArgs, UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
+import {
+  CreateUserArgs,
+  UpdatePasswordArgs,
+  UpdateUserArgs,
+} from './internal.dto'
 
 @Injectable()
 export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -174,6 +178,5 @@ export class UserInternalService {
 
       return { userId: user.id, schoolId: finalSchoolId }
     })
-
   }
 }

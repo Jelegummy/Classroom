@@ -1,4 +1,4 @@
 export type DeleteUserArgs = {
-    userId: string
-    email: string
+  userId: string
+  email: string
 }

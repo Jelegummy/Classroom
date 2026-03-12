@@ -12,13 +12,17 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 
-import { CreateUserArgs, UpdatePasswordArgs, UpdateUserArgs } from './internal.dto'
+import {
+  CreateUserArgs,
+  UpdatePasswordArgs,
+  UpdateUserArgs,
+} from './internal.dto'
 import { UserInternalService } from './internal.service'
 
 @ApiTags('User - Internal')
 @Controller('user/internal')
 export class UserInternalController {
-  constructor(private readonly service: UserInternalService) { }
+  constructor(private readonly service: UserInternalService) {}
 
   @Get('/me')
   async getMe(@Req() ctx: Context) {
