@@ -10,6 +10,12 @@ CREATE TYPE "CheckStatus" AS ENUM ('PRESENT', 'LATE', 'ABSENT');
 -- CreateEnum
 CREATE TYPE "ItemType" AS ENUM ('ATTACK_BOOST', 'TIME_EXTEND');
 
+-- CreateEnum
+CREATE TYPE "GameStatus" AS ENUM ('WAITING', 'ONGOING', 'FINISHED');
+
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED', 'CANCELED');
+
 -- CreateTable
 CREATE TABLE "schools" (
     "id" TEXT NOT NULL,
@@ -26,11 +32,12 @@ CREATE TABLE "schools" (
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
+    "password" TEXT,
     "role" "Role" NOT NULL DEFAULT 'STUDENT',
     "first_name" TEXT NOT NULL,
     "last_name" TEXT NOT NULL,
     "phone_number" TEXT,
+    "discord_id" TEXT,
     "student_id" TEXT,
     "teacher_id" TEXT,
     "points" INTEGER NOT NULL DEFAULT 0,
@@ -40,6 +47,19 @@ CREATE TABLE "users" (
     "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Transaction" (
+    "id" TEXT NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "tokens_points" INTEGER NOT NULL,
+    "reference_id" TEXT,
+    "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
+    "user_id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -76,6 +96,7 @@ CREATE TABLE "classroom_users" (
     "userId" TEXT NOT NULL,
     "classroomId" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
+    "is_rewarded" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "classroom_users_pkey" PRIMARY KEY ("userId","classroomId")
 );
@@ -84,9 +105,13 @@ CREATE TABLE "classroom_users" (
 CREATE TABLE "game_sessions" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "time_limit" INTEGER NOT NULL DEFAULT 0,
+    "damage_boost" INTEGER NOT NULL DEFAULT 0,
+    "max_hp_boss" INTEGER NOT NULL DEFAULT 0,
     "image_url" TEXT,
     "description" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "status" "GameStatus" NOT NULL DEFAULT 'WAITING',
     "creator_id" TEXT,
     "character_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -99,6 +124,7 @@ CREATE TABLE "game_sessions" (
 CREATE TABLE "characters" (
     "id" TEXT NOT NULL,
     "boss_name" TEXT NOT NULL,
+    "point_boss" INTEGER NOT NULL DEFAULT 0,
     "max_hp" INTEGER NOT NULL,
     "time_limit" INTEGER NOT NULL,
     "description" TEXT,
@@ -129,12 +155,26 @@ CREATE TABLE "tutor_sessions" (
     "summary" TEXT,
     "data_content" JSONB NOT NULL,
     "discord_channel_id" TEXT NOT NULL,
+    "invite_link" TEXT,
     "bot_link" TEXT,
     "start_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "host_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "tutor_sessions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "tutor_voice_logs" (
+    "id" TEXT NOT NULL,
+    "tutor_id" TEXT NOT NULL,
+    "voice_channel_name" TEXT,
+    "topic" TEXT,
+    "summary" TEXT,
+    "data_content" JSONB NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "tutor_voice_logs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -154,6 +194,7 @@ CREATE TABLE "assignments" (
     "chat_history" JSONB,
     "file_pdf" TEXT,
     "text_content" TEXT,
+    "description" TEXT,
     "generated_content" TEXT,
     "generated_file_txt" TEXT,
     "grading_criteria" TEXT,
@@ -168,7 +209,7 @@ CREATE TABLE "assignments" (
 -- CreateTable
 CREATE TABLE "classroom_assignments" (
     "id" TEXT NOT NULL,
-    "due_date" TIMESTAMP(3) NOT NULL,
+    "due_date" TIMESTAMP(3),
     "classroom_id" TEXT NOT NULL,
     "assignment_id" TEXT NOT NULL,
 
@@ -182,6 +223,7 @@ CREATE TABLE "homework_submissions" (
     "submitted_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "transcription" TEXT,
     "ai_feedback" TEXT,
+    "answer_history" JSONB,
     "score" INTEGER DEFAULT 0,
     "assignment_id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
@@ -195,6 +237,7 @@ CREATE TABLE "items" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "image_url" TEXT,
     "price" INTEGER NOT NULL,
     "effect_value" INTEGER NOT NULL,
     "type" "ItemType" NOT NULL,
@@ -244,6 +287,9 @@ CREATE UNIQUE INDEX "schools_name_key" ON "schools"("name");
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Transaction_reference_id_key" ON "Transaction"("reference_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "classrooms_code_key" ON "classrooms"("code");
 
 -- CreateIndex
@@ -263,6 +309,9 @@ CREATE UNIQUE INDEX "attendances_user_id_homework_submission_id_key" ON "attenda
 
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "classrooms" ADD CONSTRAINT "classrooms_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "schools"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -296,6 +345,9 @@ ALTER TABLE "classroom_games" ADD CONSTRAINT "classroom_games_game_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "tutor_sessions" ADD CONSTRAINT "tutor_sessions_host_id_fkey" FOREIGN KEY ("host_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tutor_voice_logs" ADD CONSTRAINT "tutor_voice_logs_tutor_id_fkey" FOREIGN KEY ("tutor_id") REFERENCES "tutor_sessions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "classroom_tutors" ADD CONSTRAINT "classroom_tutors_classroom_id_fkey" FOREIGN KEY ("classroom_id") REFERENCES "classrooms"("id") ON DELETE CASCADE ON UPDATE CASCADE;
