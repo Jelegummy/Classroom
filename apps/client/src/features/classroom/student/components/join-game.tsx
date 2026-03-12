@@ -36,6 +36,23 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
     },
   })
 
+  if (!game || game.length === 0) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center">
+        <div className="mb-4 rounded-full bg-gray-100 p-4 text-gray-400">
+          <Gamepad2 size={48} />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-800">
+          ยังไม่มีการเล่นเกมในขณะนี้
+        </h3>
+        <p className="mt-2 max-w-sm text-sm text-gray-500">
+          ยังไม่มีการกำหนดการเล่นเกมสำหรับห้องเรียนนี้
+          โปรดตรวจสอบอีกครั้งในภายหลัง
+        </p>
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="min-h-screen bg-slate-50 p-4">
@@ -43,12 +60,12 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
           {game?.map(game => (
             <div
               key={game.id}
-              className="w-full max-w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+              className="group relative w-full max-w-[350px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-primary/30 hover:shadow-md"
             >
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-3">
-                  <div className="h-fit rounded-lg bg-blue-100 p-2.5">
-                    <Gamepad2 className="h-6 w-6 text-primary" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                    <Gamepad2 />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">

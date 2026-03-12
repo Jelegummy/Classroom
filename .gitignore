@@ -13,3 +13,5 @@ generated
 test.py
 __pycache__/
 *.pyc
+recordings/**
+temp.py
