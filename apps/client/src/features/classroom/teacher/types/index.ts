@@ -11,3 +11,8 @@ export type SelectedStudent = {
   name: string
   point: number
 } | null
+
+export type DeleteClassroomProps = {
+  classroomId: string
+  name: string
+}

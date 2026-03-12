@@ -9,6 +9,7 @@ import { CiSettings } from 'react-icons/ci'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import CreateButton from '@/features/classroom/teacher/components/create-button'
+import DeleteClassroom from '@/features/classroom/teacher/components/delete-classroom'
 
 export default function Page() {
   const [search, setSearch] = useState('')
@@ -87,13 +88,13 @@ export default function Page() {
         </div>
         <div className="mt-5 grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 md:grid-cols-3">
           {filteredClassrooms?.map(classroom => (
-            <Link
+            <div
               key={classroom.id}
-              href={`/dashboard/teacher/classroom/${classroom.id}`}
+              className="card w-96 overflow-hidden rounded-xl bg-base-100 shadow-md transition hover:shadow-lg"
             >
-              <div
-                key={classroom.id}
-                className="card w-96 overflow-hidden rounded-xl bg-base-100 shadow-md transition hover:shadow-lg"
+              <Link
+                href={`/dashboard/teacher/classroom/${classroom.id}`}
+                className="block"
               >
                 <div
                   className="relative h-28 bg-cover bg-center"
@@ -113,24 +114,26 @@ export default function Page() {
                     </p>
                   </div>
                 </div>
+              </Link>
 
-                <div className="flex h-12 flex-col p-4">
-                  {(session?.user?.role === 'TEACHER' ||
-                    session?.user?.role === 'ADMIN') && (
-                    <div className="flex items-center justify-end">
-                      <CiSettings className="h-5 w-5 cursor-pointer" />
-                      {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
-                    </div>
-                  )}
-                  {session?.user?.role === 'STUDENT' && (
-                    <div className="flex items-center justify-end text-sm text-gray-500">
-                      {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
-                      นักเรียน
-                    </div>
-                  )}
-                </div>
+              <div className="flex h-12 flex-col p-4">
+                {(session?.user?.role === 'TEACHER' ||
+                  session?.user?.role === 'ADMIN') && (
+                  <div className="flex items-center justify-end">
+                    <DeleteClassroom
+                      classroomId={classroom.id}
+                      name={classroom.name}
+                    />
+                  </div>
+                )}
+                {session?.user?.role === 'STUDENT' && (
+                  <div className="flex items-center justify-end text-sm text-gray-500">
+                    {/* ยังไม่ได้เชื่อม api update ไม่รู้จะ update อะไรบ้าง Design มา */}
+                    นักเรียน
+                  </div>
+                )}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </DashboardLayout>
