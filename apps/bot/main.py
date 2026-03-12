@@ -49,6 +49,7 @@ llm = ChatOpenAI(
     temperature=0.3,
     max_tokens=4000,
 )
+print("กำลัง downloadโมเดล Whisper (ครั้งแรกอาจใช้เวลานานหน่อยนะครับ)...")
 
 # Load Model
 model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")

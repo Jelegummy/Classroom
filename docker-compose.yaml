@@ -21,10 +21,10 @@ services:
       context: ./apps/bot
       dockerfile: Dockerfile
     restart: on-failure
-    environment:
-      - DATABASE_URL=postgresql://local:local@db:5432/classroom
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - TYPHOON_KEY=${TYPHOON_KEY}
+    # environment:
+    #   - DATABASE_URL=postgresql://local:local@db:5432/classroom
+    #   - DISCORD_TOKEN=${DISCORD_TOKEN}
+    #   - TYPHOON_KEY=${TYPHOON_KEY}
     depends_on:
       - db
     env_file:

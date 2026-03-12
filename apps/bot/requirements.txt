@@ -4,7 +4,6 @@ git+https://github.com/imayhaveborkedit/discord-ext-voice-recv
 faster-whisper
 pythainlp
 python-dotenv
-scipy
 transformers
 langchain_openai
-ollama
+torch
