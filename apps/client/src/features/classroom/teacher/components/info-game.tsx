@@ -43,12 +43,12 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
           {game?.map(game => (
             <div
               key={game.id}
-              className="w-full max-w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+              className="group relative w-full max-w-[350px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-primary/30 hover:shadow-md"
             >
               <div className="mb-6 flex items-start justify-between">
                 <div className="flex gap-3">
-                  <div className="h-fit rounded-lg bg-blue-100 p-2.5">
-                    <Gamepad2 className="h-6 w-6 text-primary" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                    <Gamepad2 />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">

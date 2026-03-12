@@ -1,6 +1,7 @@
+import DeleteCard from '@/features/tutor/components/delete-card'
 import { getAllTutors } from '@/services/tutor'
 import { useQuery } from '@tanstack/react-query'
-import { Video } from 'lucide-react'
+import { ArrowRight, CalendarClock, ExternalLink, Video } from 'lucide-react'
 import Link from 'next/link'
 // import StateLink from './components/state-link'
 
@@ -35,49 +36,70 @@ export default function TutorSessionTeacher({
         {tutors?.map(tutor => (
           <div
             key={tutor.id}
-            className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
+            className="group relative flex flex-col justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-primary/30 hover:shadow-md"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex gap-4">
-                <div className="rounded-xl bg-primary p-3 text-white">
-                  <Video size={24} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-gray-800">
-                    {Array.isArray(tutor.voiceLogs) &&
-                    tutor.voiceLogs.length > 0
-                      ? tutor.voiceLogs[0].voiceChannelName
-                      : 'ไม่พบชื่อห้องเสียง'}
-                  </h3>
-                  <p className="text-gray-500">
-                    {tutor.host.firstName}{' '}
-                    {tutor.host.lastName || 'Teeraphan Sukjai'}
-                  </p>
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                <Video size={24} />
               </div>
-              {/* <span className="rounded-md bg-green-500 px-3 py-1 text-xs text-white">
-                ดำเนินการอยู่
-              </span> */}
+              <div className="flex flex-col">
+                <h3 className="line-clamp-1 text-base font-bold text-gray-900">
+                  {tutor.discordChannelId || 'Calculus Problem Set'}
+                </h3>
+                <p className="text-sm font-medium text-gray-500">
+                  {tutor.host?.firstName}{' '}
+                  {tutor.host?.lastName || 'Teeraphan Sukjai'}
+                </p>
+              </div>
+              <div className="ml-1 flex justify-end sm:ml-6">
+                <DeleteCard
+                  id={tutor.id}
+                  discordChannelId={
+                    tutor.discordChannelId || 'Calculus Problem Set'
+                  }
+                />
+              </div>
             </div>
 
-            <div className="mt-1">
-              <span className="rounded-full px-2 py-1 text-sm font-medium">
-                {tutor.startTime &&
-                  new Date(tutor.startTime).toLocaleString('th-TH', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}{' '}
-              </span>
+            <div className="flex flex-col gap-3 rounded-xl border border-gray-100/50 bg-gray-50 p-4">
+              <div className="flex items-center gap-2.5 text-sm text-gray-700">
+                <CalendarClock size={16} className="shrink-0 text-gray-400" />
+                <span className="font-medium">
+                  {tutor.startTime
+                    ? new Date(tutor.startTime).toLocaleString('th-TH', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : 'ยังไม่ระบุเวลา'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-sm">
+                <ExternalLink size={16} className="shrink-0 text-gray-400" />
+                {tutor.inviteLink ? (
+                  <a
+                    href={tutor.inviteLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary transition-colors hover:text-primary/80 hover:underline"
+                  >
+                    เข้าร่วมห้องติว Discord
+                  </a>
+                ) : (
+                  <span className="text-gray-500">ไม่มีลิงก์เข้าร่วม</span>
+                )}
+              </div>
             </div>
             <Link
               key={tutor.id}
               href={`/dashboard/teacher/tutor/${tutor.id}`}
-              className="mt-2 block w-full rounded-lg bg-primary py-1 text-center font-medium text-white transition-colors hover:bg-primary/80"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
-              ตรวจสอบ
+              ตรวจสอบรายละเอียด
+              <ArrowRight size={16} />
             </Link>
           </div>
         ))}

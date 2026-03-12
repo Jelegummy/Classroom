@@ -1,6 +1,7 @@
 import { getAnnounce } from '@/services/announce'
 import { useQueries } from '@tanstack/react-query'
 import { MoreVertical, FileText } from 'lucide-react'
+import { GrAnnounce } from 'react-icons/gr'
 import Image from 'next/image'
 
 export default function MainTasks({ announcesId }: { announcesId: string[] }) {
@@ -62,7 +63,17 @@ export default function MainTasks({ announcesId }: { announcesId: string[] }) {
           </div>
         ))
       ) : (
-        <p className="text-center text-gray-400">ไม่มีประกาศในขณะนี้</p>
+        <div className="flex min-h-[50vh] flex-col items-center justify-center p-4 text-center">
+          <div className="mb-4 rounded-full bg-gray-100 p-4 text-gray-400">
+            <GrAnnounce size={48} />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800">
+            ยังไม่มีประกาศในขณะนี้
+          </h3>
+          <p className="mt-2 max-w-sm text-sm text-gray-500">
+            ยังไม่มีการประกาศสำหรับห้องเรียนนี้ โปรดตรวจสอบอีกครั้งในภายหลัง
+          </p>
+        </div>
       )}
     </div>
   )

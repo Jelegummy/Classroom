@@ -6,6 +6,7 @@ import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import { FaArrowLeft } from 'react-icons/fa'
 import { PaginationDemo } from '@/features/pagination'
+import { MonitorPlay } from 'lucide-react'
 
 const formatTime = (seconds: number) => {
   if (!seconds || isNaN(seconds)) return '00:00'
@@ -52,8 +53,17 @@ export default function Content() {
     <AppLayout>
       <DashboardLayout>
         {isContentLoading || isUserLoading ? (
-          <div className="flex min-h-screen items-center justify-center text-gray-500">
-            ยังไม่มีข้อมูลการติว...
+          <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+            <div className="mb-4 rounded-full bg-gray-100 p-4 text-gray-400">
+              <MonitorPlay size={48} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              ยังไม่มีข้อมูลการติวในขณะนี้
+            </h3>
+            <p className="mt-2 max-w-sm text-sm text-gray-500">
+              ยังไม่มีการกำหนดเวลาติวสำหรับห้องติวนี้
+              โปรดตรวจสอบอีกครั้งในภายหลัง
+            </p>
           </div>
         ) : (
           <div className="mt-10 min-h-screen bg-[#F8FAFC] p-4 md:p-8">
@@ -107,7 +117,6 @@ export default function Content() {
                     )}
                   </div>
 
-                  {/* 1. ส่วนลำดับการพูด ที่ดึง start และ end มาแสดง */}
                   <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div className="mb-4 flex items-center justify-between">
                       <h2 className="text-lg font-bold text-gray-900">
