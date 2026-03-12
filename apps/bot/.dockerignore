@@ -1,0 +1,5 @@
+.venv/
+recordings/
+session_logs/
+temp.py
+test.py
