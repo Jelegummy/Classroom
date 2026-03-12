@@ -10,7 +10,7 @@ import { TransactionClient } from '@app/db/dist/generated/internal/prismaNamespa
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -49,7 +49,7 @@ export class GameInternalService {
       data: {
         classroom: { connect: { id: args.classroomId } },
         game: { connect: { id: gameSession.id } },
-        currentHp: character?.maxHp ?? 0,
+        currentHp: args.maxHpBoss ?? 0,
       },
     })
 
@@ -585,7 +585,7 @@ export class GameInternalService {
     }
 
     await this.db.$transaction(async tx => {
-      const bossMaxHp = activeGame.game.character?.maxHp || 1
+      const bossMaxHp = activeGame.game.maxHpBoss || 1
       const bossPoints = activeGame.game.character?.pointBoss || 0
 
       await this.distributePoints(

@@ -311,6 +311,7 @@ model Item {
     id          String   @id @default(uuid())
     name        String
     description String?
+    imageUrl    String?  @map("image_url")
     price       Int
     effectValue Int      @map("effect_value")
     type        ItemType

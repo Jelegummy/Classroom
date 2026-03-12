@@ -10,6 +10,7 @@ export type Items = {
   description?: string
   price: number
   effectValue?: number
+  imageUrl?: string
   type: 'ATTACK_BOOST' | 'TIME_EXTEND'
 }
 
@@ -18,5 +19,6 @@ export type CreateItemsArgs = {
   description?: string
   price: number
   effectValue?: number
+  imageUrl?: string
   type: 'ATTACK_BOOST' | 'TIME_EXTEND'
 }
