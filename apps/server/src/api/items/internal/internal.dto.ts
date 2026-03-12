@@ -7,9 +7,10 @@ export class ItemsArgs extends createZodDto(
     description: z.string().optional(),
     price: z.number().min(0),
     effectValue: z.number().optional(),
+    imageUrl: z.string().url().optional(),
     type: z.enum(['ATTACK_BOOST', 'TIME_EXTEND']),
   }),
-) {}
+) { }
 
 export class UpdateItemsArgs extends createZodDto(
   z.object({
@@ -20,13 +21,13 @@ export class UpdateItemsArgs extends createZodDto(
     effectValue: z.number().optional(),
     type: z.enum(['ATTACK_BOOST', 'TIME_EXTEND']),
   }),
-) {}
+) { }
 
 export class SpacialItemsArgs extends createZodDto(
   z.object({
     amount: z.number().min(1),
   }),
-) {}
+) { }
 
 export class BuyItemsArgs extends createZodDto(
   z.object({
@@ -34,6 +35,6 @@ export class BuyItemsArgs extends createZodDto(
     itemId: z.string().min(1),
     amount: z.number().min(1),
   }),
-) {}
+) { }
 
 patchNestJsSwagger()

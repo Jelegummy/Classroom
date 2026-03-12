@@ -8,6 +8,7 @@ import { GiFragmentedSword } from 'react-icons/gi'
 import { FiInbox, FiLoader } from 'react-icons/fi'
 import CreateItems from '@/features/items/components/create-items'
 import DeleteItems from '@/features/items/components/delete-items'
+import Image from 'next/image'
 
 export default function Items() {
   const [search, setSearch] = useState('')
@@ -70,16 +71,19 @@ export default function Items() {
                     className="group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md"
                   >
                     <div className="group relative">
-                      <div className="ml-1 flex justify-end sm:ml-6">
+                      <div className="absolute right-2 top-2 z-10">
                         <DeleteItems
                           id={item.id}
                           name={item.name || 'ชื่อไอเทมไม่ระบุ'}
                         />
                       </div>
-
-                      <div className="flex h-40 w-full items-center justify-center bg-slate-100 transition-colors group-hover:bg-slate-200">
-                        <GiFragmentedSword className="h-16 w-16 text-slate-300" />
-                      </div>
+                      <Image
+                        src={item.imageUrl || '/default-character-image.png'}
+                        alt={item.name || 'ชื่อไอเทม'}
+                        width={100}
+                        height={100}
+                        className="h-full w-full object-cover"
+                      />
                     </div>
 
                     <div className="flex flex-col p-4">
