@@ -19,7 +19,7 @@ export default function EndresultOverlay({ result, onEnd }: Props) {
       {result && (
         <>
           <p className="text-4xl font-bold text-white">
-            {result.passed ? '🎉 ผ่านแล้ว!' : '❌ ยังไม่ผ่าน'}
+            {result.passed ? 'ผ่านแล้ว!' : 'ยังไม่ผ่าน'}
           </p>
           <p className="mt-3 text-2xl text-gray-200">
             ตอบถูก {result.correct} / {result.total} ข้อ

@@ -19,6 +19,7 @@ import {
   GetSubmissionsByAssignmentArgs,
   ApproveSubmissionArgs,
   GetAnswerHistoryArgs,
+  SubmitHomeworkArgs,
 } from './internal.dto'
 import { Context } from '@app/common'
 
@@ -59,26 +60,56 @@ export class AssignmentInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   } //TODO : fix Route
 
-  @Get('getsubmissions')
-  @HttpCode(HttpStatus.OK)
+  @Get('/submissions/:assignmentId/:classroomId')
   async getSubmissionsByAssignment(
-    @Query() query: GetSubmissionsByAssignmentArgs,
+    @Param('assignmentId') assignmentId: string,
+    @Param('classroomId') classroomId: string,
+    @Req() ctx: Context,
   ) {
-    return this.service.getSubmissionsByAssignment(
-      query.assignmentId,
-      query.classroomId,
+    const res = await this.service.getSubmissionsByAssignment(
+      assignmentId,
+      classroomId,
+      ctx,
     )
+
+    return { statusCode: HttpStatus.OK, data: res }
+  } //TODO : fix Route
+
+  @Post('/approvesubmission')
+  async approveSubmission(
+    @Body() args: ApproveSubmissionArgs,
+    @Req() ctx: Context,
+  ) {
+    const res = await this.service.approveSubmission(args, ctx)
+
+    return { statusCode: HttpStatus.OK, message: res }
   }
 
-  @Post('approvesubmission')
-  @HttpCode(HttpStatus.OK)
-  async approveSubmission(@Body() body: ApproveSubmissionArgs) {
-    return this.service.approveSubmission(body.submissionId, body.isApproved)
+  @Get('/answerhistory/:submissionId')
+  async getAnswerHistory(
+    @Param('submissionId') submissionId: string,
+    @Req() ctx: Context,
+  ) {
+    const res = await this.service.getAnswerHistory(submissionId, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
   }
 
-  @Get('getanswerhistory')
+  @Get('/classroom-assignment/:assignmentId/:classroomId')
+  async getClassroomAssignment(
+    @Param('assignmentId') assignmentId: string,
+    @Param('classroomId') classroomId: string,
+  ) {
+    const res = await this.service.getClassroomAssignment(
+      assignmentId,
+      classroomId,
+    )
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+  @Post('/submit')
   @HttpCode(HttpStatus.OK)
-  async getAnswerHistory(@Body() query: GetAnswerHistoryArgs) {
-    return this.service.getAnswerHistory(query.submissionId)
+  async submitHomework(@Body() args: SubmitHomeworkArgs) {
+    const res = await this.service.submitHomework(args)
+    return { statusCode: HttpStatus.OK, data: res }
   }
 }

@@ -9,6 +9,7 @@ import SessionEndOverlay from './endresult'
 import { stopSession } from '@/services/assignment'
 
 export default function SessionView() {
+  const DURATION = 10
   const router = useRouter()
   const { id, sid } = router.query
   const sessionId = sid as string
@@ -19,7 +20,6 @@ export default function SessionView() {
   const { aiText, sessionState, sessionResult, closeSession } =
     useSession(sessionId)
 
-  // เปิดกล้องมุมขวาบน
   useEffect(() => {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: false })
@@ -42,7 +42,10 @@ export default function SessionView() {
     if (sessionState === 'ended') {
       router.push(`/dashboard/student/assignment/${id}`)
     } else {
-      router.push(`/dashboard/student/assignment/${id}/camera`)
+      router.push({
+        pathname: '/dashboard/student/assignment/homework/camera',
+        query: { id: id },
+      })
     }
   }
 
@@ -62,7 +65,10 @@ export default function SessionView() {
         />
       </div>
 
-      <CountdownTimer active={sessionState === 'recording'} duration={20} />
+      <CountdownTimer
+        active={sessionState === 'recording'}
+        duration={DURATION}
+      />
       <SessionControls onEnd={handleEnd} />
       {sessionState === 'ended' && (
         <SessionEndOverlay result={sessionResult} onEnd={handleEnd} />

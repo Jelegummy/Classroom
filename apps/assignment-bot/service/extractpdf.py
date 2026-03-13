@@ -86,7 +86,7 @@ class HybridSmartExtractor:
 
         return "\n".join(combined_text)
 
-    def analyze_text(self, text):
+    def analyze_text(self, text, chunk_size=3000):
         if not text.strip():
             return ""
         prompt = f"""
@@ -98,6 +98,7 @@ class HybridSmartExtractor:
     2. **ห้ามเพิ่มคำตอบ ห้ามแก้โจทย์ และห้ามคำนวณใดๆ ทั้งสิ้น** ให้คงเนื้อหาโจทย์เดิมไว้ 100%
     3. **ห้ามตัดเนื้อหาทิ้ง** แม้จะเป็นตัวอย่าง (เช่น A[] = ...) หรือ Code ภายในโจทย์
     4. แก้ไขเฉพาะคำที่ OCR อ่านผิดให้ถูกต้องตามบริบท (เช่น "ก าหนด" -> "กำหนด")
+    5. ห้าทตัดเนื้อหาแแก เช่นโจทย์ถัดไป และ มีการแยกข้อย่อย ให้จัดเรียงใหม่ให้เป็นข้อย่อยให้ชัดเจน (เช่น ข้อ 1.1, 1.2, ...) แต่ไม่ต้องเพิ่มคำอธิบาย หรือ คำตอบใดๆ ทั้งสิ้น
 
     ข้อความต้นฉบับที่ต้องจัดการ:
     {text}
@@ -126,29 +127,27 @@ def run_extraction(pdf_path):
 
     log_dir = os.path.join(os.path.dirname(__file__), "..", "log")
     os.makedirs(log_dir, exist_ok=True)
+
     extract_dir = os.path.join(os.path.dirname(
         __file__), "../data", "extractpdf-txt")
     os.makedirs(extract_dir, exist_ok=True)
 
-    with open(os.path.join(extract_dir, "extractpdf.txt"), "w", encoding="utf-8") as f:
+    pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    output_txt = f"{pdf_name}.txt"
+
+    txt_path = os.path.join(extract_dir, output_txt)
+
+    with open(txt_path, "w", encoding="utf-8") as f:
         f.write(final_output)
 
-    with open(os.path.join(log_dir, "raw_combined.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(log_dir, f"{pdf_name}_raw.txt"), "w", encoding="utf-8") as f:
         f.write(full_raw_text)
 
-    return final_output
+    return txt_path
 
 
 def extract_pdf(pdf_path: str) -> str:
-    """
-    FastAPI จะเรียก function นี้
-    return path ของ txt
-    """
-    run_extraction(pdf_path)
-    extract_dir = os.path.join(os.path.dirname(
-        __file__), "../data", "extractpdf-txt")
-    txt_path = os.path.join(extract_dir, "extractpdf.txt")
-    return txt_path
+    return run_extraction(pdf_path)
 
 
 def main():

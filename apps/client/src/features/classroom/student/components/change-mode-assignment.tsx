@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { MdArrowBackIos } from 'react-icons/md'
-type Mode = 'all' | 'pending' | 'overdue' | 'submitted'
+type Mode = 'pending' | 'overdue' | 'submitted' | 'all'
 
 interface FilterMode {
   mode: Mode
@@ -9,9 +9,9 @@ interface FilterMode {
 
 const options = [
   { value: 'all', label: 'งานทั้งหมด' },
-  { value: 'pending', label: 'ยังไม่ครบกำหนด' },
-  { value: 'overdue', label: 'ครบกำหนดแล้ว' },
+  { value: 'pending', label: 'ยังไม่ส่ง' },
   { value: 'submitted', label: 'ส่งแล้ว' },
+  { value: 'overdue', label: 'ครบกำหนดแล้ว' },
 ]
 
 export default function AssignmentFilterDropdown({

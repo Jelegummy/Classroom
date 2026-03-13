@@ -53,7 +53,10 @@ export default function AssignmentTaskTeacher({
           return (
             <Link
               key={assignment.id}
-              href={`/dashboard/teacher/assignment/${assignment.id}`}
+              href={{
+                pathname: `/dashboard/teacher/assignment/${assignment.id}`,
+                query: { classroomId },
+              }}
               className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="mb-3 flex justify-between gap-4">

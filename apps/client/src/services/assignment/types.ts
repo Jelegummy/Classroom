@@ -67,6 +67,8 @@ export type GetAssignmentsByClassroomResponse = {
     submissions: {
       id: string
       userId: string
+      isApproved: boolean
+      score?: number | null
     }[]
   }[]
 }

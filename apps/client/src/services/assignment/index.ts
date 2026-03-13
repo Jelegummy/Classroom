@@ -58,9 +58,17 @@ export async function createAssignment(
   })
 }
 
-export async function startSession(assignmentId: string) {
+export async function startSession(payload: {
+  assignmentId: string
+  classroomAssignmentId: string
+  userId: string
+  duration?: number
+}) {
   return api8000.post<{ session_id: string }>('/api/session/start', {
-    assignment_id: assignmentId,
+    assignment_id: payload.assignmentId,
+    classroom_assignment_id: payload.classroomAssignmentId,
+    duration: payload.duration,
+    user_id: payload.userId,
   })
 }
 
@@ -83,13 +91,6 @@ export async function checkFace(frame: Blob) {
     formData,
   )
 }
-
-// export async function getAssignment(assignmentId: string) {
-//   return api4000.get<GetAssignmentResponse>(
-//     '/assignment/internal/get-assignment',
-//     { assignmentId }
-//   )
-// }
 
 export const getAssignment = async (assignmentId: string) => {
   const session = await getSession()
@@ -126,38 +127,63 @@ export async function deleteAssignment(assignmentId: string) {
   )
 }
 
-// export async function getAssignmentsByClassroom(classroomId: string) {
-//   return api4000.get<GetAssignmentsByClassroomResponse[]>(
-//     '/assignment/internal/get-assignments-by-classroom',
-//     { classroomId }
-//   )
-// }
-
-export async function getSubmissionsByAssignment(
+export const getClassroomAssignment = async (
   assignmentId: string,
   classroomId: string,
-) {
-  return api4000.get<GetSubmissionsByAssignmentResponse[]>(
-    '/assignment/internal/getsubmissions',
-    { assignmentId, classroomId },
+) => {
+  const session = await getSession()
+  const res = await fetchers.Get<{ id: string }>(
+    `${ENDPOINT}/assignment/internal/classroom-assignment/${assignmentId}/${classroomId}`,
+    { token: session?.user.accessToken },
   )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+  return res.data
 }
 
-export async function approveSubmission(
+export const getSubmissionsByAssignment = async (
+  assignmentId: string,
+  classroomId: string,
+) => {
+  const session = await getSession()
+  const res = await fetchers.Get<GetSubmissionsByAssignmentResponse[]>(
+    `${ENDPOINT}/assignment/internal/submissions/${assignmentId}/${classroomId}`,
+    { token: session?.user.accessToken },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+  return res.data
+}
+
+export const approveSubmission = async (
   submissionId: string,
   isApproved: boolean,
-) {
-  return api4000.post<ApproveSubmissionResponse>(
-    '/assignment/internal/approvesubmission',
-    { submissionId, isApproved },
-  )
-}
+) => {
+  const session = await getSession()
 
-export async function getAnswerHistory(submissionId: string) {
-  return api4000.get<GetAnswerHistoryResponse>(
-    '/assignment/internal/getanswerhistory',
-    { submissionId },
+  const res = await fetchers.Post<ApproveSubmissionResponse>(
+    `${ENDPOINT}/assignment/internal/approvesubmission`,
+    {
+      data: {
+        submissionId,
+        isApproved,
+      },
+      token: session?.user.accessToken,
+    },
   )
+
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+export const getAnswerHistory = async (submissionId: string) => {
+  const session = await getSession()
+  const res = await fetchers.Get<GetAnswerHistoryResponse>(
+    `${ENDPOINT}/assignment/internal/answerhistory/${submissionId}`,
+    { token: session?.user.accessToken },
+  )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+  return res.data
 }
 
 export async function stopSession(sessionId: string) {

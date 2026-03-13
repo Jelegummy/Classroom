@@ -61,7 +61,6 @@ async function request<T>(
   const isFormData = options?.body instanceof FormData
 
   const res = await fetch(`${base}${url}`, {
-    credentials: 'include',
     headers: {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options?.headers || {}),

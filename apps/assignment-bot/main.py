@@ -124,17 +124,24 @@ async def process_pdf(
 
         loop = asyncio.get_event_loop()
 
-        # รัน CPU-heavy ใน thread แยก ไม่บล็อก event loop
-        extracted_text = await loop.run_in_executor(
+        # Extract PDF -> txt
+        temp_txt_path = await loop.run_in_executor(
             None, extract_pdf, pdf_path
         )
 
-        temp_assignment_id = str(uuid.uuid4())
-        txt_path = save_txt_file(temp_assignment_id, extracted_text)
+        # อ่านเนื้อหา txt
+        with open(temp_txt_path, "r", encoding="utf-8") as f:
+            extracted_text = f.read()
 
-        # LLM รัน thread แยก
+        # สร้าง assignment_id
+        assignment_id = str(uuid.uuid4())
+
+        # บันทึก txt ใหม่เป็น assignment_id.txt
+        final_txt_path = save_txt_file(assignment_id, extracted_text)
+
+        # Generate questions
         questions_raw = await loop.run_in_executor(
-            None, run_genquestiontext, extracted_text
+            None, run_genquestiontext, final_txt_path
         )
 
         questions = [
@@ -150,23 +157,24 @@ async def process_pdf(
             title=payload.title,
             chatHistory=questions,
             filePdf=payload.filePdf,
-            generatedFileTxt=txt_path,
+            generatedFileTxt=final_txt_path,
             creatorId=payload.creatorId,
             classroomId=payload.classroomId,
             dueDate=payload.dueDate,
             status="DRAFT"
         )
 
-        assignment_id = create_assignment(db, payload_dict)
+        create_assignment(db, payload_dict)
 
         return {
             "success": True,
             "assignmentId": assignment_id,
             "assignment": {
                 "chat_history": questions,
-                "generated_file_txt": txt_path
+                "generated_file_txt": final_txt_path
             }
         }
+
     except Exception as e:
         db.rollback()
         logger.error(f"PROCESS PDF ERROR: {traceback.format_exc()}")
@@ -197,6 +205,9 @@ async def check_face(frame: UploadFile = File(...)):
 # --- Session Endpoints ---
 class StartSessionRequest(BaseModel):
     assignment_id: str
+    classroom_assignment_id: str
+    user_id: str
+    duration: int = 10
 
 
 @app.post("/api/session/start")
@@ -206,9 +217,13 @@ async def start_session(payload: StartSessionRequest):
         "status": "running",
         "paused": False,
         "ws": None,
+        "user_id": payload.user_id,
+        "duration": payload.duration,
+        "classroom_assignment_id": payload.classroom_assignment_id,
     }
     asyncio.create_task(
-        run_check_session(session_id, payload.assignment_id, active_sessions)
+        run_check_session(session_id, payload.assignment_id,
+                          active_sessions, payload.duration)
     )
     return {"session_id": session_id}
 

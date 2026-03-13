@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common'
 import { Context, getUserFromContext } from '@app/common'
 import { CheckStatus } from '@app/db/dist/generated/enums'
+import { ApproveSubmissionArgs, SubmitHomeworkArgs } from './internal.dto'
 
 @Injectable()
 export class AssignmentInternalService {
@@ -103,6 +104,8 @@ export class AssignmentInternalService {
               select: {
                 id: true,
                 userId: true,
+                isApproved: true,
+                score: true,
               },
             },
           },
@@ -111,7 +114,15 @@ export class AssignmentInternalService {
     })
   }
 
-  async getSubmissionsByAssignment(assignmentId: string, classroomId: string) {
+  async getSubmissionsByAssignment(
+    assignmentId: string,
+    classroomId: string,
+    ctx: Context,
+  ) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated')
+    }
     const classroomAssignment = await this.db.classroomOnAssignment.findFirst({
       where: {
         assignmentId,
@@ -149,22 +160,107 @@ export class AssignmentInternalService {
     })
   }
 
-  async approveSubmission(submissionId: string, isApproved: boolean) {
+  
+  async approveSubmission(args: ApproveSubmissionArgs, ctx: Context) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated')
+    }
+
+    // 1. Fetch data พร้อมดึง classroomId จาก Assignment
     const submission = await this.db.homeworkSubmission.findUnique({
-      where: { id: submissionId },
+      where: { id: args.submissionId },
+      include: {
+        user: true,
+        classroomAssignment: true, // เพื่อเอา classroomId
+      },
     })
 
     if (!submission) {
       throw new NotFoundException('Submission not found')
     }
 
-    return this.db.homeworkSubmission.update({
-      where: { id: submissionId },
-      data: { isApproved },
+    if (submission.isApproved && args.isApproved) {
+      throw new BadRequestException('Already approved')
+    }
+
+    // 2. Logic การคำนวณผ่านเกณฑ์ 70%
+    const currentScore = submission.score ?? 0
+    const MAX_SCORE = 5
+    const isPassed = currentScore / MAX_SCORE >= 0.7
+    const pointsToAdd = isPassed ? 5 : 1
+
+    // 3. Database Transaction
+    const updated = await this.db.$transaction(async tx => {
+      // A) Update สถานะการส่งงาน
+      const subUpdate = await tx.homeworkSubmission.update({
+        where: { id: args.submissionId },
+        data: { isApproved: args.isApproved },
+      })
+
+      if (args.isApproved) {
+        // B) Update คะแนนรวมของ User (Global Points)
+        await tx.user.update({
+          where: { id: submission.userId },
+          data: { points: { increment: pointsToAdd } },
+        })
+
+        // C) Update คะแนนในห้องเรียน (Classroom Score)
+        // ใช้ userId และ classroomId เป็น Unique identifier
+        await tx.classroomOnUser.update({
+          where: {
+            userId_classroomId: {
+              userId: submission.userId,
+              classroomId: submission.classroomAssignment.classroomId,
+            },
+          },
+          data: {
+            score: { increment: pointsToAdd },
+          },
+        })
+
+        //บันทึกลง Attendance (Session Record)
+        await tx.attendance.upsert({
+          where: {
+            userId_homeworkSubmissionId: {
+              userId: submission.userId,
+              homeworkSubmissionId: submission.id,
+            },
+          },
+          update: {
+            scoreEarned: pointsToAdd,
+            status: 'PRESENT',
+          },
+          create: {
+            userId: submission.userId,
+            homeworkSubmissionId: submission.id,
+            scoreEarned: pointsToAdd,
+            status: 'PRESENT',
+          },
+        })
+      }
+      return subUpdate
     })
+    return {
+      id: updated.id,
+      studentName:
+        `${submission.user.firstName} ${submission.user.lastName || ''}`.trim(),
+      result: {
+        rawScore: currentScore,
+        fullScore: MAX_SCORE,
+        isPassed,
+        pointsAwarded: args.isApproved ? pointsToAdd : 0,
+      },
+      totalUserPoints:
+        submission.user.points + (args.isApproved ? pointsToAdd : 0),
+    }
   }
 
-  async getAnswerHistory(submissionId: string) {
+  async getAnswerHistory(submissionId: string, ctx: Context) {
+    const user = getUserFromContext(ctx)
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated')
+    }
     const submission = await this.db.homeworkSubmission.findUnique({
       where: { id: submissionId },
       select: {
@@ -184,5 +280,24 @@ export class AssignmentInternalService {
     }
 
     return submission
+  }
+  async getClassroomAssignment(assignmentId: string, classroomId: string) {
+    const result = await this.db.classroomOnAssignment.findFirst({
+      where: { assignmentId, classroomId },
+      select: { id: true },
+    })
+    if (!result) throw new NotFoundException('ClassroomAssignment not found')
+    return result
+  }
+
+  async submitHomework(args: SubmitHomeworkArgs) {
+    return this.db.homeworkSubmission.create({
+      data: {
+        userId: args.userId,
+        classroomAssignmentId: args.classroomAssignmentId,
+        score: args.score,
+        answerHistory: args.answerHistory,
+      },
+    })
   }
 }

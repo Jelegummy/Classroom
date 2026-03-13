@@ -12,32 +12,33 @@ import json
 from sqlalchemy import text
 import pygame
 import os
+import httpx
+
+NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["SDL_AUDIODRIVER"] = "coreaudio"
 
 
 VOICE = "th-TH-NiwatNeural"
-RECORD_DURATION = 20
+# RECORD_DURATION = 10
 SAMPLE_RATE = 44100
 PASS_THRESHOLD = 4
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+TXT_DIR = os.path.join(BASE_DIR, "data", "extractpdf-txt")
 
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 whisper_model = whisper.load_model("medium", device=device)
 
-# โหลด LLM
 llm = OllamaLLM(
     model="scb10x/typhoon-translate1.5-4b:latest",
     temperature=0.1,
 )
-
-# --- Load Questions from DB ---
 
 
 def load_questions_from_db(assignment_id: str) -> list[str]:
     db: Session = next(get_db())
     try:
         result = db.execute(
-            # ← ใส่ text()
             text("SELECT chat_history FROM assignments WHERE id = :id"),
             {"id": assignment_id}
         ).fetchone()
@@ -57,6 +58,36 @@ def load_questions_from_db(assignment_id: str) -> list[str]:
     except Exception as e:
         print(f"โหลดคำถามไม่สำเร็จ: {e}")
         return []
+    finally:
+        db.close()
+
+
+def load_assignment_context(assignment_id: str) -> str:
+    db: Session = next(get_db())
+    try:
+        result = db.execute(
+            text("SELECT filePdf FROM assignments WHERE id = :id"),
+            {"id": assignment_id}
+        ).fetchone()
+
+        if not result:
+            return ""
+
+        pdf_name = result.filePdf
+        txt_name = os.path.splitext(pdf_name)[0] + ".txt"
+
+        txt_path = os.path.join(TXT_DIR, txt_name)
+
+        if not os.path.exists(txt_path):
+            print(f"ไม่พบไฟล์ txt: {txt_path}")
+            return ""
+
+        with open(txt_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+    except Exception as e:
+        print(f"โหลด context ไม่สำเร็จ: {e}")
+        return ""
     finally:
         db.close()
 
@@ -126,11 +157,11 @@ async def speak(text: str, session_id: str):
             os.remove(temp_mp3)
 
 
-def record_answer(session_id: str):
+def record_answer(session_id: str, duration: int):
     temp_wav = f"input_student_{session_id}.wav"
     print("🎙️ บันทึกคำตอบ...")
     recording = sd.rec(
-        int(RECORD_DURATION * SAMPLE_RATE),
+        int(duration * SAMPLE_RATE),
         samplerate=SAMPLE_RATE,
         channels=1
     )
@@ -146,36 +177,57 @@ def transcribe_answer(wav_path: str) -> str:
 
 def normalize_answer(text: str) -> str:
     prompt = f"""
-    ถอดความคำตอบนักเรียนให้เป็นระเบียบ โดยห้ามเปลี่ยนใจความสำคัญ 
-    แก้ไขเฉพาะคำสะกดผิด หรือคำที่ฟังดูเพี้ยนจากการ Transcribe 
+    ถอดความคำตอบนักเรียนให้เป็นระเบียบ โดยห้ามเปลี่ยนใจความสำคัญ
+    แก้ไขเฉพาะคำสะกดผิด หรือคำที่ฟังดูเพี้ยนจากการ Transcribe
     *ห้ามเติมเนื้อหาเข้ามาเองเด็ดขาด*
     คำตอบ: {text}
     """
     return llm.invoke(prompt).strip()
 
 
-def is_correct(question: str, student_answer: str) -> bool:
+def is_correct(question: str, student_answer: str, context: str) -> bool:
     """ตัดสินความถูกต้องโดยเน้นที่ 'ความเข้าใจในแนวคิด' เป็นหลัก"""
 
+    # prompt = f"""
+    # คุณเป็นอาจารย์ผู้เชี่ยวชาญที่เน้นการสอนให้เด็กเข้าใจ (Conceptual Learning)
+    # หน้าที่ของคุณคือตรวจคำตอบปากเปล่าของนักเรียนในวิชาคอมพิวเตอร์
+
+    # เกณฑ์การตัดสิน:
+    # 1. เน้น "ใจความสำคัญ": แม้นักเรียนจะใช้คำพูดไม่เป็นทางการ หรืออธิบายติดขัด แต่ถ้า "หลักการ" ถูกต้อง ให้ถือว่า 'true'
+    # 2. ยอมรับ "ความแตกต่าง": สำหรับคำถามที่ไม่มีคำตอบตายตัว หรือคำถามที่ถามความคิดเห็น ให้ดูเหตุผลสนับสนุนที่เกี่ยวข้องต้องเกี่ยวกับการบ้านมากพอ
+    # 3. ไม่จับผิด "คำพูด": อย่าให้ 'false' เพียงเพราะนักเรียนพูดผิดเล็กน้อย
+    # 4. เข้าใจ "บริบท": ถ้านักเรียนตอบได้ใกล้เคียง หรือแสดงให้เห็นว่าเข้าใจกระบวนการทำงานของอัลกอริทึม ให้ถือว่าผ่าน
+
+    # คำถาม: {question}
+    # เนื้อหาการบ้าน:{context}
+    # คำตอบนักเรียน: {student_answer}
+
+    # จงตอบเป็น JSON เท่านั้น:
+    # {{
+    #   "is_correct": true/false,
+    #   "reason": "อธิบายสั้นๆ ว่าทำไมถึงให้ผ่านหรือไม่ผ่าน โดยเน้นชมส่วนที่นักเรียนเข้าใจ"
+    # }}
+    # """
+
     prompt = f"""
-    คุณเป็นอาจารย์ผู้เชี่ยวชาญที่เน้นการสอนให้เด็กเข้าใจ (Conceptual Learning) 
-    หน้าที่ของคุณคือตรวจคำตอบปากเปล่าของนักเรียนในวิชาคอมพิวเตอร์
+คุณเป็นอาจารย์ตรวจการบ้านที่ยุติธรรม
 
-    เกณฑ์การตัดสิน:
-    1. เน้น "ใจความสำคัญ": แม้นักเรียนจะใช้คำพูดไม่เป็นทางการ หรืออธิบายติดขัด แต่ถ้า "หลักการ" ถูกต้อง ให้ถือว่า 'true'
-    2. ยอมรับ "ความแตกต่าง": สำหรับคำถามที่ไม่มีคำตอบตายตัว หรือคำถามที่ถามความคิดเห็น ให้ดูเหตุผลสนับสนุนที่เกี่ยวข้องต้องเกี่ยวกับการบ้านมากพอ
-    3. ไม่จับผิด "คำพูด": อย่าให้ 'false' เพียงเพราะนักเรียนพูดผิดเล็กน้อย
-    4. เข้าใจ "บริบท": ถ้านักเรียนตอบได้ใกล้เคียง หรือแสดงให้เห็นว่าเข้าใจกระบวนการทำงานของอัลกอริทึม ให้ถือว่าผ่าน
+เกณฑ์การตัดสิน:
+1. ข้อเท็จจริงต้องถูก: ตัวเลข ชื่อ หรือข้อมูลเฉพาะเจาะจงต้องถูกต้อง ผิดแม้แต่อันเดียว → false
+2. หลักการต้องถูก: ถ้าอธิบายกระบวนการหรือแนวคิด ใจความสำคัญต้องตรง ไม่ต้องครบทุกคำ
+3. ไม่ตอบ หรือตอบนอกเรื่อง → false
+4. ห้ามสันนิษฐานแทนนักเรียน ถ้าไม่ได้พูดถึงชัดเจน → false
 
-    คำถาม: {question}
-    คำตอบนักเรียน: {student_answer}
+คำถาม: {question}
+เนื้อหาการบ้าน: {context}
+คำตอบนักเรียน: {student_answer}
 
-    จงตอบเป็น JSON เท่านั้น: 
-    {{ 
-      "is_correct": true/false, 
-      "reason": "อธิบายสั้นๆ ว่าทำไมถึงให้ผ่านหรือไม่ผ่าน โดยเน้นชมส่วนที่นักเรียนเข้าใจ" 
-    }}
-    """
+ตอบเป็น JSON เท่านั้น:
+{{
+  "is_correct": true/false,
+  "reason": "เหตุผลสั้นๆ"
+}}
+"""
     try:
         res = llm.invoke(prompt)
         start, end = res.find('{'), res.rfind('}') + 1
@@ -187,13 +239,15 @@ def is_correct(question: str, student_answer: str) -> bool:
         return False
 
 
-# --- Main Session Runner ---
 async def run_check_session(
     session_id: str,
     assignment_id: str,
-    active_sessions: dict
+    active_sessions: dict,
+    duration: int = 10
 ):
     session = active_sessions[session_id]
+    user_id = session.get("user_id")
+    classroom_assignment_id = session.get("classroom_assignment_id")
 
     async def send(text: str, msg_type: str = "ai_text"):
         ws = session.get("ws")
@@ -216,12 +270,14 @@ async def run_check_session(
             await send("▶️ กลับมาแล้ว เริ่มต่อเลยครับ", "info")
 
     questions = load_questions_from_db(assignment_id)
+    context_text = load_assignment_context(assignment_id)
     if not questions:
         await send("ไม่พบคำถามสำหรับการบ้านนี้", "error")
         return
 
     correct_count = 0
     total = len(questions)
+    answer_history = []
 
     await send(f"สวัสดีครับ! มีคำถามทั้งหมด {total} ข้อ พร้อมเริ่มได้เลยครับ")
     await speak(f"สวัสดีครับ มีคำถามทั้งหมด {total} ข้อ", session_id)
@@ -237,16 +293,17 @@ async def run_check_session(
         print(f"\n--- [ข้อที่ {i}/{total}] ---")
         await send(f"ข้อที่ {i}: {q_text}", "ai_text")
         await speak(f"ข้อที่ {i} . {q_text}", session_id)
+        answer_history.append(
+            {"role": "bot", "content": q_text})  # ← เก็บคำถาม
 
         if is_stopped():
             return
 
         await send("", "start_recording")
         wav_path = await asyncio.get_event_loop().run_in_executor(
-            None, record_answer, session_id
+            None, record_answer, session_id, duration
         )
 
-        # cleanup wav ถ้า stop ระหว่าง record
         if is_stopped():
             if os.path.exists(wav_path):
                 os.remove(wav_path)
@@ -264,12 +321,18 @@ async def run_check_session(
                 os.remove(wav_path)
             return
 
-        result = is_correct(q_text, clean_ans)
+        result = is_correct(q_text, clean_ans, context_text)
         if result:
             correct_count += 1
             msg = "คำตอบถูกต้องครับ ✓"
         else:
             msg = "คำตอบยังไม่ถูกต้องครับ ✗"
+
+        answer_history.append({                          # ← เก็บคำตอบ
+            "role": "student",
+            "content": clean_ans,
+            "is_correct": result,
+        })
 
         await send(msg, "ai_text")
         await speak(msg, session_id)
@@ -288,6 +351,24 @@ async def run_check_session(
     print(f"\n📊 {final_msg}")
     await send(final_msg)
     await speak(final_msg, session_id)
+
+    # บันทึกลง DB ผ่าน NestJS  ← เพิ่ม
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                f"{NESTJS_URL}/assignment/internal/submit",
+                json={
+                    "userId": user_id,
+                    "classroomAssignmentId": classroom_assignment_id,
+                    "score": correct_count,
+                    "answerHistory": answer_history,
+                },
+                timeout=10.0,
+            )
+            res.raise_for_status()
+            print("✅ บันทึกผลสำเร็จ")
+    except Exception as e:
+        print(f"❌ บันทึกผลไม่สำเร็จ: {e}")
 
     await send("", "session_end")
     ws = session.get("ws")

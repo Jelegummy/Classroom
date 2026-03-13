@@ -24,7 +24,7 @@ def generate_questions(pdf_content):
     - ถามสั้นๆ เป็นกันเอง (ไม่เกิน 1 บรรทัดต่อข้อ)
     - เป็นคำถามที่เช็กภาพรวมการบ้าน เช่น "การบ้านวันนี้มีทั้งหมดกี่ข้อใหญ่","ข้อไหนยากสุดทำไม" สามารถตอบได้เลยโดยไม่ต้องวิเคราะห์ตามแค่ดูความพร้อม
     - อ้างอิงคำสำคัญจากเนื้อหาการบ้านมาถามด้วย
-    - หากข้อไหนที่มีโจทย์หรือ code ให้นำมาใส่ ทั้งหมด ด้วย 
+    - ข้อไหนที่มีโจทย์หรือ code ต้องนำ code นั้นๆมาใส่ด้วยตลอด เพื่อให้เด็กได้อธิบายโค้ดนั้นๆ
     - ไม่จำเป็นต้องมีเลขข้อ
     - ไม่เอาตอบใช่หรือไม่
     
@@ -36,7 +36,6 @@ def generate_questions(pdf_content):
 
 
 def save_file(selected_questions):
-    # ย้ายไปเก็บที่โฟลเดอร์ log
     log_dir = os.path.join(os.path.dirname(__file__), "..", "log")
     filename = os.path.join(log_dir, "generated_questions.json")
 
@@ -48,7 +47,6 @@ def save_file(selected_questions):
 
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data_to_save, f, ensure_ascii=False, indent=4)
-    # print(f"--- บันทึกคำถามเรียบร้อยแล้ว ---")
 
 
 def run_gen_question(pdf_content):
@@ -71,7 +69,6 @@ def run_genquestiontext(txt_path: str):
 
 
 def main():
-    # สำหรับเทส ใช้ไฟล์จาก log ที่ extract ไว้
     log_dir = os.path.join(os.path.dirname(__file__), "..", "log")
     test_path = os.path.join(log_dir, "extractpdf.txt")
 

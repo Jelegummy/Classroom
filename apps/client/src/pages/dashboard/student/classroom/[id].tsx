@@ -22,7 +22,7 @@ type Mode = 'all' | 'pending' | 'overdue' | 'submitted'
 
 export default function ClassroomId() {
   const router = useRouter()
-  const [mode, setMode] = useState<Mode>('all')
+  const [mode, setMode] = useState<Mode>('pending')
   const [activeTab, setActiveTab] = useState<
     'main_tabs' | 'jobs_tabs' | 'game_tabs' | 'tutor_tabs' | 'people_tabs'
   >('main_tabs')

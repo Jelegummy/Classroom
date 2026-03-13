@@ -10,7 +10,7 @@ import { Context, getUserFromContext } from '@app/common'
 
 @Injectable()
 export class TutorInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createTutor(args: CreateTutorArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
