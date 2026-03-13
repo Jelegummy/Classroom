@@ -1,3 +1,4 @@
+import DeleteGame from '@/features/game/components/delete-game'
 import { getAllGameSessions, joinGame } from '@/services/game-session'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Gamepad2, Swords, Users } from 'lucide-react'
@@ -45,23 +46,35 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
               key={game.id}
               className="group relative w-full max-w-[350px] rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-primary/30 hover:shadow-md"
             >
-              <div className="mb-6 flex items-start justify-between">
-                <div className="flex gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                    <Gamepad2 />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
+              <div className="mb-6 flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm transition-all duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:shadow-md">
+                  <Gamepad2 size={24} />
+                </div>
+
+                <div className="flex flex-1 flex-col gap-1.5 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate text-lg font-bold text-gray-900">
                       {game.name}
                     </h3>
-                    <p className="text-sm text-gray-400">{game.description}</p>
+                    <span
+                      className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-semibold tracking-wide ${
+                        game.isActive
+                          ? 'border-green-200 bg-green-50 text-green-600'
+                          : 'border-gray-200 bg-gray-50 text-gray-500'
+                      }`}
+                    >
+                      {game.isActive ? '🟢 กำลังเล่น' : '⚫ ปิดหรือจบแล้ว'}
+                    </span>
                   </div>
+
+                  <p className="line-clamp-2 text-sm text-gray-500">
+                    เวลาในการเล่น: {game.timeLimit} วินาที
+                  </p>
                 </div>
-                <span
-                  className={`rounded px-2 py-1 text-[10px] font-semibold ${game.isActive ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}
-                >
-                  {game.isActive ? 'กำลังเล่น' : 'ปิดหรือจบแล้ว'}
-                </span>
+
+                <div className="shrink-0 pt-0.5">
+                  <DeleteGame id={game.id} name={game.name} />
+                </div>
               </div>
 
               <div className="mb-4 flex items-center justify-between text-sm">

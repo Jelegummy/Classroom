@@ -82,6 +82,21 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
             <div className="mb-3">
               <label className="label">
                 <span className="label-text">
+                  ชื่อห้องติวที่จะเปิด (voice chat name){' '}
+                  <span className="text-error">*</span>
+                </span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                placeholder="เช่น 123456789012345678"
+                value={form.name || ''}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+              />
+            </div>
+            <div className="mb-3">
+              <label className="label">
+                <span className="label-text">
                   เปิดห้องติว (voice chat id){' '}
                   <span className="text-error">*</span>
                 </span>

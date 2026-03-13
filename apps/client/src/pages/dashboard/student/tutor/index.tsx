@@ -89,7 +89,7 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
               </div>
               <div className="flex flex-col">
                 <h3 className="line-clamp-1 text-base font-bold text-gray-900">
-                  {tutor.discordChannelId || 'Calculus Problem Set'}
+                  {tutor.name || 'Calculus Problem Set'}
                 </h3>
                 <p className="text-sm font-medium text-gray-500">
                   {tutor.host?.firstName}{' '}

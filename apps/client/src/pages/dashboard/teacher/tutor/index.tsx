@@ -42,16 +42,18 @@ export default function TutorSessionTeacher({
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                 <Video size={24} />
               </div>
+
               <div className="flex flex-col">
                 <h3 className="line-clamp-1 text-base font-bold text-gray-900">
-                  {tutor.discordChannelId || 'Calculus Problem Set'}
+                  {tutor.name || 'Calculus Problem Set'}
                 </h3>
                 <p className="text-sm font-medium text-gray-500">
                   {tutor.host?.firstName}{' '}
                   {tutor.host?.lastName || 'Teeraphan Sukjai'}
                 </p>
               </div>
-              <div className="ml-1 flex justify-end sm:ml-6">
+
+              <div className="ml-auto flex justify-end">
                 <DeleteCard
                   id={tutor.id}
                   discordChannelId={

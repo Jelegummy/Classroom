@@ -14,6 +14,7 @@ export type Character = {
   maxHp: number
   timeLimit: number
   description?: string
+  pointBoss: number
   modelUrl?: string
   imageUrl?: string
   createdAt: string

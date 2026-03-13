@@ -10,7 +10,8 @@ export class CreateTutorArgs extends createZodDto(
     discordChannelId: z.string().optional(),
     classroomId: z.string().min(1),
     inviteLink: z.string().optional(),
+    name: z.string().optional(),
   }),
-) {}
+) { }
 
 patchNestJsSwagger()

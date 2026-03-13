@@ -44,6 +44,9 @@ export default function CardCharacter({
             <div className="mt-0.5 truncate text-center text-sm font-bold text-gray-700 lg:mt-2 lg:text-base">
               {character.bossName}
             </div>
+            <div className="mt-0.5 flex items-center justify-center gap-1 truncate text-center text-xs font-bold text-gray-700 lg:mt-2 lg:text-sm">
+              มี <p className="text-yellow-600">{character.pointBoss}</p> คะแนน
+            </div>
           </div>
         ))}
       </div>

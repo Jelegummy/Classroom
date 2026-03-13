@@ -8,3 +8,8 @@ export type CardGameProps = {
   classroomId: string
   characterId: string
 }
+
+export type DeleteGameProps = {
+  id: string
+  name: string
+}

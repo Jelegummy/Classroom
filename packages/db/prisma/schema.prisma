@@ -198,6 +198,7 @@ model Tutor {
     dataContent      Json     @map("data_content")
     discordChannelId String   @map("discord_channel_id")
     inviteLink       String?  @map("invite_link")
+    name             String?  @map("name")
     botLink          String?  @map("bot_link") //not used
     startTime        DateTime @default(now()) @map("start_time")
 

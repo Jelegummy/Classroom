@@ -187,6 +187,7 @@ export default function GameId() {
   }
 
   const handleAttack = () => {
+    if (session?.user.role !== 'STUDENT') return
     if (!isStarted || timeLeft <= 0) return
     if (!activeSession || activeSession.currentHp <= 0) return
 
