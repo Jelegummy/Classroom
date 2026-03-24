@@ -162,7 +162,7 @@ llm = ChatOpenAI(
     api_key=TYPHOON_KEY,
     model='typhoon-v2.5-30b-a3b-instruct',
     temperature=0.3,
-    max_tokens=4000,
+    max_tokens=8192,
 )
 print("กำลัง downloadโมเดล Whisper (ครั้งแรกอาจใช้เวลานานหน่อยนะครับ)...")
 
@@ -263,7 +263,8 @@ class MultiUserSink(voice_recv.AudioSink):
 
 def format_time(seconds: float) -> str:
     m, s = divmod(int(seconds), 60)
-    return f"{m:02d}:{s:02d}"
+    ms = int(round((seconds - int(seconds)) * 100))
+    return f"{m:02d}:{s:02d}.{ms:02d}"
 
 
 def extract_json_from_text(text: str) -> str:
@@ -303,22 +304,35 @@ def transcribe_with_whisper(path: str):
 
 async def analyze_session(blocks, all_participants):
     convo = "\n".join(
-        [f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}" for b in blocks])
+        [f"[start: {b['start']} | end: {b['end']}] {b['speaker']}: {b['text']}" for b in blocks])
     participants_str = ", ".join(all_participants)
-    prompt = f"ผู้เข้าร่วม: {participants_str}\nหมายเหตุ: ถอดเสียงอัตโนมัติ ให้ประมวลผลข้ามคำผิดและสรุปใจความสำคัญ\n\nบทสนทนา:\n{convo}"
+
+    prompt = f"รายชื่อผู้ที่อยู่ในห้อง: {participants_str}\n\nบทสนทนาดิบ (ถอดเสียงอัตโนมัติ อาจมีคำเพี้ยน):\n{convo}"
 
     messages = [
-        SystemMessage(content="""คุณคือ AI ผู้ช่วยสรุปการสอน 
-        ตอบกลับเป็น JSON format เท่านั้น ห้ามมีข้อความอื่น โครงสร้าง:
+        SystemMessage(content="""คุณคือ AI ผู้ช่วยวิเคราะห์การเรียนการสอน หน้าที่ของคุณคือ:
+        1. แก้ไขคำผิดในบทสนทนาดิบ ให้เป็นประโยคภาษาไทยที่ถูกต้อง อ่านรู้เรื่อง โดยคงความหมายเดิมไว้
+        2. วิเคราะห์ประเภทเนื้อหา: ให้เป็น "Tutoring" (มีการสอน/ให้ความรู้/นำเสนอ) หรือ "General" (พูดคุยเรื่องทั่วไป/คุยเล่น)
+        3. ระบุผู้พูดหลัก (main_speaker): ให้เลือกคนที่พูดเยอะที่สุด หรือเป็นผู้นำเสนอหลักเพียง 1 คน (ถ้ามี)
+        
+        ตอบกลับเป็น JSON format เท่านั้น โครงสร้าง:
         {
-            "session_type": "Tutoring/General", 
-            "topic": "หัวข้อที่สอน", 
-            "summary": "สรุปเนื้อหา", 
+            "session_type": "Tutoring" หรือ "General",
+            "topic": "หัวข้อที่คุย/สอน (ถ้าคุยเล่นให้ใส่ 'พูดคุยทั่วไป')",
+            "summary": "สรุปเนื้อหาใจความสำคัญ",
             "roles": {
-                "main_speaker": "ผู้สอน", 
-                "active_participants": ["ชื่อคนที่พูด"],
-                "silent_participants": ["ชื่อคนที่ไม่พูด"]
-            }
+                "main_speaker": "ชื่อผู้พูดหลัก (ดึงจากคนที่พูดนำเสนอ ไม่สนใจว่าชื่ออะไร)",
+                "active_participants": ["ชื่อผู้เรียนที่พูดโต้ตอบ"],
+                "silent_participants": ["ชื่อคนที่อยู่ในห้องแต่ไม่ได้พูด"]
+            },
+            "corrected_transcript": [
+                {
+                    "speaker": "ชื่อคนพูด", 
+                    "start": ตัวเลขเวลาเริ่ม (ลอกมาจากต้นฉบับ), 
+                    "end": ตัวเลขเวลาจบ (ลอกมาจากต้นฉบับ), 
+                    "text": "ประโยคที่แก้ไขคำผิดแล้ว"
+                }
+            ]
         }"""),
         HumanMessage(content=prompt)
     ]
@@ -396,17 +410,32 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
 
     try:
         analysis_data = json.loads(analysis_json_str)
+
+        session_type = analysis_data.get('session_type', 'General')
+        roles = analysis_data.get('roles', {})
+        main_speaker = roles.get('main_speaker')
+
+        filtered_participants = [
+            name for name in all_names if name != main_speaker]
+
+        if session_type != "Tutoring":
+            roles = {}
+            filtered_participants = []
+
+        final_transcript = analysis_data.get(
+            'corrected_transcript', speaker_blocks)
+
         payload = {
             "voiceChannelName": voice_name,
             "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
             "summary": analysis_data.get('summary', '-'),
-            "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
+            "sessionType": session_type,
             "discordChannelId": str(channel_id),
             "commandRunnerDiscordId": str(command_runner_id),
             "dataContent": {
-                "roles": analysis_data.get('roles', {}),
-                "participants": all_names,
-                "transcript": speaker_blocks
+                "roles": roles,
+                "participants": filtered_participants,
+                "transcript": final_transcript
             }
         }
 
@@ -418,19 +447,22 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
             async with http_session.post(post_url, json=payload, headers=headers) as response:
                 print(f"API Response: {response.status}")
 
-        embed = discord.Embed(
-            title=f"สรุปผลการเรียน: {analysis_data.get('topic', 'ไม่ระบุ')}", color=discord.Color.green())
+        embed_color = discord.Color.green(
+        ) if session_type == "Tutoring" else discord.Color.light_grey()
+        embed_title = f"สรุปผลการเรียน: {analysis_data.get('topic', 'ไม่ระบุ')}" if session_type == "Tutoring" else "สรุปการพูดคุยทั่วไป (ไม่มีการเก็บคะแนน)"
+
+        embed = discord.Embed(title=embed_title, color=embed_color)
         embed.add_field(name="สรุปเนื้อหา", value=analysis_data.get(
             'summary', '-'), inline=False)
-        roles = analysis_data.get('roles', {})
+
         if roles.get('main_speaker'):
             embed.add_field(
                 name="ผู้สอน", value=roles['main_speaker'], inline=True)
 
-        await text_channel.send(embed=embed)
+        await status_msg.edit(content=None, embed=embed)
 
     except Exception as e:
-        await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการสรุปผล: {e}")
+        await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการอ่านข้อมูลจาก AI: {e}")
 
 
 # UI Discord Events
