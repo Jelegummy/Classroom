@@ -87,7 +87,7 @@ const options: NextAuthOptions = {
       if (account?.provider === 'discord') {
         if (token?.accessToken) {
           try {
-            const apiUrl = process.env.NEXT_PUBLIC_ENDPOINT
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
             const res = await fetch(`${apiUrl}/discord-id`, {
               method: 'PATCH',
