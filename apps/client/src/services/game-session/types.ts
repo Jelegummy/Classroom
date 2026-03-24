@@ -56,6 +56,7 @@ export interface Game {
   status: 'WAITING' | 'ONGOING' | 'FINISHED'
   maxHpBoss?: number
   timeLimit?: number
+  startedAt?: string
   character?: {
     id: string
     bossName: string

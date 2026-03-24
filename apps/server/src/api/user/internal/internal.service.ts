@@ -1,7 +1,12 @@
 import { AuthService } from '@app/auth'
 import { Context, getUserFromContext } from '@app/common'
 import { PrismaService } from '@app/db'
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common'
 
 import {
   ConnectDiscordArgs,
@@ -15,7 +20,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) { }
+  ) {}
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -200,7 +205,9 @@ export class UserInternalService {
 
     if (existingDiscordUser) {
       if (existingDiscordUser.id !== loggedInUser.id) {
-        throw new ConflictException('Discord ID นี้ถูกเชื่อมต่อกับบัญชีอื่นไปแล้ว')
+        throw new ConflictException(
+          'Discord ID นี้ถูกเชื่อมต่อกับบัญชีอื่นไปแล้ว',
+        )
       }
     }
 

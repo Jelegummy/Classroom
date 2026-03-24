@@ -10,7 +10,7 @@ export class ItemsArgs extends createZodDto(
     imageUrl: z.string().url().optional(),
     type: z.enum(['ATTACK_BOOST', 'TIME_EXTEND']),
   }),
-) { }
+) {}
 
 export class UpdateItemsArgs extends createZodDto(
   z.object({
@@ -21,20 +21,21 @@ export class UpdateItemsArgs extends createZodDto(
     effectValue: z.number().optional(),
     type: z.enum(['ATTACK_BOOST', 'TIME_EXTEND']),
   }),
-) { }
+) {}
 
 export class SpacialItemsArgs extends createZodDto(
   z.object({
     amount: z.number().min(1),
   }),
-) { }
+) {}
 
 export class BuyItemsArgs extends createZodDto(
   z.object({
     userId: z.string().min(1),
     itemId: z.string().min(1),
+    gameId: z.string().min(1).optional(),
     amount: z.number().min(1),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

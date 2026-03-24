@@ -12,6 +12,6 @@ export class CreateTutorArgs extends createZodDto(
     inviteLink: z.string().optional(),
     name: z.string().optional(),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

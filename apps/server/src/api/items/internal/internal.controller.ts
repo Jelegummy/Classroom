@@ -18,11 +18,17 @@ import {
   UpdateItemsArgs,
 } from './internal.dto'
 import { Context } from '@app/common'
+import { GameGateway } from '../../game/internal/game.gateway'
+import { GameInternalService } from '../../game/internal/internal.service'
 
 @ApiTags('Items - Internal')
 @Controller('items/internal')
 export class ItemsInternalController {
-  constructor(private readonly service: ItemsInternalService) {}
+  constructor(
+    private readonly service: ItemsInternalService,
+    private readonly gameGateway: GameGateway,
+    private readonly gameService: GameInternalService,
+  ) {}
 
   @Post('/create')
   async createItems(@Body() args: ItemsArgs, @Req() ctx: Context) {
@@ -74,6 +80,14 @@ export class ItemsInternalController {
   @Post('/buy-items')
   async buyItems(@Body() args: BuyItemsArgs, @Req() ctx: Context) {
     const res = await this.service.buyItems(args, ctx)
+
+    if (args.gameId) {
+      const updatedGame = await this.gameService.getGameSession(
+        { id: args.gameId },
+        ctx,
+      )
+      this.gameGateway.broadcastGameState(args.gameId, updatedGame)
+    }
 
     return { statusCode: HttpStatus.OK, data: res }
   }

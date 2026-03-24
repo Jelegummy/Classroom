@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import Link from 'next/link'
 import CharacterScene from '../../../features/game/components/character-scene'
+import { io, Socket } from 'socket.io-client'
 
 interface Item {
   id: string
@@ -33,6 +34,7 @@ interface Game {
   isActive: boolean
   maxHpBoss?: number
   status: 'WAITING' | 'ONGOING' | 'FINISHED'
+  startedAt?: string | Date
   character?: {
     timeLimit: number
     imageUrl: string
@@ -60,6 +62,8 @@ interface Game {
   }>
 }
 
+const SOCKET_URL = process.env.NEXT_PUBLIC_ENDPOINT
+
 export default function GameId() {
   const router = useRouter()
   const gameId = router.query.id as string
@@ -70,12 +74,37 @@ export default function GameId() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [isAttacking, setIsAttacking] = useState(false)
 
+  const socketRef = useRef<Socket | null>(null)
+
   const { data: game, isLoading } = useQuery<Game | undefined>({
     queryKey: ['getGameSession', gameId],
     queryFn: () => getGameSession(gameId),
     enabled: !!gameId,
-    refetchInterval: !isGameOver ? 1000 : false,
+    // refetchInterval: !isGameOver ? 1000 : false,
   })
+
+  useEffect(() => {
+    if (!gameId) return
+
+    socketRef.current = io(SOCKET_URL)
+    const socket = socketRef.current
+
+    socket.on('connect', () => {
+      console.log('Connected to socket server')
+      socket.emit('join-game-room', gameId)
+    })
+
+    socket.on('game-state-updated', (updatedGameData: Game) => {
+      queryClient.setQueryData(['getGameSession', gameId], updatedGameData)
+    })
+
+    return () => {
+      if (socket.connected) {
+        socket.emit('leave-game-room', gameId)
+        socket.disconnect()
+      }
+    }
+  }, [gameId, queryClient])
 
   const isStarted = game?.status === 'ONGOING'
 
@@ -86,9 +115,6 @@ export default function GameId() {
 
   const endGameMutation = useMutation({
     mutationFn: () => endGame(gameId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['getGameSession', gameId] })
-    },
     onError: (err: any) => {
       toast.error(err.message || 'เกิดข้อผิดพลาด')
     },
@@ -105,23 +131,68 @@ export default function GameId() {
     },
   })
 
-  useEffect(() => {
-    if (game?.timeLimit && timeLeft === 0 && !isStarted) {
-      setTimeLeft(game.timeLimit)
-    }
-  }, [game, isStarted])
+  const attackMutation = useMutation({
+    mutationFn: (damage: number) => attackBoss(gameId, damage),
+    // ไม่ต้อง invalidate แล้ว ปล่อยให้ socket อัปเดต UI ให้
+  })
+
+  const buyItemMutation = useMutation({
+    // ✨ อย่าลืมแนบ gameId ไปด้วยนะ ตามที่เราแก้ Backend ไปก่อนหน้านี้
+    mutationFn: (item: Item) =>
+      buyItems({
+        gameId, // <--- เพิ่มตรงนี้
+        userId: session!.user.id,
+        itemId: item.id,
+        amount: 1,
+      }),
+    onSuccess: () => {
+      toast.success('ซื้อไอเทมสำเร็จ!')
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'เกิดข้อผิดพลาด')
+    },
+  })
+
+  const startGameMutation = useMutation({
+    mutationFn: () => startGame(gameId),
+    onSuccess: () => {
+      toast.success('เริ่มเกมแล้ว!')
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'เกิดข้อผิดพลาด')
+    },
+  })
 
   useEffect(() => {
     let timer: NodeJS.Timeout
-    if (isStarted && timeLeft > 0) {
-      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000)
-    } else if (timeLeft === 0 && isStarted && !isGameOver) {
-      setIsGameOver(true)
-      console.log('Time is up! Distributing points...')
-      timeoutMutation.mutate()
+
+    if (isStarted && game?.startedAt && game?.timeLimit) {
+      const startTime = new Date(game.startedAt).getTime()
+      const endTime = startTime + game.timeLimit * 1000
+
+      timer = setInterval(() => {
+        const now = Date.now()
+        const remaining = Math.max(0, Math.floor((endTime - now) / 1000))
+
+        setTimeLeft(remaining)
+
+        if (remaining === 0 && !isGameOver) {
+          setIsGameOver(true)
+          console.log('Time is up! Distributing points...')
+          if (
+            session?.user.role === 'TEACHER' ||
+            session?.user.role === 'ADMIN'
+          ) {
+            timeoutMutation.mutate()
+          }
+        }
+      }, 1000)
+    } else if (!isStarted && game?.timeLimit) {
+      setTimeLeft(game.timeLimit)
     }
+
     return () => clearInterval(timer)
-  }, [isStarted, timeLeft, isGameOver, gameId])
+  }, [isStarted, game?.startedAt, game?.timeLimit, isGameOver, session])
 
   const activeSession = game?.classrooms?.[0]
   const boss = game?.character
@@ -144,39 +215,6 @@ export default function GameId() {
 
     return baseDamage + itemBonus
   }, [currentUserData, game?.damageBoost])
-
-  const attackMutation = useMutation({
-    mutationFn: (damage: number) => attackBoss(gameId, damage),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['getGameSession', gameId] })
-    },
-  })
-
-  const buyItemMutation = useMutation({
-    mutationFn: (item: Item) =>
-      buyItems({
-        userId: session!.user.id,
-        itemId: item.id,
-        amount: 1,
-      }),
-    onSuccess: () => {
-      toast.success('ซื้อไอเทมสำเร็จ!')
-      queryClient.invalidateQueries({ queryKey: ['getGameSession', gameId] })
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'เกิดข้อผิดพลาด')
-    },
-  })
-
-  const startGameMutation = useMutation({
-    mutationFn: () => startGame(gameId),
-    onSuccess: () => {
-      toast.success('เริ่มเกมแล้ว!')
-    },
-    onError: (err: any) => {
-      toast.error(err.message || 'เกิดข้อผิดพลาด')
-    },
-  })
 
   const handleStartGame = () => {
     if (attendances.length === 0) {

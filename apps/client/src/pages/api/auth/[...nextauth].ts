@@ -85,10 +85,9 @@ const options: NextAuthOptions = {
       }
 
       if (account?.provider === 'discord') {
-
         if (token?.accessToken) {
           try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL
+            const apiUrl = process.env.NEXT_PUBLIC_ENDPOINT
 
             const res = await fetch(`${apiUrl}/discord-id`, {
               method: 'PATCH',
@@ -108,14 +107,11 @@ const options: NextAuthOptions = {
 
             const _updatedUser = await getMe(token.accessToken as string, {})
             return { ...token, ..._updatedUser }
-
           } catch (error) {
             console.error('Failed to link Discord via backend:', error)
             throw new Error('ไม่สามารถเชื่อมต่อ Discord ได้ในขณะนี้')
           }
-        }
-
-        else if (user) {
+        } else if (user) {
           try {
             const nameParts = user.name?.split(' ') || ['Discord', 'User']
             const firstName = nameParts[0]
