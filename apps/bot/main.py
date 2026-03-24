@@ -1,5 +1,10 @@
+from discord.opus import Decoder as _OpusDecoder
+from discord.ext.voice_recv import rtp as _rtp
+from discord.ext.voice_recv.reader import AudioReader as _AudioReader
+from discord.ext.voice_recv.opus import PacketDecoder as _PacketDecoder
 from dotenv import load_dotenv
 import os
+import threading
 import discord
 from faster_whisper import WhisperModel
 from discord.ext import commands, voice_recv
@@ -10,6 +15,8 @@ import shutil
 import aiohttp
 import json
 import re
+import struct
+import logging
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -41,6 +48,114 @@ if not discord.opus.is_loaded():
         except Exception:
             continue
 
+# Patch _decode_packet to catch occasional Opus errors (safety net)
+_original_decode_packet = _PacketDecoder._decode_packet
+_SILENCE_FRAME = b'\x00' * \
+    (_OpusDecoder.SAMPLES_PER_FRAME * _OpusDecoder.CHANNELS * 2)
+
+
+def _safe_decode_packet(self, packet):
+    try:
+        return _original_decode_packet(self, packet)
+    except Exception:
+        return packet, _SILENCE_FRAME
+
+
+_PacketDecoder._decode_packet = _safe_decode_packet
+
+# Patch AudioReader.callback to add DAVE decryption after transport decryption
+_original_callback = _AudioReader.callback
+_dave_log = logging.getLogger('dave_patch')
+
+
+def _patched_callback(self, packet_data: bytes) -> None:
+    """Wraps original callback to inject DAVE decryption on RTP packets."""
+    packet = rtp_packet = rtcp_packet = None
+    try:
+        from nacl.exceptions import CryptoError
+
+        if not _rtp.is_rtcp(packet_data):
+            packet = rtp_packet = _rtp.decode_rtp(packet_data)
+            packet.decrypted_data = self.decryptor.decrypt_rtp(packet)
+
+            # --- DAVE decryption ---
+            vc = self.voice_client
+            conn = vc._connection
+            dave = getattr(conn, 'dave_session', None)
+            if dave:
+                ssrc = rtp_packet.ssrc
+                user_id = vc._ssrc_to_id.get(ssrc)
+                if user_id is not None and packet.decrypted_data:
+                    try:
+                        import davey
+                        decrypted = dave.decrypt(
+                            user_id,
+                            davey.MediaType.audio,
+                            packet.decrypted_data,
+                        )
+                        if decrypted:
+                            packet.decrypted_data = decrypted
+                    except Exception:
+                        pass
+            # --- end DAVE ---
+
+        else:
+            packet = rtcp_packet = _rtp.decode_rtcp(
+                self.decryptor.decrypt_rtcp(packet_data)
+            )
+            from discord.ext.voice_recv.rtp import ReceiverReportPacket
+            if not isinstance(packet, ReceiverReportPacket):
+                pass
+    except CryptoError:
+        return
+    except Exception:
+        if self._is_ip_discovery_packet(packet_data):
+            return
+        _dave_log.debug("Error unpacking packet")
+    finally:
+        if self.error:
+            self.stop()
+            return
+        if not packet:
+            return
+
+    if rtcp_packet:
+        self.packet_router.feed_rtcp(rtcp_packet)
+    elif rtp_packet:
+        ssrc = rtp_packet.ssrc
+        if ssrc not in self.voice_client._ssrc_to_id:
+            if rtp_packet.is_silence():
+                return
+        self.speaking_timer.notify(ssrc)
+        try:
+            self.packet_router.feed_rtp(rtp_packet)
+        except Exception as e:
+            _dave_log.exception('Error processing rtp packet')
+            self.error = e
+            self.stop()
+
+
+_AudioReader.callback = _patched_callback
+
+
+def enable_dave_passthrough(vc):
+    """Enable permanent DAVE passthrough mode for receiving audio.
+
+    With passthrough enabled:
+    - DAVE-encrypted data → decrypt() works normally
+    - Unencrypted data (during transitions) → passes through without error
+    This eliminates the 'UnencryptedWhenPassthroughDisabled' errors.
+    """
+    try:
+        conn = vc._connection
+        dave = getattr(conn, 'dave_session', None)
+        if dave:
+            dave.set_passthrough_mode(True)
+            print("[DAVE] Passthrough mode enabled for voice receiving")
+    except Exception as e:
+        print(f"[DAVE] Warning: could not enable passthrough: {e}")
+
+
 # Load LLM
 llm = ChatOpenAI(
     base_url="https://api.opentyphoon.ai/v1",
@@ -70,31 +185,78 @@ ai_processing_queue = asyncio.Queue()
 
 
 class MultiUserSink(voice_recv.AudioSink):
+    # Minimum RMS energy threshold to filter silence/noise frames
+    SILENCE_THRESHOLD = 30
+
     def __init__(self, output_dir):
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.files = {}
+        self._lock = threading.Lock()
+        self._closed = False
 
     def wants_opus(self):
         return False
 
+    @staticmethod
+    def _is_silence(pcm_data: bytes) -> bool:
+        """Check if a PCM frame is silence using RMS energy."""
+        if len(pcm_data) < 2:
+            return True
+        try:
+            samples = struct.unpack(f'<{len(pcm_data) // 2}h', pcm_data)
+            rms = (sum(s * s for s in samples) / len(samples)) ** 0.5
+            return rms < MultiUserSink.SILENCE_THRESHOLD
+        except Exception:
+            return False
+
+    @staticmethod
+    def _stereo_to_mono(pcm_data: bytes) -> bytes:
+        """Convert stereo PCM16 to mono by averaging L/R channels."""
+        try:
+            samples = struct.unpack(f'<{len(pcm_data) // 2}h', pcm_data)
+            mono = []
+            for i in range(0, len(samples), 2):
+                avg = (samples[i] + samples[i + 1]) // 2
+                mono.append(avg)
+            return struct.pack(f'<{len(mono)}h', *mono)
+        except Exception:
+            return pcm_data
+
     def write(self, user, data):
         if not user:
             return
-        uid = user.id
-        if uid not in self.files:
-            path = os.path.join(self.output_dir, f"{uid}.wav")
-            wf = wave.open(path, "wb")
-            wf.setnchannels(2)
-            wf.setsampwidth(2)
-            wf.setframerate(48000)
-            self.files[uid] = wf
-        self.files[uid].writeframes(data.pcm)
+        with self._lock:
+            if self._closed:
+                return
+            try:
+                pcm = data.pcm
+                # Skip silence frames to reduce file size and improve STT
+                if self._is_silence(pcm):
+                    return
+                # Convert to mono for better STT accuracy
+                mono_pcm = self._stereo_to_mono(pcm)
+                uid = user.id
+                if uid not in self.files:
+                    path = os.path.join(self.output_dir, f"{uid}.wav")
+                    wf = wave.open(path, "wb")
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(48000)
+                    self.files[uid] = wf
+                self.files[uid].writeframes(mono_pcm)
+            except Exception as e:
+                print(f"Sink write error (ignored): {e}")
 
     def cleanup(self):
-        for wf in list(self.files.values()):
-            wf.close()
-        self.files.clear()
+        with self._lock:
+            self._closed = True
+            for wf in list(self.files.values()):
+                try:
+                    wf.close()
+                except Exception:
+                    pass
+            self.files.clear()
 
 
 # AI and Data Processing
@@ -123,14 +285,20 @@ def transcribe_with_whisper(path: str):
         path,
         language=LANGUAGE,
         vad_filter=True,
-        beam_size=2,
-        condition_on_previous_text=False
+        vad_parameters=dict(
+            min_silence_duration_ms=300,
+            speech_pad_ms=200,
+            threshold=0.4,
+        ),
+        beam_size=3,
+        condition_on_previous_text=False,
+        no_speech_threshold=0.5,
     )
     return [{
         "start": seg.start,
         "end": seg.end,
         "text": seg.text.strip()
-    } for seg in segments]
+    } for seg in segments if seg.text.strip()]
 
 
 async def analyze_session(blocks, all_participants):
@@ -187,7 +355,7 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
     command_runner_id = session_data["command_runner_id"]
 
     speaker_blocks = []
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     if os.path.exists(record_dir):
         files = [f for f in os.listdir(record_dir) if f.endswith(".wav")]
@@ -246,8 +414,8 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
         headers = {"x-bot-secret": BOT_API_SECRET,
                    "Content-Type": "application/json"}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(post_url, json=payload, headers=headers) as response:
+        async with aiohttp.ClientSession() as http_session:
+            async with http_session.post(post_url, json=payload, headers=headers) as response:
                 print(f"API Response: {response.status}")
 
         embed = discord.Embed(
@@ -300,8 +468,8 @@ class RegistrationModal(discord.ui.Modal, title='ยืนยันการเ�
             headers = {"x-bot-secret": BOT_API_SECRET,
                        "Content-Type": "application/json"}
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(post_url, json=payload, headers=headers) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.post(post_url, json=payload, headers=headers) as response:
                     if response.status in (200, 201):
                         registered_names[user_id] = real_name
                         print(
@@ -346,8 +514,8 @@ class HostView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(get_url) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
                     if response.status == 200:
                         res_json = await response.json()
                         data = res_json.get("data", {})
@@ -383,19 +551,37 @@ class HostView(discord.ui.View):
                 members_map[member.id] = member.display_name
                 unregistered.append(member.mention)
 
+        # Check if there are any registered users in the channel
+        registered_in_vc = [
+            uid for uid in members_map if str(uid) in api_users]
+        if not registered_in_vc:
+            active_sessions.pop(channel_id_str, None)
+            await interaction.followup.send(
+                "❌ ไม่มีผู้เรียนที่ลงทะเบียนอยู่ในห้องเสียง\n"
+                "กรุณาให้ผู้เรียนกดปุ่ม **เข้าร่วม** ก่อนเริ่มอัดเสียงครับ"
+            )
+            return
+
         if unregistered:
             warning_msg = f"⚠️ ระบบตรวจพบผู้เรียนที่ยังไม่ลงทะเบียน: {', '.join(unregistered)}\n*(บอทจะใช้ชื่อ Discord ของผู้ใช้แทนชั่วคราว)*"
             await interaction.channel.send(warning_msg)
 
         try:
             vc = voice_channel.guild.voice_client
+            if vc is not None:
+                try:
+                    if not vc.is_connected() or vc.channel != voice_channel:
+                        await vc.disconnect(force=True)
+                        await asyncio.sleep(0.5)
+                        vc = None
+                except Exception:
+                    vc = None
+
             if vc is None:
                 vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
-            elif vc.channel != voice_channel:
-                await vc.move_to(voice_channel)
-            elif not vc.is_connected():
-                await vc.disconnect(force=True)
-                vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
+
+            # Enable DAVE passthrough so received audio isn't rejected
+            enable_dave_passthrough(vc)
 
             record_dir = os.path.join(BASE_RECORD_DIR, channel_id_str)
             os.makedirs(record_dir, exist_ok=True)
@@ -451,13 +637,17 @@ class HostView(discord.ui.View):
         voice_name = voice_channel.name
 
         try:
+            sink.cleanup()  # Set closed flag first to stop accepting data
             vc.stop_listening()
-            sink.cleanup()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)  # Let in-flight packets drain
         except Exception as e:
             print(f"เกิดข้อผิดพลาดตอนหยุดอัด: {e}")
 
-        await vc.disconnect(force=True)
+        try:
+            if vc.is_connected():
+                await vc.disconnect(force=True)
+        except Exception:
+            pass
 
         asyncio.create_task(process_session_data(
             channel_id_str, interaction.channel, session_data, voice_name))
@@ -468,7 +658,7 @@ class MainEntryPointView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="🧑🏻‍🏫 ยืนยันการเข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
+    @discord.ui.button(label="🧑🏻‍🏫 เตรียมความพร้อม/ยืนยันการเข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
     async def open_panel_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.user.voice:
             await interaction.response.send_message("❌ คุณต้องอยู่ในห้องเสียงก่อนครับ", ephemeral=True)
@@ -484,8 +674,8 @@ class MainEntryPointView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(get_url) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
                     if response.status == 200:
                         res_json = await response.json()
                         data = res_json.get("data", {})
@@ -520,30 +710,59 @@ async def on_voice_state_update(member, before, after):
 
     if after.channel and before.channel != after.channel:
         voice_channel = after.channel
-        if len([m for m in voice_channel.members if not m.bot]) == 1:
-            embed = discord.Embed(title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
-                                  description="**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง)", color=discord.Color.blue())
-            await voice_channel.send(content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว", embed=embed, view=MainEntryPointView())
+        channel_id_str = str(voice_channel.id)
 
-        if member.id not in registered_names:
-            await voice_channel.send(f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**", delete_after=30)
+        is_active_session = False
+        try:
+            get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
+                    if response.status == 200:
+                        is_active_session = True
+        except Exception as e:
+            print(f"API Error in on_voice_state_update: {e}")
+
+        if is_active_session:
+            if len([m for m in voice_channel.members if not m.bot]) == 1:
+                embed = discord.Embed(
+                    title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
+                    description="**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง)",
+                    color=discord.Color.blue()
+                )
+                await voice_channel.send(content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว", embed=embed, view=MainEntryPointView())
+
+            if member.id not in registered_names:
+                await voice_channel.send(f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**", delete_after=30)
 
     if before.channel and before.channel != after.channel:
         voice_channel = before.channel
+        channel_id_str = str(voice_channel.id)
+
         if len([m for m in voice_channel.members if not m.bot]) == 0:
+            is_active_session_before = False
             try:
-                await voice_channel.purge(limit=None, bulk=False)
+                get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
+                async with aiohttp.ClientSession() as http_session:
+                    async with http_session.get(get_url) as response:
+                        if response.status == 200:
+                            is_active_session_before = True
             except Exception:
                 pass
 
+            if is_active_session_before:
+                try:
+                    await voice_channel.purge(limit=None, bulk=False)
+                except Exception:
+                    pass
+
             vc = voice_channel.guild.voice_client
             if vc and vc.channel == voice_channel:
-                channel_id_str = str(voice_channel.id)
                 session_data = active_sessions.pop(channel_id_str, None)
                 if session_data:
                     try:
-                        vc.stop_listening()
                         session_data["sink"].cleanup()
+                        vc.stop_listening()
+                        await asyncio.sleep(0.5)
                     except Exception:
                         pass
 
@@ -554,7 +773,11 @@ async def on_voice_state_update(member, before, after):
                             "session_data": session_data,
                             "voice_name": voice_channel.name
                         })
-                await vc.disconnect(force=True)
+                try:
+                    if vc.is_connected():
+                        await vc.disconnect(force=True)
+                except Exception:
+                    pass
 
 
 @bot.event
