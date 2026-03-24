@@ -20,6 +20,7 @@ export type User = {
   firstName: string
   lastName: string
   phoneNumber: string | null
+  discordId?: string
 }
 
 export type UpdateUserArgs = {

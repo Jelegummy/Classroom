@@ -1,9 +1,10 @@
 import { AuthService } from '@app/auth'
 import { Context, getUserFromContext } from '@app/common'
 import { PrismaService } from '@app/db'
-import { Injectable } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common'
 
 import {
+  ConnectDiscordArgs,
   CreateUserArgs,
   UpdatePasswordArgs,
   UpdateUserArgs,
@@ -14,7 +15,7 @@ export class UserInternalService {
   constructor(
     private readonly db: PrismaService,
     private readonly authService: AuthService,
-  ) {}
+  ) { }
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -32,6 +33,7 @@ export class UserInternalService {
         phoneNumber: true,
         points: true,
         studentId: true,
+        discordId: true,
         teacherId: true,
         major: true,
         role: true,
@@ -178,5 +180,41 @@ export class UserInternalService {
 
       return { userId: user.id, schoolId: finalSchoolId }
     })
+  }
+
+  async connectDiscord(args: ConnectDiscordArgs, ctx: Context) {
+    const loggedInUser = getUserFromContext(ctx)
+    if (!loggedInUser) {
+      throw new UnauthorizedException('User not found')
+    }
+
+    const { discordId } = args
+
+    if (!discordId) {
+      throw new BadRequestException('Discord ID is required.')
+    }
+
+    const existingDiscordUser = await this.db.user.findFirst({
+      where: { discordId: discordId },
+    })
+
+    if (existingDiscordUser) {
+      if (existingDiscordUser.id !== loggedInUser.id) {
+        throw new ConflictException('Discord ID นี้ถูกเชื่อมต่อกับบัญชีอื่นไปแล้ว')
+      }
+    }
+
+    const updatedUser = await this.db.user.update({
+      where: { id: loggedInUser.id },
+      data: { discordId: discordId },
+    })
+
+    const accessToken = await this.authService.generateToken(loggedInUser.id)
+
+    return {
+      accessToken,
+      userId: updatedUser.id,
+      schoolId: updatedUser.schoolId,
+    }
   }
 }

@@ -141,4 +141,18 @@ export const createUser = async (args: CreateUserArgs) => {
   return res.data
 }
 
+export const connectDiscord = async (args: { discordId: string }) => {
+  const session = await getSession()
+
+  const res = await fetchers.Patch(`${ENDPOINT}/user/internal/discord-id`, {
+    data: args,
+    token: session?.user.accessToken,
+  })
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) {
+    throw new Error(res.message)
+  }
+
+  return res.data
+}
+
 export * from './types'

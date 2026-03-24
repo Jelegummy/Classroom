@@ -3,17 +3,19 @@
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import {
+  connectDiscord,
   updatePassword,
   UpdatePasswordArgs,
   updateUser,
   UpdateUserArgs,
 } from '@/services/user'
 import { useMutation } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
-import { SquarePen, Save, X } from 'lucide-react'
+import { SquarePen, Save, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { useState, useEffect } from 'react'
+import { FaDiscord } from 'react-icons/fa6'
 
 type PasswordFormValues = UpdatePasswordArgs & {
   confirmNewPassword?: string
@@ -22,6 +24,7 @@ type PasswordFormValues = UpdatePasswordArgs & {
 export default function Setting() {
   const { data: session, update } = useSession()
   const user = session?.user
+  const isDiscordConnected = !!user?.discordId
 
   const [isEditingProfile, setIsEditingProfile] = useState(false)
 
@@ -66,6 +69,24 @@ export default function Setting() {
     },
   })
 
+  const connectDiscordMutation = useMutation({
+    mutationFn: (args: { discordId: string }) => connectDiscord(args),
+    mutationKey: ['connectDiscord'],
+    onSuccess: () => {
+      update()
+      toast.success('เชื่อมต่อ Discord สำเร็จ')
+    },
+    onError: error => {
+      toast.error(
+        'เกิดข้อผิดพลาดในการเชื่อมต่อ Discord: ' + (error as Error).message,
+      )
+    },
+  })
+
+  const handleConnectDiscord = () => {
+    signIn('discord', { callbackUrl: '/dashboard/setting' })
+  }
+
   const onSubmitPassword = (data: PasswordFormValues) => {
     if (data.newPassword !== data.confirmNewPassword) {
       toast.error('รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน')
@@ -90,9 +111,24 @@ export default function Setting() {
             การตั้งค่า
           </h1>
 
+          {!isDiscordConnected && (
+            <div className="flex flex-col items-start gap-3 rounded-2xl border-l-4 border-amber-500 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-5">
+              <div className="flex items-center gap-3 text-amber-800">
+                <AlertCircle className="h-6 w-6 shrink-0" />
+                <div>
+                  <h3 className="font-bold">จำเป็นต้องเชื่อมต่อ Discord</h3>
+                  <p className="text-sm text-amber-700">
+                    เพื่อเข้าสู่ห้องเรียนและรับการแจ้งเตือน
+                    กรุณาเชื่อมต่อบัญชีของคุณ
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:p-6">
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-gray-200 sm:h-16 sm:w-16">
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full bg-gray-200">
                 <img
                   src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
                     `${user?.firstName || ''} ${user?.lastName || ''}`.trim() ||
@@ -110,6 +146,50 @@ export default function Setting() {
                   {user?.role || 'Teacher'}
                 </p>
               </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm">
+            <div className="border-b bg-gray-50/50 p-4 text-gray-800 sm:p-6">
+              <h3 className="text-lg font-bold sm:text-xl">
+                การเชื่อมต่อบัญชีภายนอก
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                จัดการการเชื่อมต่อบัญชีเพื่อใช้งานฟีเจอร์ต่างๆ ภายในระบบ
+              </p>
+            </div>
+            <div className="flex flex-col items-start justify-between gap-4 p-4 sm:flex-row sm:items-center sm:p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#5865F2]/10 text-[#5865F2]">
+                  <FaDiscord className="text-2xl" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-800">Discord</h4>
+                  <p className="text-sm text-gray-500">
+                    {isDiscordConnected
+                      ? 'เชื่อมต่อบัญชีเรียบร้อยแล้ว'
+                      : 'ยังไม่ได้เชื่อมต่อบัญชี'}
+                  </p>
+                </div>
+              </div>
+
+              {isDiscordConnected ? (
+                <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-600">
+                  <CheckCircle2 size={18} />
+                  เชื่อมต่อแล้ว
+                </div>
+              ) : (
+                <button
+                  onClick={handleConnectDiscord}
+                  disabled={connectDiscordMutation.isPending}
+                  className="flex items-center gap-2 rounded-lg bg-[#5865F2] px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-[#4752C4] disabled:opacity-50"
+                >
+                  <FaDiscord size={20} />
+                  {connectDiscordMutation.isPending
+                    ? 'กำลังเชื่อมต่อ...'
+                    : 'เชื่อมต่อ Discord'}
+                </button>
+              )}
             </div>
           </div>
 

@@ -13,6 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger'
 
 import {
+  ConnectDiscordArgs,
   CreateUserArgs,
   UpdatePasswordArgs,
   UpdateUserArgs,
@@ -22,7 +23,7 @@ import { UserInternalService } from './internal.service'
 @ApiTags('User - Internal')
 @Controller('user/internal')
 export class UserInternalController {
-  constructor(private readonly service: UserInternalService) {}
+  constructor(private readonly service: UserInternalService) { }
 
   @Get('/me')
   async getMe(@Req() ctx: Context) {
@@ -71,5 +72,12 @@ export class UserInternalController {
     const res = await this.service.createUser(args, ctx)
 
     return { statusCode: HttpStatus.CREATED, data: res }
+  }
+
+  @Patch('/discord-id')
+  async connectDiscord(@Body() args: ConnectDiscordArgs, @Req() ctx: Context) {
+    const res = await this.service.connectDiscord(args, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
   }
 }

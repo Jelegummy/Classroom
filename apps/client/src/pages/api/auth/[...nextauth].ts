@@ -14,6 +14,7 @@ declare module 'next-auth' {
     lastName: string
     phoneNumber: string | null
     accessToken: string
+    discordId?: string
   }
 
   interface Session {
@@ -83,24 +84,56 @@ const options: NextAuthOptions = {
         return { ...token, ...user, ..._user }
       }
 
-      if (account?.provider === 'discord' && user) {
-        try {
-          const nameParts = user.name?.split(' ') || ['Discord', 'User']
-          const firstName = nameParts[0]
-          const lastName = nameParts.slice(1).join(' ') || ''
+      if (account?.provider === 'discord') {
 
-          const backendData = await loginDiscord({
-            discordId: account.providerAccountId,
-            email: user.email || '',
-            firstName: firstName,
-            lastName: lastName,
-          })
-          const _fullUser = await getMe(backendData.accessToken, {})
+        if (token?.accessToken) {
+          try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL
 
-          return { ...token, ...backendData, ..._fullUser }
-        } catch (error) {
-          console.error('Failed to login with Discord via backend:', error)
-          throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Discord ได้ในขณะนี้')
+            const res = await fetch(`${apiUrl}/discord-id`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token.accessToken}`,
+              },
+              body: JSON.stringify({
+                discordId: account.providerAccountId,
+                email: token.email || user?.email || '',
+              }),
+            })
+
+            if (!res.ok) {
+              throw new Error('Backend failed to link discord id')
+            }
+
+            const _updatedUser = await getMe(token.accessToken as string, {})
+            return { ...token, ..._updatedUser }
+
+          } catch (error) {
+            console.error('Failed to link Discord via backend:', error)
+            throw new Error('ไม่สามารถเชื่อมต่อ Discord ได้ในขณะนี้')
+          }
+        }
+
+        else if (user) {
+          try {
+            const nameParts = user.name?.split(' ') || ['Discord', 'User']
+            const firstName = nameParts[0]
+            const lastName = nameParts.slice(1).join(' ') || ''
+
+            const backendData = await loginDiscord({
+              discordId: account.providerAccountId,
+              email: user.email || '',
+              firstName: firstName,
+              lastName: lastName,
+            })
+            const _fullUser = await getMe(backendData.accessToken, {})
+
+            return { ...token, ...backendData, ..._fullUser }
+          } catch (error) {
+            console.error('Failed to login with Discord via backend:', error)
+            throw new Error('ไม่สามารถเข้าสู่ระบบด้วย Discord ได้ในขณะนี้')
+          }
         }
       }
 

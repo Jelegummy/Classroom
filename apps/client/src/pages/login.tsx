@@ -22,17 +22,37 @@ const Login = () => {
   })
 
   useEffect(() => {
-    if (status === 'authenticated' && session?.user) {
-      localStorage.setItem('accessToken', session.user.accessToken ?? '')
-      const userRole = session.user.role
+    if (status !== 'authenticated' || !session?.user) return
 
-      if (userRole === 'TEACHER') {
-        router.push('/dashboard/teacher/classroom')
-      } else if (userRole === 'ADMIN') {
-        router.push('/dashboard/admin')
-      } else {
-        router.push('/dashboard/student/classroom')
+    const {
+      role: userRole,
+      discordId: userDiscordId,
+      accessToken,
+    } = session.user
+
+    localStorage.setItem('accessToken', accessToken ?? '')
+    console.log('User Discord ID:', userDiscordId)
+
+    if (!userDiscordId) {
+      if (['TEACHER', 'ADMIN', 'STUDENT'].includes(userRole)) {
+        router.replace('/dashboard/setting')
       }
+      return
+    }
+
+    switch (userRole) {
+      case 'TEACHER':
+        router.replace('/dashboard/teacher/classroom')
+        break
+      case 'ADMIN':
+        router.replace('/dashboard/admin')
+        break
+      case 'STUDENT':
+        router.replace('/dashboard/student/classroom')
+        break
+      default:
+        console.error('Unknown role, cannot redirect:', userRole)
+        break
     }
   }, [status, session, router])
 
@@ -55,14 +75,31 @@ const Login = () => {
         'accessToken',
         currentSession?.user.accessToken ?? '',
       )
-      const userRole = currentSession?.user?.role
 
-      if (userRole === 'TEACHER') {
-        router.push('/dashboard/teacher/classroom')
-      } else if (userRole === 'ADMIN') {
-        router.push('/dashboard/admin')
-      } else {
-        router.push('/dashboard/student/classroom')
+      const userRole = currentSession?.user?.role
+      const userDiscordId = currentSession?.user?.discordId
+
+      if (!userDiscordId) {
+        if (
+          userRole === 'TEACHER' ||
+          userRole === 'ADMIN' ||
+          userRole === 'STUDENT'
+        ) {
+          router.push('/dashboard/setting')
+        }
+        return
+      }
+
+      switch (userRole) {
+        case 'TEACHER':
+          router.push('/dashboard/teacher/classroom')
+          break
+        case 'ADMIN':
+          router.push('/dashboard/admin')
+          break
+        case 'STUDENT':
+          router.push('/dashboard/student/classroom')
+          break
       }
     } catch (e) {
       toast.error((e as Error).message)
