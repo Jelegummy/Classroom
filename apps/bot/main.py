@@ -10,6 +10,8 @@ from faster_whisper import WhisperModel
 from discord.ext import commands, voice_recv
 import wave
 import asyncio
+from groq import AsyncGroq
+from pydub import AudioSegment
 from pythainlp.util import normalize
 import shutil
 import aiohttp
@@ -29,6 +31,7 @@ LANGUAGE = os.getenv("LANGUAGE", "th")
 BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
 NESTJS_BASE_URL = os.getenv("NESTJS_BASE_URL", "http://localhost:4000")
 TYPHOON_KEY = os.getenv("TYPHOON_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 BASE_RECORD_DIR = "recordings"
 os.makedirs(BASE_RECORD_DIR, exist_ok=True)
@@ -167,8 +170,11 @@ llm = ChatOpenAI(
 print("กำลัง downloadโมเดล Whisper (ครั้งแรกอาจใช้เวลานานหน่อยนะครับ)...")
 
 # Load Model
-model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
-print("Whisper พร้อมใช้งาน")
+# model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
+# print("Whisper พร้อมใช้งาน")
+
+groq_client = AsyncGroq(api_key=GROQ_API_KEY)
+print("Groq API พร้อมใช้งาน")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -278,28 +284,44 @@ def extract_json_from_text(text: str) -> str:
     return text
 
 
-def transcribe_with_whisper(path: str):
+async def transcribe_with_groq(path: str):
     if os.path.getsize(path) < 100000:
         return []
 
-    segments, _ = model.transcribe(
-        path,
-        language=LANGUAGE,
-        vad_filter=True,
-        vad_parameters=dict(
-            min_silence_duration_ms=300,
-            speech_pad_ms=200,
-            threshold=0.4,
-        ),
-        beam_size=3,
-        condition_on_previous_text=False,
-        no_speech_threshold=0.5,
-    )
-    return [{
-        "start": seg.start,
-        "end": seg.end,
-        "text": seg.text.strip()
-    } for seg in segments if seg.text.strip()]
+    mp3_path = path.replace(".wav", ".mp3")
+    try:
+        audio = AudioSegment.from_wav(path)
+        audio.export(mp3_path, format="mp3", bitrate="64k")
+    except Exception as e:
+        print(f"Error converting to MP3: {e}")
+        mp3_path = path
+
+    try:
+        with open(mp3_path, "rb") as file:
+            transcription = await groq_client.audio.transcriptions.create(
+                file=(os.path.basename(mp3_path), file.read()),
+                model="whisper-large-v3",
+                response_format="verbose_json",
+                language="th",
+                temperature=0.0
+            )
+
+        if mp3_path != path and os.path.exists(mp3_path):
+            os.remove(mp3_path)
+
+        segments = []
+        if hasattr(transcription, 'segments') and transcription.segments:
+            for segment in transcription.segments:
+                segments.append({
+                    "start": segment["start"],
+                    "end": segment["end"],
+                    "text": segment["text"].strip()
+                })
+        return segments
+
+    except Exception as e:
+        print(f"Groq API Error on {path}: {e}")
+        return []
 
 
 async def analyze_session(blocks, all_participants):
@@ -369,21 +391,27 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
     command_runner_id = session_data["command_runner_id"]
 
     speaker_blocks = []
-    loop = asyncio.get_running_loop()
 
     if os.path.exists(record_dir):
         files = [f for f in os.listdir(record_dir) if f.endswith(".wav")]
+
         for idx, file in enumerate(files, 1):
             user_id_str = file.replace(".wav", "")
             speaker_name = members_map.get(int(user_id_str), registered_names.get(
                 int(user_id_str), f"Unknown-{user_id_str}"))
             full_path = os.path.join(record_dir, file)
 
-            print(f"[{voice_name}] ถอดเสียง {speaker_name} ({idx}/{len(files)})...")
+            print(
+                f"[{voice_name}] ส่ง API ถอดเสียง {speaker_name} ({idx}/{len(files)})...")
             try:
-                segments = await loop.run_in_executor(None, transcribe_with_whisper, full_path)
+                segments = await transcribe_with_groq(full_path)
+
                 for seg in segments:
-                    clean = normalize(seg["text"])
+                    try:
+                        clean = normalize(seg["text"])
+                    except NameError:
+                        clean = seg["text"]
+
                     if len(clean) > 2:
                         speaker_blocks.append({
                             "speaker": speaker_name, "start": seg["start"],

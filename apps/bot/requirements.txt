@@ -7,3 +7,5 @@ python-dotenv
 transformers
 langchain_openai
 torch
+groq
+pydub
