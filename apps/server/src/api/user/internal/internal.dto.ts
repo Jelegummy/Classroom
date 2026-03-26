@@ -31,4 +31,10 @@ export class CreateUserArgs extends createZodDto(
   }),
 ) {}
 
+export class ConnectDiscordArgs extends createZodDto(
+  z.object({
+    discordId: z.string().min(1),
+  }),
+) {}
+
 patchNestJsSwagger()

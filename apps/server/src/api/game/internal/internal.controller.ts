@@ -13,11 +13,15 @@ import { ApiTags } from '@nestjs/swagger'
 import { GameInternalService } from './internal.service'
 import { AttackGameArgs, CreateGameArgs, UpdateGameArgs } from './internal.dto'
 import { Context } from '@app/common'
+import { GameGateway } from './game.gateway'
 
 @ApiTags('game-internal')
 @Controller('game/internal')
 export class GameInternalController {
-  constructor(private readonly service: GameInternalService) {}
+  constructor(
+    private readonly service: GameInternalService,
+    private readonly gameGateway: GameGateway,
+  ) {}
 
   @Post('/create')
   async createGameSession(@Body() args: CreateGameArgs, @Req() ctx: Context) {
@@ -67,16 +71,28 @@ export class GameInternalController {
 
   @Post('/attack')
   async attackBoss(@Req() ctx: Context, @Body() args: AttackGameArgs) {
-    const res = await this.service.attackBoss(ctx, args)
+    await this.service.attackBoss(ctx, args)
 
-    return { statusCode: HttpStatus.OK, data: res }
+    const updatedGame = await this.service.getGameSession(
+      { id: args.gameId },
+      ctx,
+    )
+    this.gameGateway.broadcastGameState(args.gameId, updatedGame)
+
+    return { statusCode: HttpStatus.OK, data: updatedGame }
   }
 
   @Patch('/attack-timeout')
   async timeoutBossGame(@Req() ctx: Context, @Body() args: { gameId: string }) {
-    const res = await this.service.timeoutBossGame(ctx, args)
+    await this.service.timeoutBossGame(ctx, args)
 
-    return { statusCode: HttpStatus.OK, data: res }
+    const updatedGame = await this.service.getGameSession(
+      { id: args.gameId },
+      ctx,
+    )
+    this.gameGateway.broadcastGameState(args.gameId, updatedGame)
+
+    return { statusCode: HttpStatus.OK, data: updatedGame }
   }
 
   @Get('/leaderboard/:gameId')
@@ -88,23 +104,32 @@ export class GameInternalController {
 
   @Post('join/:gameId')
   async joinGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
-    const res = await this.service.joinGame(ctx, { gameId })
+    await this.service.joinGame(ctx, { gameId })
 
-    return { statusCode: HttpStatus.OK, data: res }
+    const updatedGame = await this.service.getGameSession({ id: gameId }, ctx)
+    this.gameGateway.broadcastGameState(gameId, updatedGame)
+
+    return { statusCode: HttpStatus.OK, data: updatedGame }
   }
 
   @Patch('start/:gameId')
   async startGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
-    const res = await this.service.startGame(ctx, { gameId })
+    await this.service.startGame(ctx, { gameId })
 
-    return { statusCode: HttpStatus.OK, data: res }
+    const updatedGame = await this.service.getGameSession({ id: gameId }, ctx)
+    this.gameGateway.broadcastGameState(gameId, updatedGame)
+
+    return { statusCode: HttpStatus.OK, data: updatedGame }
   }
 
   @Patch('end/:gameId')
   async endGame(@Req() ctx: Context, @Param('gameId') gameId: string) {
-    const res = await this.service.endGame(ctx, { gameId })
+    await this.service.endGame(ctx, { gameId })
 
-    return { statusCode: HttpStatus.OK, data: res }
+    const updatedGame = await this.service.getGameSession({ id: gameId }, ctx)
+    this.gameGateway.broadcastGameState(gameId, updatedGame)
+
+    return { statusCode: HttpStatus.OK, data: updatedGame }
   }
 
   // @Patch('Item/update-item-from-game/:gameId/:itemId')

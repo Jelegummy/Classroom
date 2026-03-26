@@ -1,6 +1,7 @@
 export type BuyItems = {
   userId: string
   itemId: string
+  gameId?: string
   amount: number
 }
 

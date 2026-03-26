@@ -10,7 +10,7 @@ import { TransactionClient } from '@app/db/dist/generated/internal/prismaNamespa
 
 @Injectable()
 export class GameInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createGameSession(args: CreateGameArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
@@ -517,7 +517,10 @@ export class GameInternalService {
 
     await this.db.game.update({
       where: { id: args.gameId },
-      data: { status: 'ONGOING' },
+      data: {
+        status: 'ONGOING',
+        startedAt: new Date(),
+      },
     })
   }
 

@@ -1,15 +1,24 @@
+from discord.opus import Decoder as _OpusDecoder
+from discord.ext.voice_recv import rtp as _rtp
+from discord.ext.voice_recv.reader import AudioReader as _AudioReader
+from discord.ext.voice_recv.opus import PacketDecoder as _PacketDecoder
 from dotenv import load_dotenv
 import os
+import threading
 import discord
 from faster_whisper import WhisperModel
 from discord.ext import commands, voice_recv
 import wave
 import asyncio
+from groq import AsyncGroq
+from pydub import AudioSegment
 from pythainlp.util import normalize
 import shutil
 import aiohttp
 import json
 import re
+import struct
+import logging
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
@@ -22,6 +31,7 @@ LANGUAGE = os.getenv("LANGUAGE", "th")
 BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
 NESTJS_BASE_URL = os.getenv("NESTJS_BASE_URL", "http://localhost:4000")
 TYPHOON_KEY = os.getenv("TYPHOON_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 BASE_RECORD_DIR = "recordings"
 os.makedirs(BASE_RECORD_DIR, exist_ok=True)
@@ -41,19 +51,130 @@ if not discord.opus.is_loaded():
         except Exception:
             continue
 
+# Patch _decode_packet to catch occasional Opus errors (safety net)
+_original_decode_packet = _PacketDecoder._decode_packet
+_SILENCE_FRAME = b'\x00' * \
+    (_OpusDecoder.SAMPLES_PER_FRAME * _OpusDecoder.CHANNELS * 2)
+
+
+def _safe_decode_packet(self, packet):
+    try:
+        return _original_decode_packet(self, packet)
+    except Exception:
+        return packet, _SILENCE_FRAME
+
+
+_PacketDecoder._decode_packet = _safe_decode_packet
+
+# Patch AudioReader.callback to add DAVE decryption after transport decryption
+_original_callback = _AudioReader.callback
+_dave_log = logging.getLogger('dave_patch')
+
+
+def _patched_callback(self, packet_data: bytes) -> None:
+    """Wraps original callback to inject DAVE decryption on RTP packets."""
+    packet = rtp_packet = rtcp_packet = None
+    try:
+        from nacl.exceptions import CryptoError
+
+        if not _rtp.is_rtcp(packet_data):
+            packet = rtp_packet = _rtp.decode_rtp(packet_data)
+            packet.decrypted_data = self.decryptor.decrypt_rtp(packet)
+
+            # --- DAVE decryption ---
+            vc = self.voice_client
+            conn = vc._connection
+            dave = getattr(conn, 'dave_session', None)
+            if dave:
+                ssrc = rtp_packet.ssrc
+                user_id = vc._ssrc_to_id.get(ssrc)
+                if user_id is not None and packet.decrypted_data:
+                    try:
+                        import davey
+                        decrypted = dave.decrypt(
+                            user_id,
+                            davey.MediaType.audio,
+                            packet.decrypted_data,
+                        )
+                        if decrypted:
+                            packet.decrypted_data = decrypted
+                    except Exception:
+                        pass
+            # --- end DAVE ---
+
+        else:
+            packet = rtcp_packet = _rtp.decode_rtcp(
+                self.decryptor.decrypt_rtcp(packet_data)
+            )
+            from discord.ext.voice_recv.rtp import ReceiverReportPacket
+            if not isinstance(packet, ReceiverReportPacket):
+                pass
+    except CryptoError:
+        return
+    except Exception:
+        if self._is_ip_discovery_packet(packet_data):
+            return
+        _dave_log.debug("Error unpacking packet")
+    finally:
+        if self.error:
+            self.stop()
+            return
+        if not packet:
+            return
+
+    if rtcp_packet:
+        self.packet_router.feed_rtcp(rtcp_packet)
+    elif rtp_packet:
+        ssrc = rtp_packet.ssrc
+        if ssrc not in self.voice_client._ssrc_to_id:
+            if rtp_packet.is_silence():
+                return
+        self.speaking_timer.notify(ssrc)
+        try:
+            self.packet_router.feed_rtp(rtp_packet)
+        except Exception as e:
+            _dave_log.exception('Error processing rtp packet')
+            self.error = e
+            self.stop()
+
+
+_AudioReader.callback = _patched_callback
+
+
+def enable_dave_passthrough(vc):
+    """Enable permanent DAVE passthrough mode for receiving audio.
+
+    With passthrough enabled:
+    - DAVE-encrypted data → decrypt() works normally
+    - Unencrypted data (during transitions) → passes through without error
+    This eliminates the 'UnencryptedWhenPassthroughDisabled' errors.
+    """
+    try:
+        conn = vc._connection
+        dave = getattr(conn, 'dave_session', None)
+        if dave:
+            dave.set_passthrough_mode(True)
+            print("[DAVE] Passthrough mode enabled for voice receiving")
+    except Exception as e:
+        print(f"[DAVE] Warning: could not enable passthrough: {e}")
+
+
 # Load LLM
 llm = ChatOpenAI(
     base_url="https://api.opentyphoon.ai/v1",
     api_key=TYPHOON_KEY,
     model='typhoon-v2.5-30b-a3b-instruct',
     temperature=0.3,
-    max_tokens=4000,
+    max_tokens=8192,
 )
 print("กำลัง downloadโมเดล Whisper (ครั้งแรกอาจใช้เวลานานหน่อยนะครับ)...")
 
 # Load Model
-model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
-print("Whisper พร้อมใช้งาน")
+# model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
+# print("Whisper พร้อมใช้งาน")
+
+groq_client = AsyncGroq(api_key=GROQ_API_KEY)
+print("Groq API พร้อมใช้งาน")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -70,38 +191,86 @@ ai_processing_queue = asyncio.Queue()
 
 
 class MultiUserSink(voice_recv.AudioSink):
+    # Minimum RMS energy threshold to filter silence/noise frames
+    SILENCE_THRESHOLD = 30
+
     def __init__(self, output_dir):
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.files = {}
+        self._lock = threading.Lock()
+        self._closed = False
 
     def wants_opus(self):
         return False
 
+    @staticmethod
+    def _is_silence(pcm_data: bytes) -> bool:
+        """Check if a PCM frame is silence using RMS energy."""
+        if len(pcm_data) < 2:
+            return True
+        try:
+            samples = struct.unpack(f'<{len(pcm_data) // 2}h', pcm_data)
+            rms = (sum(s * s for s in samples) / len(samples)) ** 0.5
+            return rms < MultiUserSink.SILENCE_THRESHOLD
+        except Exception:
+            return False
+
+    @staticmethod
+    def _stereo_to_mono(pcm_data: bytes) -> bytes:
+        """Convert stereo PCM16 to mono by averaging L/R channels."""
+        try:
+            samples = struct.unpack(f'<{len(pcm_data) // 2}h', pcm_data)
+            mono = []
+            for i in range(0, len(samples), 2):
+                avg = (samples[i] + samples[i + 1]) // 2
+                mono.append(avg)
+            return struct.pack(f'<{len(mono)}h', *mono)
+        except Exception:
+            return pcm_data
+
     def write(self, user, data):
         if not user:
             return
-        uid = user.id
-        if uid not in self.files:
-            path = os.path.join(self.output_dir, f"{uid}.wav")
-            wf = wave.open(path, "wb")
-            wf.setnchannels(2)
-            wf.setsampwidth(2)
-            wf.setframerate(48000)
-            self.files[uid] = wf
-        self.files[uid].writeframes(data.pcm)
+        with self._lock:
+            if self._closed:
+                return
+            try:
+                pcm = data.pcm
+                # Skip silence frames to reduce file size and improve STT
+                if self._is_silence(pcm):
+                    return
+                # Convert to mono for better STT accuracy
+                mono_pcm = self._stereo_to_mono(pcm)
+                uid = user.id
+                if uid not in self.files:
+                    path = os.path.join(self.output_dir, f"{uid}.wav")
+                    wf = wave.open(path, "wb")
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(48000)
+                    self.files[uid] = wf
+                self.files[uid].writeframes(mono_pcm)
+            except Exception as e:
+                print(f"Sink write error (ignored): {e}")
 
     def cleanup(self):
-        for wf in list(self.files.values()):
-            wf.close()
-        self.files.clear()
+        with self._lock:
+            self._closed = True
+            for wf in list(self.files.values()):
+                try:
+                    wf.close()
+                except Exception:
+                    pass
+            self.files.clear()
 
 
 # AI and Data Processing
 
 def format_time(seconds: float) -> str:
     m, s = divmod(int(seconds), 60)
-    return f"{m:02d}:{s:02d}"
+    ms = int(round((seconds - int(seconds)) * 100))
+    return f"{m:02d}:{s:02d}.{ms:02d}"
 
 
 def extract_json_from_text(text: str) -> str:
@@ -115,42 +284,77 @@ def extract_json_from_text(text: str) -> str:
     return text
 
 
-def transcribe_with_whisper(path: str):
+async def transcribe_with_groq(path: str):
     if os.path.getsize(path) < 100000:
         return []
 
-    segments, _ = model.transcribe(
-        path,
-        language=LANGUAGE,
-        vad_filter=True,
-        beam_size=2,
-        condition_on_previous_text=False
-    )
-    return [{
-        "start": seg.start,
-        "end": seg.end,
-        "text": seg.text.strip()
-    } for seg in segments]
+    mp3_path = path.replace(".wav", ".mp3")
+    try:
+        audio = AudioSegment.from_wav(path)
+        audio.export(mp3_path, format="mp3", bitrate="64k")
+    except Exception as e:
+        print(f"Error converting to MP3: {e}")
+        mp3_path = path
+
+    try:
+        with open(mp3_path, "rb") as file:
+            transcription = await groq_client.audio.transcriptions.create(
+                file=(os.path.basename(mp3_path), file.read()),
+                model="whisper-large-v3",
+                response_format="verbose_json",
+                language="th",
+                temperature=0.0
+            )
+
+        if mp3_path != path and os.path.exists(mp3_path):
+            os.remove(mp3_path)
+
+        segments = []
+        if hasattr(transcription, 'segments') and transcription.segments:
+            for segment in transcription.segments:
+                segments.append({
+                    "start": segment["start"],
+                    "end": segment["end"],
+                    "text": segment["text"].strip()
+                })
+        return segments
+
+    except Exception as e:
+        print(f"Groq API Error on {path}: {e}")
+        return []
 
 
 async def analyze_session(blocks, all_participants):
     convo = "\n".join(
-        [f"[{format_time(b['start'])}] {b['speaker']}: {b['text']}" for b in blocks])
+        [f"[start: {b['start']} | end: {b['end']}] {b['speaker']}: {b['text']}" for b in blocks])
     participants_str = ", ".join(all_participants)
-    prompt = f"ผู้เข้าร่วม: {participants_str}\nหมายเหตุ: ถอดเสียงอัตโนมัติ ให้ประมวลผลข้ามคำผิดและสรุปใจความสำคัญ\n\nบทสนทนา:\n{convo}"
+
+    prompt = f"รายชื่อผู้ที่อยู่ในห้อง: {participants_str}\n\nบทสนทนาดิบ (ถอดเสียงอัตโนมัติ อาจมีคำเพี้ยน):\n{convo}"
 
     messages = [
-        SystemMessage(content="""คุณคือ AI ผู้ช่วยสรุปการสอน 
-        ตอบกลับเป็น JSON format เท่านั้น ห้ามมีข้อความอื่น โครงสร้าง:
+        SystemMessage(content="""คุณคือ AI ผู้ช่วยวิเคราะห์การเรียนการสอน หน้าที่ของคุณคือ:
+        1. แก้ไขคำผิดในบทสนทนาดิบ ให้เป็นประโยคภาษาไทยที่ถูกต้อง อ่านรู้เรื่อง โดยคงความหมายเดิมไว้
+        2. วิเคราะห์ประเภทเนื้อหา: ให้เป็น "Tutoring" (มีการสอน/ให้ความรู้/นำเสนอ) หรือ "General" (พูดคุยเรื่องทั่วไป/คุยเล่น)
+        3. ระบุผู้พูดหลัก (main_speaker): ให้เลือกคนที่พูดเยอะที่สุด หรือเป็นผู้นำเสนอหลักเพียง 1 คน (ถ้ามี)
+        
+        ตอบกลับเป็น JSON format เท่านั้น โครงสร้าง:
         {
-            "session_type": "Tutoring/General", 
-            "topic": "หัวข้อที่สอน", 
-            "summary": "สรุปเนื้อหา", 
+            "session_type": "Tutoring" หรือ "General",
+            "topic": "หัวข้อที่คุย/สอน (ถ้าคุยเล่นให้ใส่ 'พูดคุยทั่วไป')",
+            "summary": "สรุปเนื้อหาใจความสำคัญ",
             "roles": {
-                "main_speaker": "ผู้สอน", 
-                "active_participants": ["ชื่อคนที่พูด"],
-                "silent_participants": ["ชื่อคนที่ไม่พูด"]
-            }
+                "main_speaker": "ชื่อผู้พูดหลัก (ดึงจากคนที่พูดนำเสนอ ไม่สนใจว่าชื่ออะไร)",
+                "active_participants": ["ชื่อผู้เรียนที่พูดโต้ตอบ"],
+                "silent_participants": ["ชื่อคนที่อยู่ในห้องแต่ไม่ได้พูด"]
+            },
+            "corrected_transcript": [
+                {
+                    "speaker": "ชื่อคนพูด", 
+                    "start": ตัวเลขเวลาเริ่ม (ลอกมาจากต้นฉบับ), 
+                    "end": ตัวเลขเวลาจบ (ลอกมาจากต้นฉบับ), 
+                    "text": "ประโยคที่แก้ไขคำผิดแล้ว"
+                }
+            ]
         }"""),
         HumanMessage(content=prompt)
     ]
@@ -187,21 +391,27 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
     command_runner_id = session_data["command_runner_id"]
 
     speaker_blocks = []
-    loop = asyncio.get_event_loop()
 
     if os.path.exists(record_dir):
         files = [f for f in os.listdir(record_dir) if f.endswith(".wav")]
+
         for idx, file in enumerate(files, 1):
             user_id_str = file.replace(".wav", "")
             speaker_name = members_map.get(int(user_id_str), registered_names.get(
                 int(user_id_str), f"Unknown-{user_id_str}"))
             full_path = os.path.join(record_dir, file)
 
-            print(f"[{voice_name}] ถอดเสียง {speaker_name} ({idx}/{len(files)})...")
+            print(
+                f"[{voice_name}] ส่ง API ถอดเสียง {speaker_name} ({idx}/{len(files)})...")
             try:
-                segments = await loop.run_in_executor(None, transcribe_with_whisper, full_path)
+                segments = await transcribe_with_groq(full_path)
+
                 for seg in segments:
-                    clean = normalize(seg["text"])
+                    try:
+                        clean = normalize(seg["text"])
+                    except NameError:
+                        clean = seg["text"]
+
                     if len(clean) > 2:
                         speaker_blocks.append({
                             "speaker": speaker_name, "start": seg["start"],
@@ -228,17 +438,32 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
 
     try:
         analysis_data = json.loads(analysis_json_str)
+
+        session_type = analysis_data.get('session_type', 'General')
+        roles = analysis_data.get('roles', {})
+        main_speaker = roles.get('main_speaker')
+
+        filtered_participants = [
+            name for name in all_names if name != main_speaker]
+
+        if session_type != "Tutoring":
+            roles = {}
+            filtered_participants = []
+
+        final_transcript = analysis_data.get(
+            'corrected_transcript', speaker_blocks)
+
         payload = {
             "voiceChannelName": voice_name,
             "topic": analysis_data.get('topic', 'ไม่ระบุหัวข้อ'),
             "summary": analysis_data.get('summary', '-'),
-            "sessionType": analysis_data.get('session_type', 'ทั่วไป'),
+            "sessionType": session_type,
             "discordChannelId": str(channel_id),
             "commandRunnerDiscordId": str(command_runner_id),
             "dataContent": {
-                "roles": analysis_data.get('roles', {}),
-                "participants": all_names,
-                "transcript": speaker_blocks
+                "roles": roles,
+                "participants": filtered_participants,
+                "transcript": final_transcript
             }
         }
 
@@ -246,23 +471,26 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
         headers = {"x-bot-secret": BOT_API_SECRET,
                    "Content-Type": "application/json"}
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(post_url, json=payload, headers=headers) as response:
+        async with aiohttp.ClientSession() as http_session:
+            async with http_session.post(post_url, json=payload, headers=headers) as response:
                 print(f"API Response: {response.status}")
 
-        embed = discord.Embed(
-            title=f"สรุปผลการเรียน: {analysis_data.get('topic', 'ไม่ระบุ')}", color=discord.Color.green())
+        embed_color = discord.Color.green(
+        ) if session_type == "Tutoring" else discord.Color.light_grey()
+        embed_title = f"สรุปผลการเรียน: {analysis_data.get('topic', 'ไม่ระบุ')}" if session_type == "Tutoring" else "สรุปการพูดคุยทั่วไป (ไม่มีการเก็บคะแนน)"
+
+        embed = discord.Embed(title=embed_title, color=embed_color)
         embed.add_field(name="สรุปเนื้อหา", value=analysis_data.get(
             'summary', '-'), inline=False)
-        roles = analysis_data.get('roles', {})
+
         if roles.get('main_speaker'):
             embed.add_field(
                 name="ผู้สอน", value=roles['main_speaker'], inline=True)
 
-        await text_channel.send(embed=embed)
+        await status_msg.edit(content=None, embed=embed)
 
     except Exception as e:
-        await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการสรุปผล: {e}")
+        await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการอ่านข้อมูลจาก AI: {e}")
 
 
 # UI Discord Events
@@ -300,8 +528,8 @@ class RegistrationModal(discord.ui.Modal, title='ยืนยันการเ�
             headers = {"x-bot-secret": BOT_API_SECRET,
                        "Content-Type": "application/json"}
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(post_url, json=payload, headers=headers) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.post(post_url, json=payload, headers=headers) as response:
                     if response.status in (200, 201):
                         registered_names[user_id] = real_name
                         print(
@@ -346,8 +574,8 @@ class HostView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(get_url) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
                     if response.status == 200:
                         res_json = await response.json()
                         data = res_json.get("data", {})
@@ -383,19 +611,37 @@ class HostView(discord.ui.View):
                 members_map[member.id] = member.display_name
                 unregistered.append(member.mention)
 
+        # Check if there are any registered users in the channel
+        registered_in_vc = [
+            uid for uid in members_map if str(uid) in api_users]
+        if not registered_in_vc:
+            active_sessions.pop(channel_id_str, None)
+            await interaction.followup.send(
+                "❌ ไม่มีผู้เรียนที่ลงทะเบียนอยู่ในห้องเสียง\n"
+                "กรุณาให้ผู้เรียนกดปุ่ม **เข้าร่วม** ก่อนเริ่มอัดเสียงครับ"
+            )
+            return
+
         if unregistered:
             warning_msg = f"⚠️ ระบบตรวจพบผู้เรียนที่ยังไม่ลงทะเบียน: {', '.join(unregistered)}\n*(บอทจะใช้ชื่อ Discord ของผู้ใช้แทนชั่วคราว)*"
             await interaction.channel.send(warning_msg)
 
         try:
             vc = voice_channel.guild.voice_client
+            if vc is not None:
+                try:
+                    if not vc.is_connected() or vc.channel != voice_channel:
+                        await vc.disconnect(force=True)
+                        await asyncio.sleep(0.5)
+                        vc = None
+                except Exception:
+                    vc = None
+
             if vc is None:
                 vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
-            elif vc.channel != voice_channel:
-                await vc.move_to(voice_channel)
-            elif not vc.is_connected():
-                await vc.disconnect(force=True)
-                vc = await voice_channel.connect(cls=voice_recv.VoiceRecvClient, timeout=20.0)
+
+            # Enable DAVE passthrough so received audio isn't rejected
+            enable_dave_passthrough(vc)
 
             record_dir = os.path.join(BASE_RECORD_DIR, channel_id_str)
             os.makedirs(record_dir, exist_ok=True)
@@ -451,13 +697,17 @@ class HostView(discord.ui.View):
         voice_name = voice_channel.name
 
         try:
+            sink.cleanup()  # Set closed flag first to stop accepting data
             vc.stop_listening()
-            sink.cleanup()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0)  # Let in-flight packets drain
         except Exception as e:
             print(f"เกิดข้อผิดพลาดตอนหยุดอัด: {e}")
 
-        await vc.disconnect(force=True)
+        try:
+            if vc.is_connected():
+                await vc.disconnect(force=True)
+        except Exception:
+            pass
 
         asyncio.create_task(process_session_data(
             channel_id_str, interaction.channel, session_data, voice_name))
@@ -468,7 +718,7 @@ class MainEntryPointView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="🧑🏻‍🏫 ยืนยันการเข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
+    @discord.ui.button(label="🧑🏻‍🏫 เตรียมความพร้อม/ยืนยันการเข้าร่วม", style=discord.ButtonStyle.green, custom_id="btn_main_entry")
     async def open_panel_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         if not interaction.user.voice:
             await interaction.response.send_message("❌ คุณต้องอยู่ในห้องเสียงก่อนครับ", ephemeral=True)
@@ -484,8 +734,8 @@ class MainEntryPointView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(get_url) as response:
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
                     if response.status == 200:
                         res_json = await response.json()
                         data = res_json.get("data", {})
@@ -520,30 +770,59 @@ async def on_voice_state_update(member, before, after):
 
     if after.channel and before.channel != after.channel:
         voice_channel = after.channel
-        if len([m for m in voice_channel.members if not m.bot]) == 1:
-            embed = discord.Embed(title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
-                                  description="**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง)", color=discord.Color.blue())
-            await voice_channel.send(content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว", embed=embed, view=MainEntryPointView())
+        channel_id_str = str(voice_channel.id)
 
-        if member.id not in registered_names:
-            await voice_channel.send(f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**", delete_after=30)
+        is_active_session = False
+        try:
+            get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
+            async with aiohttp.ClientSession() as http_session:
+                async with http_session.get(get_url) as response:
+                    if response.status == 200:
+                        is_active_session = True
+        except Exception as e:
+            print(f"API Error in on_voice_state_update: {e}")
+
+        if is_active_session:
+            if len([m for m in voice_channel.members if not m.bot]) == 1:
+                embed = discord.Embed(
+                    title="🎓 ยินดีต้อนรับเข้าสู่ชั้นเรียนอัจฉริยะ",
+                    description="**กรุณากดปุ่ม `เข้าร่วม`** (ด้านล่าง)",
+                    color=discord.Color.blue()
+                )
+                await voice_channel.send(content="👋 ยินดีต้อนรับเข้าสู่ห้องแห่งการติว", embed=embed, view=MainEntryPointView())
+
+            if member.id not in registered_names:
+                await voice_channel.send(f"📝 {member.mention} อย่าลืมกดปุ่ม **เข้าร่วม**", delete_after=30)
 
     if before.channel and before.channel != after.channel:
         voice_channel = before.channel
+        channel_id_str = str(voice_channel.id)
+
         if len([m for m in voice_channel.members if not m.bot]) == 0:
+            is_active_session_before = False
             try:
-                await voice_channel.purge(limit=None, bulk=False)
+                get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
+                async with aiohttp.ClientSession() as http_session:
+                    async with http_session.get(get_url) as response:
+                        if response.status == 200:
+                            is_active_session_before = True
             except Exception:
                 pass
 
+            if is_active_session_before:
+                try:
+                    await voice_channel.purge(limit=None, bulk=False)
+                except Exception:
+                    pass
+
             vc = voice_channel.guild.voice_client
             if vc and vc.channel == voice_channel:
-                channel_id_str = str(voice_channel.id)
                 session_data = active_sessions.pop(channel_id_str, None)
                 if session_data:
                     try:
-                        vc.stop_listening()
                         session_data["sink"].cleanup()
+                        vc.stop_listening()
+                        await asyncio.sleep(0.5)
                     except Exception:
                         pass
 
@@ -554,7 +833,11 @@ async def on_voice_state_update(member, before, after):
                             "session_data": session_data,
                             "voice_name": voice_channel.name
                         })
-                await vc.disconnect(force=True)
+                try:
+                    if vc.is_connected():
+                        await vc.disconnect(force=True)
+                except Exception:
+                    pass
 
 
 @bot.event

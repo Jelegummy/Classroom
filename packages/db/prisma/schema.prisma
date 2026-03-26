@@ -147,8 +147,9 @@ model Game {
     characterId String?           @map("character_id")
     character   Character?        @relation(fields: [characterId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+    startedAt DateTime?
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
 
     @@map("game_sessions")
 }
