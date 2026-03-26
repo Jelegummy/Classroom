@@ -8,7 +8,7 @@ import { CreateTutorVoiceLogArgs } from './pubilc.dto'
 
 @Injectable()
 export class TutorPublicService {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly db: PrismaService) { }
 
   async createTutorBot(
     id: string,
@@ -23,6 +23,7 @@ export class TutorPublicService {
         tutorId: id,
         topic: args.topic,
         summary: args.summary,
+        audioUrl: args.audioUrl,
         dataContent: args.dataContent,
         voiceChannelName: args.voiceChannelName,
       },

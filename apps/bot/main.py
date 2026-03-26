@@ -1,3 +1,5 @@
+import boto3
+import time
 from discord.opus import Decoder as _OpusDecoder
 from discord.ext.voice_recv import rtp as _rtp
 from discord.ext.voice_recv.reader import AudioReader as _AudioReader
@@ -35,6 +37,16 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 BASE_RECORD_DIR = "recordings"
 os.makedirs(BASE_RECORD_DIR, exist_ok=True)
+
+s3_client = boto3.client(
+    's3',
+    endpoint_url=os.getenv("S3_ENDPOINT"),
+    aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
+    aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
+    region_name='auto'
+)
+S3_BUCKET = os.getenv("S3_BUCKET", "classroom-file")
+S3_PUBLIC_DOMAIN = os.getenv("S3_PUBLIC_DOMAIN", "https://pub-xxxx.r2.dev")
 
 
 # Opus
@@ -191,13 +203,14 @@ ai_processing_queue = asyncio.Queue()
 
 
 class MultiUserSink(voice_recv.AudioSink):
-    # Minimum RMS energy threshold to filter silence/noise frames
     SILENCE_THRESHOLD = 30
 
     def __init__(self, output_dir):
         self.output_dir = output_dir
         os.makedirs(self.output_dir, exist_ok=True)
         self.files = {}
+        self.last_write_time = {}
+        self.start_time = time.time()
         self._lock = threading.Lock()
         self._closed = False
 
@@ -206,7 +219,6 @@ class MultiUserSink(voice_recv.AudioSink):
 
     @staticmethod
     def _is_silence(pcm_data: bytes) -> bool:
-        """Check if a PCM frame is silence using RMS energy."""
         if len(pcm_data) < 2:
             return True
         try:
@@ -218,13 +230,10 @@ class MultiUserSink(voice_recv.AudioSink):
 
     @staticmethod
     def _stereo_to_mono(pcm_data: bytes) -> bytes:
-        """Convert stereo PCM16 to mono by averaging L/R channels."""
         try:
             samples = struct.unpack(f'<{len(pcm_data) // 2}h', pcm_data)
-            mono = []
-            for i in range(0, len(samples), 2):
-                avg = (samples[i] + samples[i + 1]) // 2
-                mono.append(avg)
+            mono = [(samples[i] + samples[i + 1]) //
+                    2 for i in range(0, len(samples), 2)]
             return struct.pack(f'<{len(mono)}h', *mono)
         except Exception:
             return pcm_data
@@ -237,12 +246,13 @@ class MultiUserSink(voice_recv.AudioSink):
                 return
             try:
                 pcm = data.pcm
-                # Skip silence frames to reduce file size and improve STT
                 if self._is_silence(pcm):
                     return
-                # Convert to mono for better STT accuracy
+
                 mono_pcm = self._stereo_to_mono(pcm)
                 uid = user.id
+                current_time = time.time()
+
                 if uid not in self.files:
                     path = os.path.join(self.output_dir, f"{uid}.wav")
                     wf = wave.open(path, "wb")
@@ -250,7 +260,22 @@ class MultiUserSink(voice_recv.AudioSink):
                     wf.setsampwidth(2)
                     wf.setframerate(48000)
                     self.files[uid] = wf
+
+                    gap = current_time - self.start_time
+                    if gap > 0:
+                        blank_frames = int(gap * 48000)
+                        wf.writeframes(b'\x00' * (blank_frames * 2))
+                else:
+                    gap = current_time - self.last_write_time[uid]
+                    if gap > 0.05:
+                        blank_frames = int((gap - 0.02) * 48000)
+                        if blank_frames > 0:
+                            self.files[uid].writeframes(
+                                b'\x00' * (blank_frames * 2))
+
                 self.files[uid].writeframes(mono_pcm)
+                self.last_write_time[uid] = current_time
+
             except Exception as e:
                 print(f"Sink write error (ignored): {e}")
 
@@ -264,8 +289,8 @@ class MultiUserSink(voice_recv.AudioSink):
                     pass
             self.files.clear()
 
-
 # AI and Data Processing
+
 
 def format_time(seconds: float) -> str:
     m, s = divmod(int(seconds), 60)
@@ -383,7 +408,7 @@ async def ai_worker():
 
 
 async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict, voice_name: str):
-    status_msg = await text_channel.send(f"** บันทึกเสียงเสร็จสิ้น กำลังถอดรหัสเสียง** (ขั้นตอน 1/2)...")
+    status_msg = await text_channel.send(f"**บันทึกเสียงเสร็จสิ้น กำลังถอดรหัสเสียง** (ขั้นตอน 1/2)...")
 
     record_dir = session_data["record_dir"]
     members_map = session_data["members_map"]
@@ -419,6 +444,42 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
                         })
             except Exception as e:
                 print(f"Error STT: {e}")
+
+        print("กำลังรวมไฟล์เสียงเข้าด้วยกันแบบซ้อนทับ (Overlay)...")
+        combined_audio = AudioSegment.empty()
+
+        if files:
+            first_file_path = os.path.join(record_dir, files[0])
+            combined_audio = AudioSegment.from_wav(first_file_path)
+
+            for file in files[1:]:
+                full_path = os.path.join(record_dir, file)
+                try:
+                    audio_seg = AudioSegment.from_wav(full_path)
+                    combined_audio = combined_audio.overlay(audio_seg)
+                except Exception as e:
+                    print(f"Error mixing {file}: {e}")
+
+        audio_url = None
+        if len(combined_audio) > 0:
+            session_mp3_path = os.path.join(record_dir, "session_full.mp3")
+            combined_audio.export(
+                session_mp3_path, format="mp3", bitrate="64k")
+
+            object_key = f"classrooms/{channel_id}_{int(time.time())}.mp3"
+            try:
+                print("กำลังอัปโหลดไฟล์เสียงหลักขึ้น R2...")
+                s3_client.upload_file(
+                    session_mp3_path,
+                    os.getenv("S3_BUCKET", "your-bucket-name"),
+                    object_key,
+                    ExtraArgs={'ContentType': 'audio/mpeg'}
+                )
+                S3_PUBLIC_DOMAIN = os.getenv("S3_PUBLIC_DOMAIN")
+                audio_url = f"{S3_PUBLIC_DOMAIN}/{object_key}"
+                print(f"อัปโหลดสำเร็จ: {audio_url}")
+            except Exception as e:
+                print(f"อัปโหลด R2 ล้มเหลว: {e}")
 
     shutil.rmtree(record_dir, ignore_errors=True)
 
@@ -460,6 +521,7 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
             "sessionType": session_type,
             "discordChannelId": str(channel_id),
             "commandRunnerDiscordId": str(command_runner_id),
+            "audioUrl": audio_url,
             "dataContent": {
                 "roles": roles,
                 "participants": filtered_participants,
@@ -468,8 +530,10 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
         }
 
         post_url = f"{NESTJS_BASE_URL}/tutor/public/{tutor_id}/bot/logs"
-        headers = {"x-bot-secret": BOT_API_SECRET,
-                   "Content-Type": "application/json"}
+        headers = {
+            "x-bot-secret": BOT_API_SECRET,
+            "Content-Type": "application/json"
+        }
 
         async with aiohttp.ClientSession() as http_session:
             async with http_session.post(post_url, json=payload, headers=headers) as response:
@@ -487,13 +551,17 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
             embed.add_field(
                 name="ผู้สอน", value=roles['main_speaker'], inline=True)
 
+        if audio_url:
+            embed.add_field(name="🎧 ไฟล์เสียงย้อนหลัง",
+                            value=f"[คลิกเพื่อฟังเสียงคลาสเรียน]({audio_url})", inline=False)
+
         await status_msg.edit(content=None, embed=embed)
 
     except Exception as e:
         await text_channel.send(f"⚠️ เกิดข้อผิดพลาดในการอ่านข้อมูลจาก AI: {e}")
 
-
 # UI Discord Events
+
 
 class RegistrationModal(discord.ui.Modal, title='ยืนยันการเข้าร่วมการติว'):
     discord_id_input = discord.ui.TextInput(

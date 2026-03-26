@@ -9,3 +9,5 @@ langchain_openai
 torch
 groq
 pydub
+
+boto3

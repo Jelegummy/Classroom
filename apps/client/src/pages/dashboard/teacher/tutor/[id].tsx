@@ -58,10 +58,18 @@ export default function Content() {
               <MonitorPlay size={48} />
             </div>
             <h3 className="text-lg font-semibold text-gray-800">
+              กำลังโหลดข้อมูล...
+            </h3>
+          </div>
+        ) : !contents || contents.length === 0 ? (
+          <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+            <div className="mb-4 rounded-full bg-gray-100 p-4 text-gray-400">
+              <MonitorPlay size={48} />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">
               ยังไม่มีข้อมูลการติวในขณะนี้
             </h3>
             <p className="mt-2 max-w-sm text-sm text-gray-500">
-              ยังไม่มีการกำหนดเวลาติวสำหรับห้องติวนี้
               โปรดตรวจสอบอีกครั้งในภายหลัง
             </p>
           </div>
@@ -76,124 +84,144 @@ export default function Content() {
             </button>
 
             <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-6">
-              {currentContents?.map(content => (
-                <div key={content.id} className="flex flex-col gap-6">
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 className="mb-4 text-lg font-bold text-gray-900">
-                      รายละเอียดการทวน
-                    </h2>
-                    <p className="whitespace-pre-wrap leading-relaxed text-gray-600">
-                      {content.topic}
-                    </p>
-                  </div>
+              {currentContents?.map((content: any) => {
+                const roles = content.dataContent?.roles
+                const sessionUsers: Array<{
+                  fullName: string
+                  score: number
+                  roleLabel: string
+                }> = []
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-lg font-bold text-gray-900">
-                        สรุปการทวน
+                if (roles) {
+                  if (roles.main_speaker) {
+                    sessionUsers.push({
+                      fullName: roles.main_speaker,
+                      score: 5,
+                      roleLabel: 'ผู้พูดหลัก',
+                    })
+                  }
+                  if (Array.isArray(roles.active_participants)) {
+                    roles.active_participants.forEach((name: string) => {
+                      sessionUsers.push({
+                        fullName: name,
+                        score: 3,
+                        roleLabel: 'มีส่วนร่วม',
+                      })
+                    })
+                  }
+                  if (Array.isArray(roles.silent_participants)) {
+                    roles.silent_participants.forEach((name: string) => {
+                      sessionUsers.push({
+                        fullName: name,
+                        score: 1,
+                        roleLabel: 'ไม่มีส่วนร่วม',
+                      })
+                    })
+                  }
+                }
+
+                return (
+                  <div key={content.id} className="flex flex-col gap-6">
+                    {content.audioUrl && (
+                      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                        <h2 className="mb-4 text-lg font-bold text-gray-900">
+                          🎧 ไฟล์เสียงบันทึกการสอน
+                        </h2>
+                        <audio
+                          controls
+                          className="w-full rounded-md outline-none"
+                        >
+                          <source src={content.audioUrl} type="audio/mpeg" />
+                          เบราว์เซอร์ของคุณไม่รองรับการเล่นไฟล์เสียง
+                        </audio>
+                      </div>
+                    )}
+
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                      <h2 className="mb-4 text-lg font-bold text-gray-900">
+                        รายละเอียดการทวน
                       </h2>
+                      <p className="whitespace-pre-wrap leading-relaxed text-gray-600">
+                        {content.topic}
+                      </p>
                     </div>
-                    <p className="whitespace-pre-line leading-relaxed text-gray-600">
-                      {content.summary}
-                    </p>
-                    {content.dataContent?.roles && (
-                      <div className="mt-4 rounded-lg border border-gray-300 bg-gray-50 p-4">
-                        <h3 className="text-md font-semibold text-gray-800">
-                          ผู้พูดหลัก: {content.dataContent.roles.main_speaker}
-                        </h3>
-                        <p className="mt-2 text-gray-600">
-                          ผู้เข้าร่วม:{' '}
-                          {content.dataContent.roles.active_participants?.join(
-                            ', ',
-                          ) || 'ไม่มีผู้เข้าร่วม'}
-                        </p>
-                        <p className="mt-2 text-gray-600">
-                          ไม่มีส่วนร่วม:{' '}
-                          {content.dataContent.roles.silent_participants?.join(
-                            ', ',
-                          ) || 'ไม่มีผู้ไม่มีส่วนร่วม'}
-                        </p>
+
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-900">
+                          สรุปการทวน
+                        </h2>
+                      </div>
+                      <p className="whitespace-pre-line leading-relaxed text-gray-600">
+                        {content.summary}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-900">
+                          ลำดับการพูด
+                        </h2>
+                      </div>
+                      <p className="whitespace-pre-line leading-relaxed text-gray-600">
+                        {Array.isArray(content.dataContent?.transcript)
+                          ? content.dataContent.transcript
+                              .map(
+                                (item: any) =>
+                                  `[${formatTime(item.start)} - ${formatTime(item.end)}] ${item.speaker}: ${item.text}`,
+                              )
+                              .join('\n')
+                          : content.dataContent?.transcript ||
+                            'ไม่มีข้อมูลลำดับการพูด'}
+                      </p>
+                    </div>
+
+                    {sessionUsers.length > 0 && (
+                      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="flex items-center justify-between border-b border-gray-100 p-6">
+                          <h2 className="text-lg font-bold text-gray-900">
+                            คนที่เข้าร่วมและคะแนนในรอบนี้
+                          </h2>
+                        </div>
+
+                        <div className="flex flex-col">
+                          {sessionUsers.map((user, index) => (
+                            <div
+                              key={user.fullName + index}
+                              className={`flex items-center justify-between p-4 px-6 ${
+                                index !== sessionUsers.length - 1
+                                  ? 'border-b border-gray-100'
+                                  : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <img
+                                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    user.fullName,
+                                  )}&background=random`}
+                                  alt="avatar"
+                                  className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+                                />
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    {user.fullName}
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    {user.roleLabel}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="text-sm font-bold text-primary">
+                                +{user.score} Pt
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
-
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="text-lg font-bold text-gray-900">
-                        ลำดับการพูด
-                      </h2>
-                    </div>
-                    <p className="whitespace-pre-line leading-relaxed text-gray-600">
-                      {Array.isArray(content.dataContent.transcript)
-                        ? content.dataContent.transcript
-                            .map(
-                              (item: any) =>
-                                `[${formatTime(item.start)} - ${formatTime(item.end)}] ${item.speaker}: ${item.text}`,
-                            )
-                            .join('\n')
-                        : content.dataContent.transcript || 'ไม่มีสรุปการทวน'}
-                    </p>
-                  </div>
-
-                  {contentUser &&
-                    contentUser.length > 0 &&
-                    (() => {
-                      const usersInThisContent = contentUser.filter(
-                        (user: any) => user.contentId === content.id,
-                      )
-                      const displayUsers =
-                        usersInThisContent.length > 0
-                          ? usersInThisContent
-                          : contentUser
-
-                      return (
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                          <div className="flex items-center justify-between border-b border-gray-100 p-6">
-                            <h2 className="text-lg font-bold text-gray-900">
-                              คนที่เข้าร่วมการทวน
-                            </h2>
-                          </div>
-
-                          <div className="flex flex-col">
-                            {displayUsers.map((user: any, index: number) => (
-                              <div
-                                key={user.userId || index}
-                                className={`flex items-center justify-between p-4 px-6 ${
-                                  index !== displayUsers.length - 1
-                                    ? 'border-b border-gray-100'
-                                    : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <img
-                                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                      user.fullName,
-                                    )}&background=random`}
-                                    alt="avatar"
-                                    className="h-10 w-10 rounded-full border border-gray-200 object-cover"
-                                  />
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-semibold text-gray-900">
-                                      {user.fullName}
-                                    </span>
-                                    {index === 0 && (
-                                      <span className="text-xs text-gray-400">
-                                        ผู้สอน
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="text-sm font-bold text-primary">
-                                  {user.scoreEarnedInSession || 0} Pt
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    })()}
-                </div>
-              ))}
+                )
+              })}
 
               <div className="mt-6 flex justify-center pb-10">
                 <PaginationDemo

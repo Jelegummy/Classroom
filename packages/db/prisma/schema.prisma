@@ -219,6 +219,7 @@ model TutorVoiceLog {
     tutorId String @map("tutor_id")
 
     voiceChannelName String? @map("voice_channel_name")
+    audioUrl         String? @map("audio_url")
     topic            String?
     summary          String?
     dataContent      Json    @map("data_content")
