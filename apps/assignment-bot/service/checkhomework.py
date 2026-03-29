@@ -13,6 +13,7 @@ from sqlalchemy import text
 import pygame
 import os
 import httpx
+import random
 
 NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
 os.environ["SDL_VIDEODRIVER"] = "dummy"
@@ -290,6 +291,8 @@ async def run_check_session(
     active_sessions: dict,
     duration: int = 10
 ):
+    questions = load_questions_from_db(assignment_id)
+    answer_file = load_answer_file_from_db(assignment_id)
     session = active_sessions[session_id]
     user_id = session.get("user_id")
     classroom_assignment_id = session.get("classroom_assignment_id")
@@ -314,9 +317,6 @@ async def run_check_session(
                 await asyncio.sleep(0.5)
             await send("▶️ กลับมาแล้ว เริ่มต่อเลยครับ", "info")
 
-    questions = load_questions_from_db(assignment_id)
-    answer_file = load_answer_file_from_db(assignment_id)
-
     if not questions:
         await send("ไม่พบคำถามสำหรับการบ้านนี้", "error")
         return
@@ -324,6 +324,10 @@ async def run_check_session(
     if not answer_file:
         await send("ไม่พบเฉลยสำหรับการบ้านนี้", "error")
         return
+
+    # สุ่มหลัง check
+    QUESTION_COUNT = 5
+    questions = random.sample(questions, min(QUESTION_COUNT, len(questions)))
 
     correct_count = 0
     total = len(questions)
@@ -370,7 +374,6 @@ async def run_check_session(
                 os.remove(wav_path)
             return
 
-        # หาเฉลยจาก answer_file แล้วเทียบด้วย LLM
         expected = find_expected_answer(q_text, answer_file)
         result, reason = is_correct_with_answer_file(
             q_text, clean_ans, expected)
@@ -389,7 +392,6 @@ async def run_check_session(
             "reason": reason,
         })
 
-        # ส่ง answer_result ให้ frontend แสดงใน chat
         await send(
             json.dumps({
                 "studentAnswer": clean_ans,
@@ -417,7 +419,6 @@ async def run_check_session(
     await send(final_msg)
     await speak(final_msg, session_id)
 
-    # บันทึกลง DB ผ่าน NestJS
     try:
         async with httpx.AsyncClient() as client:
             res = await client.post(

@@ -101,7 +101,7 @@ export default function SubmissionDetail() {
                 <span className="text-xl text-yellow-400">รอการยืนยัน</span>
               )}
               <p className="flex gap-2 text-sm text-gray-700">
-                คะแนน {score} / 5 <span>{passed ? 'ผ่าน' : 'ไม่ผ่าน'}</span>
+                คะแนน {score} / 5
               </p>
             </div>
           </div>
