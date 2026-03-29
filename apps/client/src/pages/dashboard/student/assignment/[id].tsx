@@ -6,20 +6,30 @@ import { HiOutlineDownload } from 'react-icons/hi'
 import { getAssignment } from '@/services/assignment'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
-import NavbarPoints from '@/components/NavbarContent/navbarPoints'
 import AssignmentHead from './components/headerinfo'
+import { useSession } from 'next-auth/react'
+import SendhomeWorkhistory from './components/sendhistory'
 
 function AssignmentDescriptionStudent() {
   const router = useRouter()
-  // const { id, cid } = router.query
-  const assignmentId = router.query.id as string
+  if (!router.isReady) return null
+  // console.log('router.query:', router.query)
+  const assignmentId = router.query.id as string | undefined
+  const classroomId = router.query.cid as string | undefined
   const [fileSize, setFileSize] = useState<string>('กำลังคำนวณ...')
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: ['getAssignment', assignmentId],
-    queryFn: () => getAssignment(assignmentId),
+    queryFn: () => getAssignment(assignmentId as string),
     enabled: !!assignmentId,
   })
+
+  const { data: session } = useSession()
+  const userId = session?.user?.id
+
+  const mySubmission = assignment?.classrooms
+    ?.flatMap(c => c.submissions)
+    ?.find(s => s.userId === userId)
 
   useEffect(() => {
     if (assignment?.filePdf) {
@@ -52,71 +62,79 @@ function AssignmentDescriptionStudent() {
   return (
     <AppLayout>
       <DashboardLayout>
-        <div className="mt-10 min-h-screen bg-[#F8FAFC] p-4 md:p-8">
+        <div className="mt-10 min-h-screen bg-[#F8FAFC] p-4 px-32">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 px-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 sm:px-32"
+            className="flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
           >
             <FaArrowLeft className="h-4 w-4" />
             ย้อนกลับ
           </button>
-          <AssignmentHead assignmentId={assignment.id} />
-          <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-6">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h2 className="mb-2 text-xl font-bold text-gray-800">
-                  รายละเอียดงาน
-                </h2>
-              </div>
-              <div className="grid gap-3">
-                <p className="text-base text-gray-500">
-                  {assignment.description}
-                </p>
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-500"></h3>
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-stone-50 p-3 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-lg bg-blue-100 p-2 text-blue-600">
-                        <FaRegFilePdf size={24} />
+          <div className="mt-3 grid max-w-4xl flex-col gap-3">
+            <AssignmentHead assignmentId={assignment.id} />
+            <div className="">
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h2 className="mb-2 text-xl font-bold text-gray-800">
+                    รายละเอียดงาน
+                  </h2>
+                </div>
+                <div className="grid gap-3">
+                  <p className="text-base text-gray-500">
+                    {assignment.description}
+                  </p>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-500"></h3>
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-stone-50 p-3 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-blue-100 p-2 text-blue-600">
+                          <FaRegFilePdf size={24} />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="max-w-[200px] truncate font-medium text-gray-800 md:max-w-md">
+                            {assignment.filePdf ? fileName : 'ไม่มีไฟล์แนบ'}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {fileSize}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="max-w-[200px] truncate font-medium text-gray-800 md:max-w-md">
-                          {assignment.filePdf ? fileName : 'ไม่มีไฟล์แนบ'}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {fileSize}
-                        </span>
-                      </div>
+                      <a
+                        href={assignment.filePdf ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 rounded-lg border border-gray-300 p-2 text-sm font-medium hover:border-0 hover:bg-blue-500 hover:text-white"
+                      >
+                        <HiOutlineDownload className="size-5" />
+                        โหลดไฟล์
+                      </a>
                     </div>
-                    <a
-                      href={assignment.filePdf ?? undefined}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 rounded-lg border border-gray-300 p-2 text-sm font-medium hover:border-0 hover:bg-blue-500 hover:text-white"
-                    >
-                      <HiOutlineDownload className="size-5" />
-                      โหลดไฟล์
-                    </a>
                   </div>
                 </div>
               </div>
             </div>
+            <div className="flex justify-end">
+              {mySubmission ? (
+                <SendhomeWorkhistory submissionId={mySubmission.id} />
+              ) : (
+                <div className="flex justify-end">
+                  <button
+                    className="h-10 w-32 items-center rounded-lg bg-primary px-3 text-white hover:bg-blue-700 hover:shadow-lg"
+                    onClick={() => {
+                      if (!assignmentId || !classroomId) return
+                      router.push({
+                        pathname:
+                          '/dashboard/student/assignment/homework/camera',
+                        query: { id: assignmentId, classroomId },
+                      })
+                    }}
+                  >
+                    ตรวจการบ้าน
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            className="h-10 items-center rounded-lg bg-primary px-3 text-white hover:bg-blue-700 hover:shadow-lg"
-            onClick={() => {
-              router.push({
-                pathname: '/dashboard/student/assignment/homework/camera',
-                query: {
-                  id: router.query.id,
-                  classroomId: router.query.classroomId,
-                  cid: router.query.id,
-                },
-              })
-            }}
-          >
-            ตรวจการบ้าน
-          </button>
         </div>
       </DashboardLayout>
     </AppLayout>

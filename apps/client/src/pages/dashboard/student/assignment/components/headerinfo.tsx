@@ -34,11 +34,13 @@ export default function AssignmentHead({ assignmentId }: AssignmentHeadProps) {
   const submissions = assignment?.classrooms?.[0]?.submissions ?? []
   const mySubmission = submissions.find(s => s.userId === userId)
 
-  const status = !mySubmission
-    ? { label: 'ยังไม่ส่ง', className: 'bg-gray-100 text-gray-600' }
+  const passcore = 4
+
+  const submissionStatus = !mySubmission
+    ? { label: 'ยังไม่ส่ง' }
     : !mySubmission.isApproved
-      ? { label: 'รอดำเนินการ', className: 'bg-yellow-100 text-yellow-700' }
-      : { label: 'ส่งแล้ว', className: 'bg-green-100 text-green-700' }
+      ? { label: 'รอดำเนินการ' }
+      : { label: 'ส่งแล้ว' }
 
   const dueDate = assignment?.classrooms?.[0]?.dueDate
   const submittedCount = assignment?.classrooms?.[0]?.submissions?.length ?? 0
@@ -70,7 +72,22 @@ export default function AssignmentHead({ assignmentId }: AssignmentHeadProps) {
               <p className="text-base text-gray-500">{classroom?.name}</p>
             </div>
           </div>
-          <div>{status.label}</div>
+          <div className="grid items-end justify-end gap-1">
+            <p
+              className={`text-2xl font-semibold ${
+                !mySubmission
+                  ? 'text-gray-500'
+                  : !mySubmission.isApproved
+                    ? 'text-yellow-500'
+                    : 'text-gray-700'
+              }`}
+            >
+              {submissionStatus.label}
+              <p className="text-lg text-green-700">
+                ได้ {mySubmission?.score ?? 0} คะแนน
+              </p>
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center justify-between">

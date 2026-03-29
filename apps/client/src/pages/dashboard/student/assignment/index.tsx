@@ -1,7 +1,6 @@
 import { getAllAssignments } from '@/services/assignment'
 import { getClassroom } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
-import { UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { CiClock2 } from 'react-icons/ci'
 import { HiOutlineDocumentText } from 'react-icons/hi2'
@@ -30,7 +29,6 @@ export default function AssignmentTaskStudent({
     enabled: !!classroomId,
     refetchOnWindowFocus: false,
   })
-  console.log('classroomId prop:', classroomId)
 
   const { data: assignments, isLoading: isAssignmentsLoading } = useQuery({
     queryKey: ['getAllAssignments', classroomId],
@@ -44,7 +42,6 @@ export default function AssignmentTaskStudent({
   }
 
   const totalStudents = classroom?.users?.length ?? 0
-
   const assignmentList: GetAssignmentsByClassroomResponse[] = assignments ?? []
 
   const filtered = assignmentList.filter(assignment => {
@@ -67,14 +64,22 @@ export default function AssignmentTaskStudent({
           const classroomData = assignment.classrooms?.[0]
           const dueDate = classroomData?.dueDate
           const submissions = classroomData?.submissions ?? []
-          const submittedCount = submissions.length
-
           const isOverdue = dueDate && dayjs().isAfter(dayjs(dueDate))
+
+          const mySubmission = submissions.find(s => s.userId === userId)
+          const submissionStatus = !mySubmission
+            ? { label: 'ยังไม่ส่ง', className: 'text-gray-600' }
+            : !mySubmission.isApproved
+              ? { label: 'รอดำเนินการ', className: 'text-yellow-500' }
+              : { label: 'ส่งแล้ว', className: 'text-green-700' }
 
           return (
             <Link
               key={assignment.id}
-              href={`/dashboard/student/assignment/${assignment.id}`}
+              href={{
+                pathname: `/dashboard/student/assignment/${assignment.id}`,
+                query: { cid: classroomId },
+              }}
               className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="mb-3 flex justify-between gap-4">
@@ -82,7 +87,6 @@ export default function AssignmentTaskStudent({
                   <div className="shrink-0 rounded-md bg-blue-100 p-2">
                     <HiOutlineDocumentText className="size-7 text-blue-500" />
                   </div>
-
                   <div className="flex min-w-0 flex-col">
                     <h3 className="truncate text-lg font-semibold">
                       {assignment.title}
@@ -109,17 +113,11 @@ export default function AssignmentTaskStudent({
               </div>
 
               <div className="flex flex-col gap-3">
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <UsersRound className="size-4" />
-                    <p className="text-sm">ส่งแล้ว</p>
-                  </div>
-
-                  <p className="text-sm font-medium">
-                    {submittedCount} / {totalStudents - 1}
-                  </p>
-                </div>
-
+                <p
+                  className={`text-sm font-medium ${submissionStatus.className}`}
+                >
+                  {submissionStatus.label}
+                </p>
                 <hr className="border-gray-200" />
                 <p
                   className={`flex items-center gap-1 text-sm ${

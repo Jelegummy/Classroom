@@ -253,6 +253,7 @@ model Assignment {
     filePdf     String? @map("file_pdf")
     textContent String? @map("text_content")
     description String?
+    answerFile  Json?   @map("answer_file")
 
     generatedContent String? @map("generated_content")
     generatedFileTxt String? @map("generated_file_txt")

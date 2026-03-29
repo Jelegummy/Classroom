@@ -2,14 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { IoIosMic } from 'react-icons/io'
 import { IoMicOff, IoVideocam, IoVideocamOff, IoHeadset } from 'react-icons/io5'
 import { useRouter } from 'next/router'
-import { startSession } from '@/services/assignment'
+import { getSession } from 'next-auth/react'
+import { getClassroomAssignment, startSession } from '@/services/assignment'
 
 export default function OpenCam() {
+  const DURATION = 10
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const router = useRouter()
   const assignmentId = router.query.id as string
+  const classroomId = router.query.classroomId as string
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -37,17 +41,46 @@ export default function OpenCam() {
       alert('กรุณาเปิดกล้องก่อนเริ่ม')
       return
     }
-    if (!assignmentId) {
-      alert('ไม่พบ assignment ID')
+
+    console.log('assignmentId:', assignmentId)
+    console.log('classroomId:', classroomId)
+    if (!assignmentId || !classroomId) {
+      alert('ไม่พบข้อมูลที่จำเป็น')
       return
     }
     setLoading(true)
     try {
-      const res = await startSession(assignmentId)
+      const [caRes, userSession] = await Promise.all([
+        getClassroomAssignment(assignmentId, classroomId),
+        getSession(),
+      ])
+      console.log('userSession:', userSession)
+
+      if (!caRes) {
+        alert('ไม่พบข้อมูล classroom assignment')
+        return
+      }
+
+      if (!userSession?.user?.id) {
+        alert('ไม่พบข้อมูล user')
+        return
+      }
+
+      const res = await startSession({
+        assignmentId,
+        classroomAssignmentId: caRes.id,
+        userId: userSession.user.id,
+        duration: DURATION,
+      })
+
       setSessionId(res.session_id)
-      router.push(
-        `/dashboard/student/assignment/${assignmentId}/session?sid=${res.session_id}`,
-      )
+      router.push({
+        pathname: '/dashboard/student/assignment/homework/session',
+        query: {
+          id: assignmentId,
+          sid: res.session_id,
+        },
+      })
     } catch (e: any) {
       console.error('Error:', e)
       alert(`เริ่ม session ไม่สำเร็จ: ${e?.message}`)

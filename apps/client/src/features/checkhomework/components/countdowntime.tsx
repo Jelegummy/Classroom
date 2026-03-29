@@ -11,17 +11,24 @@ export default function CountdownTimer({ active, duration }: Props) {
   if (!active) return null
 
   return (
-    <div className="absolute right-4 top-52 flex flex-col items-center">
-      <div
-        className={`text-5xl font-bold ${timeLeft <= 5 ? 'text-red-400' : 'text-white'}`}
-      >
-        {timeLeft}
-      </div>
-      <p className="mt-1 text-sm text-gray-400">วินาที</p>
-      <div className="mt-2 flex items-center gap-1">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-        <span className="text-xs text-red-400">กำลังบันทึก</span>
-      </div>
+    <div className="flex flex-col items-center">
+      {timeLeft == 0 ? (
+        <div className="grid items-center rounded-2xl bg-slate-900 p-3 text-xl text-white">
+          กำลังประมวลผล...
+        </div>
+      ) : (
+        <div className="grid items-center rounded-2xl bg-slate-900 p-3">
+          <div
+            className={`flex items-center justify-center text-5xl font-bold ${timeLeft <= 5 ? 'text-red-400' : 'text-white'}`}
+          >
+            {timeLeft}
+          </div>
+          <div className="mt-2 flex items-center gap-1">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            <span className="text-xs text-red-400">กำลังบันทึก</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
