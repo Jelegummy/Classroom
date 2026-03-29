@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import os
 import threading
 import discord
-from faster_whisper import WhisperModel
+# from faster_whisper import WhisperModel
 from discord.ext import commands, voice_recv
 import wave
 import asyncio

@@ -28,6 +28,7 @@ export default function AssignmentTaskTeacher({
     queryKey: ['getAssignments', classroomId],
     queryFn: () => getAllAssignments({ classroomId }),
     enabled: !!classroomId,
+    refetchInterval: 2000,
     refetchOnWindowFocus: false,
   })
 

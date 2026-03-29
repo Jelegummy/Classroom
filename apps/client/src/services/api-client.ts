@@ -1,8 +1,6 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
+const API_8000 = process.env.FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
 
-const API_8000 = process.env.NEXT_PUBLIC_API_8000 ?? 'http://127.0.0.1:8000'
-
-const API_4000 = process.env.NEXT_PUBLIC_API_4000 ?? 'http://127.0.0.1:4000'
+const API_4000 = process.env.NEXT_PUBLIC_ENDPOINT ?? 'http://127.0.0.1:4000'
 
 async function request<T>(
   base: string,

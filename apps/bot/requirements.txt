@@ -1,12 +1,12 @@
 discord.py
 
 git+https://github.com/imayhaveborkedit/discord-ext-voice-recv
-faster-whisper
+# faster-whisper
 pythainlp
 python-dotenv
 transformers
 langchain_openai
-torch
+# torch
 groq
 pydub
 
