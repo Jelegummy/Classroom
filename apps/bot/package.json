@@ -3,7 +3,7 @@
   "scripts": {
     "dev:api": "./.venv/bin/python -m fastapi dev ./main.py --port 4000",
     "dev": "./.venv/bin/python ./main.py",
-    "start": "'./.venv/bin/python ./main.py'"
+    "start": "./.venv/bin/python ./main.py"
   },
   "keywords": [],
   "author": "",
