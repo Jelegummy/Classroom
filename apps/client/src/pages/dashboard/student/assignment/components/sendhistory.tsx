@@ -23,7 +23,7 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
   const sendhistory = (data?.answerHistory ?? []) as {
     role: 'bot' | 'student'
     content: string
-    correct?: boolean
+    is_correct?: boolean
   }[]
 
   return (
@@ -48,7 +48,7 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
               className={`flex flex-col gap-1 ${msg.role === 'student' ? 'items-end' : 'items-start'}`}
             >
               <div
-                className={`max-w-md rounded-xl px-4 py-2 text-sm ${
+                className={`max-w-sm rounded-xl px-4 py-2 text-sm ${
                   msg.role === 'bot'
                     ? 'bg-sky-100 text-gray-800'
                     : 'bg-amber-100 text-gray-800'
@@ -56,14 +56,14 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
               >
                 {msg.content}
               </div>
-            </div>
-            {msg.role === 'student' && (
-              <div className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500">
-                <span className="text-xs text-white">
-                  <PiStudent className="size-5" />
+              {msg.role === 'student' && msg.is_correct !== undefined && (
+                <span
+                  className={`text-xs font-medium ${msg.is_correct ? 'text-green-600' : 'text-red-500'}`}
+                >
+                  {msg.is_correct ? '✓ ถูกต้อง' : '✗ ไม่ถูกต้อง'}
                 </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         ))}
       </div>

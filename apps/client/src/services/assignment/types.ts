@@ -7,6 +7,8 @@ export interface AnalyzeAssignmentResponse {
       content: string
     }[]
     generated_file_txt: string
+    generated_content?: string
+    answer_file?: { answer: string; question: string }[]
   }
 }
 
@@ -40,6 +42,10 @@ export interface GetAssignmentResponse {
   filePdf?: string | null
   description?: string | null
   creatorId?: string | null
+  answerFile: {
+    question: string
+    answer: string
+  }[]
   classrooms: {
     classroomId: string
     dueDate?: string | null

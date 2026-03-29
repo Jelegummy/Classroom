@@ -53,12 +53,11 @@ export class AssignmentInternalController {
   @Get('/all')
   async getAllAssignments(
     @Req() ctx: Context,
-    @Param('classroomId') classroomId?: string,
+    @Query('classroomId') classroomId?: string, // เปลี่ยนจาก @Param เป็น @Query
   ) {
     const res = await this.service.getAllAssignments(ctx, classroomId)
-
     return { statusCode: HttpStatus.OK, data: res }
-  } //TODO : fix Route
+  }
 
   @Get('/submissions/:assignmentId/:classroomId')
   async getSubmissionsByAssignment(

@@ -133,6 +133,26 @@ function AssignmentDescription() {
                       ))}
                     </div>
                   </div>
+                  <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 className="mb-4 text-xl font-bold text-gray-800">
+                      ตัวอย่างคำตอบที่ถูกต้อง
+                    </h2>
+                    <div className="grid gap-4">
+                      {assignment?.answerFile?.map((chat, index) => (
+                        <div
+                          key={index}
+                          className="flex gap-2 rounded-md bg-gray-50 p-3"
+                        >
+                          <p className="flex text-base text-gray-600">
+                            {index + 1}.
+                          </p>
+                          <p className="flex text-base text-gray-600">
+                            {chat.answer}
+                          </p>{' '}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <AssignmentSummit />

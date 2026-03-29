@@ -13,7 +13,7 @@ import SendhomeWorkhistory from './components/sendhistory'
 function AssignmentDescriptionStudent() {
   const router = useRouter()
   if (!router.isReady) return null
-  console.log('router.query:', router.query)
+  // console.log('router.query:', router.query)
   const assignmentId = router.query.id as string | undefined
   const classroomId = router.query.cid as string | undefined
   const [fileSize, setFileSize] = useState<string>('กำลังคำนวณ...')

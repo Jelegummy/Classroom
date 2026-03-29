@@ -8,6 +8,8 @@ class AssignmentUpsertRequest(BaseModel):
     filePdf: Optional[str] = None
     generatedFileTxt: Optional[str] = None
     creatorId: str
+    generatedContent: Optional[str] = None
+    answerFile: Optional[List[dict]] = None
     description: Optional[str] = None
     classroomId: str
     dueDate: Optional[str] = None

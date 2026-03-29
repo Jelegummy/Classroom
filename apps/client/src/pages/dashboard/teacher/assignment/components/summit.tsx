@@ -11,7 +11,7 @@ function AssignmentSummit() {
   const router = useRouter()
   const assignmentId = router.query.id as string
   const classroomId = router.query.classroomId as string
-  console.log(router.query)
+  // console.log(router.query)
 
   const { data: submissions, isLoading } = useQuery({
     queryKey: ['getSubmissions', assignmentId, classroomId],
@@ -32,10 +32,7 @@ function AssignmentSummit() {
           {submissions.map(submission => {
             const statusLabel = !submission.isApproved
               ? { label: 'รอการยืนยัน', className: 'text-yellow-600' }
-              : (submission.score ?? 0) >= PASS_THRESHOLD
-                ? { label: 'ผ่าน', className: 'text-green-600' }
-                : { label: 'ไม่ผ่าน', className: 'text-red-500' }
-
+              : { label: 'ผ่านการตรวจแล้ว', className: 'text-green-600' }
             return (
               <div
                 key={submission.id}

@@ -42,12 +42,6 @@ export default function AssignmentHead({ assignmentId }: AssignmentHeadProps) {
       ? { label: 'รอดำเนินการ' }
       : { label: 'ส่งแล้ว' }
 
-  const resultStatus = mySubmission?.isApproved
-    ? (mySubmission.score ?? 0) >= passcore
-      ? { label: 'ผ่าน' }
-      : { label: 'ไม่ผ่าน' }
-    : null
-
   const dueDate = assignment?.classrooms?.[0]?.dueDate
   const submittedCount = assignment?.classrooms?.[0]?.submissions?.length ?? 0
   const totalStudents = classroom?.users?.length ?? 0
@@ -89,19 +83,10 @@ export default function AssignmentHead({ assignmentId }: AssignmentHeadProps) {
               }`}
             >
               {submissionStatus.label}
-            </p>
-
-            {resultStatus && (
-              <p
-                className={`flex justify-end font-medium ${
-                  (mySubmission?.score ?? 0) >= passcore
-                    ? 'text-green-600'
-                    : 'text-red-500'
-                }`}
-              >
-                {resultStatus.label}
+              <p className="text-lg text-green-700">
+                ได้ {mySubmission?.score ?? 0} คะแนน
               </p>
-            )}
+            </p>
           </div>
         </div>
 

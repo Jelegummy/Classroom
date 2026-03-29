@@ -20,11 +20,13 @@ os.environ["SDL_AUDIODRIVER"] = "coreaudio"
 
 
 VOICE = "th-TH-NiwatNeural"
-# RECORD_DURATION = 10
 SAMPLE_RATE = 44100
 PASS_THRESHOLD = 4
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 TXT_DIR = os.path.join(BASE_DIR, "data", "extractpdf-txt")
+
+TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 whisper_model = whisper.load_model("medium", device=device)
@@ -34,6 +36,8 @@ llm = OllamaLLM(
     temperature=0.1,
 )
 
+
+# --- DB Loaders ---
 
 def load_questions_from_db(assignment_id: str) -> list[str]:
     db: Session = next(get_db())
@@ -62,6 +66,30 @@ def load_questions_from_db(assignment_id: str) -> list[str]:
         db.close()
 
 
+def load_answer_file_from_db(assignment_id: str) -> list[dict]:
+    """โหลด answer_file (list of {question, answer}) จาก DB"""
+    db: Session = next(get_db())
+    try:
+        result = db.execute(
+            text("SELECT answer_file FROM assignments WHERE id = :id"),
+            {"id": assignment_id}
+        ).fetchone()
+
+        if not result or not result.answer_file:
+            return []
+
+        data = result.answer_file
+        if isinstance(data, str):
+            data = json.loads(data)
+
+        return data  # [{question: ..., answer: ...}, ...]
+    except Exception as e:
+        print(f"โหลด answer_file ไม่สำเร็จ: {e}")
+        return []
+    finally:
+        db.close()
+
+
 def load_assignment_context(assignment_id: str) -> str:
     db: Session = next(get_db())
     try:
@@ -75,7 +103,6 @@ def load_assignment_context(assignment_id: str) -> str:
 
         pdf_name = result.filePdf
         txt_name = os.path.splitext(pdf_name)[0] + ".txt"
-
         txt_path = os.path.join(TXT_DIR, txt_name)
 
         if not os.path.exists(txt_path):
@@ -92,7 +119,24 @@ def load_assignment_context(assignment_id: str) -> str:
         db.close()
 
 
+# --- Answer File Helpers ---
+
+def find_expected_answer(question: str, answer_file: list[dict]) -> str:
+    """จับคู่คำถามกับ expected answer จาก answer_file"""
+    # ตรงเป๊ะก่อน
+    for item in answer_file:
+        if item.get("question", "").strip() == question.strip():
+            return item.get("answer", "")
+    # fallback: substring match
+    for item in answer_file:
+        q = item.get("question", "")
+        if question.strip() in q or q in question.strip():
+            return item.get("answer", "")
+    return ""
+
+
 # --- Helper Functions ---
+
 def th_num(num_str):
     thai_numbers = {
         '0': 'ศูนย์', '1': 'หนึ่ง', '2': 'สอง', '3': 'สาม',
@@ -116,6 +160,7 @@ def normalize_thai_math(text):
 
     def generic_power(match):
         return f" {match.group(1)} ยกกำลัง {th_num(match.group(2))} "
+
     text = re.sub(r"([a-zA-Z0-9]+)\^(\d+)", generic_power, text)
     text = text.replace("log n", " ล็อก เอ็น ").replace(
         "binarySearch", " ไบ-นา-รี่-เซิร์ช "
@@ -126,7 +171,7 @@ def normalize_thai_math(text):
 
 async def speak(text: str, session_id: str):
     processed_text = normalize_thai_math(text)
-    temp_mp3 = f"temp_voice_{session_id}.mp3"
+    temp_mp3 = os.path.join(TEMP_DIR, f"temp_voice_{session_id}.mp3")
     print(f"🔊 AI: {processed_text}")
 
     max_retries = 3
@@ -158,7 +203,7 @@ async def speak(text: str, session_id: str):
 
 
 def record_answer(session_id: str, duration: int):
-    temp_wav = f"input_student_{session_id}.wav"
+    temp_wav = os.path.join(TEMP_DIR, f"input_student_{session_id}.wav")
     print("🎙️ บันทึกคำตอบ...")
     recording = sd.rec(
         int(duration * SAMPLE_RATE),
@@ -185,58 +230,58 @@ def normalize_answer(text: str) -> str:
     return llm.invoke(prompt).strip()
 
 
-def is_correct(question: str, student_answer: str, context: str) -> bool:
-    """ตัดสินความถูกต้องโดยเน้นที่ 'ความเข้าใจในแนวคิด' เป็นหลัก"""
-
-    # prompt = f"""
-    # คุณเป็นอาจารย์ผู้เชี่ยวชาญที่เน้นการสอนให้เด็กเข้าใจ (Conceptual Learning)
-    # หน้าที่ของคุณคือตรวจคำตอบปากเปล่าของนักเรียนในวิชาคอมพิวเตอร์
-
-    # เกณฑ์การตัดสิน:
-    # 1. เน้น "ใจความสำคัญ": แม้นักเรียนจะใช้คำพูดไม่เป็นทางการ หรืออธิบายติดขัด แต่ถ้า "หลักการ" ถูกต้อง ให้ถือว่า 'true'
-    # 2. ยอมรับ "ความแตกต่าง": สำหรับคำถามที่ไม่มีคำตอบตายตัว หรือคำถามที่ถามความคิดเห็น ให้ดูเหตุผลสนับสนุนที่เกี่ยวข้องต้องเกี่ยวกับการบ้านมากพอ
-    # 3. ไม่จับผิด "คำพูด": อย่าให้ 'false' เพียงเพราะนักเรียนพูดผิดเล็กน้อย
-    # 4. เข้าใจ "บริบท": ถ้านักเรียนตอบได้ใกล้เคียง หรือแสดงให้เห็นว่าเข้าใจกระบวนการทำงานของอัลกอริทึม ให้ถือว่าผ่าน
-
-    # คำถาม: {question}
-    # เนื้อหาการบ้าน:{context}
-    # คำตอบนักเรียน: {student_answer}
-
-    # จงตอบเป็น JSON เท่านั้น:
-    # {{
-    #   "is_correct": true/false,
-    #   "reason": "อธิบายสั้นๆ ว่าทำไมถึงให้ผ่านหรือไม่ผ่าน โดยเน้นชมส่วนที่นักเรียนเข้าใจ"
-    # }}
-    # """
-
+def is_correct_with_answer_file(
+    question: str,
+    student_answer: str,
+    expected_answer: str
+) -> tuple[bool, str]:
+    """
+    ตรวจคำตอบโดยเทียบกับ expected_answer จาก answer_file
+    LLM วิเคราะห์ type ของคำถามก่อน แล้วใช้เกณฑ์ที่เหมาะสม:
+      - factual   → ต้องถูกทุกจุดสำคัญ (ตัวเลข, ชื่อ, สูตร)
+      - conceptual → ใจความหลักตรงก็พอ ไม่ต้องครบทุกคำ
+    คืนค่า (is_correct, reason)
+    """
     prompt = f"""
-คุณเป็นอาจารย์ตรวจการบ้านที่ยุติธรรม
+คุณเป็นอาจารย์ตรวจการบ้านที่ยุติธรรมและมีประสบการณ์
 
-เกณฑ์การตัดสิน:
-1. ข้อเท็จจริงต้องถูก: ตัวเลข ชื่อ หรือข้อมูลเฉพาะเจาะจงต้องถูกต้อง ผิดแม้แต่อันเดียว → false
-2. หลักการต้องถูก: ถ้าอธิบายกระบวนการหรือแนวคิด ใจความสำคัญต้องตรง ไม่ต้องครบทุกคำ
-3. ไม่ตอบ หรือตอบนอกเรื่อง → false
-4. ห้ามสันนิษฐานแทนนักเรียน ถ้าไม่ได้พูดถึงชัดเจน → false
+ขั้นตอนการตรวจ:
+1. วิเคราะห์คำถามก่อนว่าเป็นแบบไหน:
+   - "factual"    = ถามตัวเลข, ชื่อ, จำนวน, สูตรเฉพาะ เช่น "มีกี่ข้อ" "ฟังก์ชันชื่ออะไร"
+   - "conceptual" = ถามหลักการ, วิธีคิด, เหตุผล เช่น "อธิบาย", "ทำไม", "อย่างไร"
+
+2. เกณฑ์ตาม type:
+   - factual    → นักเรียนต้องตอบถูกทุกจุดสำคัญ ผิดแม้แต่ตัวเลขเดียว → false
+   - conceptual → ใจความหลักต้องตรงกับเฉลย ไม่ต้องครบทุกคำ ถ้าเข้าใจแนวคิดถูก → true
+
+3. กฎเหล็กทุก type:
+   - ไม่ตอบ / ตอบนอกเรื่องสิ้นเชิง → false
+   - ห้ามสันนิษฐานแทนนักเรียน ถ้าไม่ได้พูดถึงชัดเจน → false
+   - คำตอบสั้นกว่าเฉลยได้ ถ้าครอบคลุมประเด็นหลัก
 
 คำถาม: {question}
-เนื้อหาการบ้าน: {context}
+เฉลย: {expected_answer}
 คำตอบนักเรียน: {student_answer}
 
-ตอบเป็น JSON เท่านั้น:
+ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น:
 {{
-  "is_correct": true/false,
-  "reason": "เหตุผลสั้นๆ"
+  "question_type": "factual" หรือ "conceptual",
+  "is_correct": true หรือ false,
+  "reason": "เหตุผลสั้นๆ ว่าถูกหรือผิดตรงไหน"
 }}
 """
     try:
         res = llm.invoke(prompt)
         start, end = res.find('{'), res.rfind('}') + 1
         data = json.loads(res[start:end])
-        print(f"มุมมอง AI: {data.get('reason', '')}")
-        return data.get("is_correct", False)
+        q_type = data.get("question_type", "?")
+        reason = data.get("reason", "")
+        is_ok = data.get("is_correct", False)
+        print(f"[{q_type}] AI: {reason}")
+        return is_ok, reason
     except Exception as e:
         print(f"ระบบตรวจคะแนนขัดข้อง: {e}")
-        return False
+        return False, "ระบบตรวจไม่ได้"
 
 
 async def run_check_session(
@@ -270,9 +315,14 @@ async def run_check_session(
             await send("▶️ กลับมาแล้ว เริ่มต่อเลยครับ", "info")
 
     questions = load_questions_from_db(assignment_id)
-    context_text = load_assignment_context(assignment_id)
+    answer_file = load_answer_file_from_db(assignment_id)
+
     if not questions:
         await send("ไม่พบคำถามสำหรับการบ้านนี้", "error")
+        return
+
+    if not answer_file:
+        await send("ไม่พบเฉลยสำหรับการบ้านนี้", "error")
         return
 
     correct_count = 0
@@ -293,8 +343,7 @@ async def run_check_session(
         print(f"\n--- [ข้อที่ {i}/{total}] ---")
         await send(f"ข้อที่ {i}: {q_text}", "ai_text")
         await speak(f"ข้อที่ {i} . {q_text}", session_id)
-        answer_history.append(
-            {"role": "bot", "content": q_text})  # ← เก็บคำถาม
+        answer_history.append({"role": "bot", "content": q_text})
 
         if is_stopped():
             return
@@ -321,18 +370,35 @@ async def run_check_session(
                 os.remove(wav_path)
             return
 
-        result = is_correct(q_text, clean_ans, context_text)
+        # หาเฉลยจาก answer_file แล้วเทียบด้วย LLM
+        expected = find_expected_answer(q_text, answer_file)
+        result, reason = is_correct_with_answer_file(
+            q_text, clean_ans, expected)
+
         if result:
             correct_count += 1
             msg = "คำตอบถูกต้องครับ ✓"
         else:
             msg = "คำตอบยังไม่ถูกต้องครับ ✗"
 
-        answer_history.append({                          # ← เก็บคำตอบ
+        answer_history.append({
             "role": "student",
             "content": clean_ans,
+            "expected": expected,
             "is_correct": result,
+            "reason": reason,
         })
+
+        # ส่ง answer_result ให้ frontend แสดงใน chat
+        await send(
+            json.dumps({
+                "studentAnswer": clean_ans,
+                "expectedAnswer": expected,
+                "isCorrect": result,
+                "reason": reason,
+            }),
+            "answer_result"
+        )
 
         await send(msg, "ai_text")
         await speak(msg, session_id)
@@ -340,19 +406,18 @@ async def run_check_session(
         if os.path.exists(wav_path):
             os.remove(wav_path)
 
-    # สรุปผล
     passed = correct_count >= PASS_THRESHOLD
     final_msg = (
-        f"ยินดีด้วยครับ! ตอบถูก {correct_count} จาก {total} ข้อ ผ่านการทดสอบครับ"
+        f"ยินดีด้วยครับ! ตอบถูก {correct_count} จาก {total} ข้อ โปรดกดปุ่มสิ้นสุดเพื่อกลับไปที่หน้า Assignment"
         if passed else
-        f"ตอบถูก {correct_count} จาก {total} ข้อ ยังไม่ผ่านนะครับ ลองใหม่ได้เลยครับ"
+        f"ตอบถูก {correct_count} จาก {total} ข้อ โปรดกดปุ่มสิ้นสุดเพื่อกลับไปที่หน้า Assignment"
     )
 
     print(f"\n📊 {final_msg}")
     await send(final_msg)
     await speak(final_msg, session_id)
 
-    # บันทึกลง DB ผ่าน NestJS  ← เพิ่ม
+    # บันทึกลง DB ผ่าน NestJS
     try:
         async with httpx.AsyncClient() as client:
             res = await client.post(

@@ -27,6 +27,7 @@ export class AssignmentInternalService {
       select: {
         id: true,
         title: true,
+        answerFile: true,
         chatHistory: true,
         filePdf: true,
         description: true,
@@ -80,6 +81,7 @@ export class AssignmentInternalService {
     }
   }
 
+  // internal.service.ts
   async getAllAssignments(ctx: Context, classroomId?: string) {
     const user = getUserFromContext(ctx)
     if (!user) {
@@ -89,7 +91,7 @@ export class AssignmentInternalService {
     return this.db.assignment.findMany({
       where: {
         classrooms: {
-          some: { classroomId: classroomId },
+          some: { classroomId: classroomId }, // กรองเฉพาะ Assignment ที่อยู่ในห้องนี้
         },
       },
       select: {
@@ -97,8 +99,9 @@ export class AssignmentInternalService {
         title: true,
         status: true,
         classrooms: {
-          where: { classroomId: classroomId },
+          where: classroomId ? { classroomId: classroomId } : {},
           select: {
+            classroomId: true,
             dueDate: true,
             submissions: {
               select: {
@@ -160,7 +163,6 @@ export class AssignmentInternalService {
     })
   }
 
-  
   async approveSubmission(args: ApproveSubmissionArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
     if (!user) {
@@ -184,11 +186,10 @@ export class AssignmentInternalService {
       throw new BadRequestException('Already approved')
     }
 
-    // 2. Logic การคำนวณผ่านเกณฑ์ 70%
     const currentScore = submission.score ?? 0
     const MAX_SCORE = 5
     const isPassed = currentScore / MAX_SCORE >= 0.7
-    const pointsToAdd = isPassed ? 5 : 1
+    const pointsToAdd = currentScore
 
     // 3. Database Transaction
     const updated = await this.db.$transaction(async tx => {

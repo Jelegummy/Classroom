@@ -22,7 +22,7 @@ export default function AssignmentTaskTeacher({
     enabled: !!classroomId,
     refetchOnWindowFocus: false,
   })
-  console.log('classroomId prop:', classroomId)
+  // console.log('classroomId prop:', classroomId)
 
   const { data: assignments, isLoading: isAssignmentsLoading } = useQuery({
     queryKey: ['getAssignments', classroomId],
@@ -35,7 +35,9 @@ export default function AssignmentTaskTeacher({
     return <div className="p-4">กำลังโหลดงาน...</div>
   }
 
-  const assignmentList: GetAssignmentsByClassroomResponse[] = assignments ?? []
+  const assignmentList = assignments ?? []
+
+  // const assignmentList: GetAssignmentsByClassroomResponse[] = assignments ?? []
 
   const totalStudents = classroom?.users?.length ?? 0
 
@@ -43,7 +45,9 @@ export default function AssignmentTaskTeacher({
     <div className="mx-auto grid w-full grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {assignmentList.length > 0 ? (
         assignmentList.map(assignment => {
-          const classroomData = assignment.classrooms?.[0]
+          const classroomData = assignment.classrooms?.find(
+            (c: any) => c.classroomId === classroomId,
+          )
           const dueDate = classroomData?.dueDate
           const submissions = classroomData?.submissions ?? []
           const submittedCount = submissions.length
