@@ -4,7 +4,10 @@ import { getAnswerHistory } from '@/services/assignment'
 import dayjs from 'dayjs'
 import 'dayjs/locale/th'
 import { RiRobot2Line } from 'react-icons/ri'
+import { IoShareSocial, IoShareSocialOutline } from 'react-icons/io5'
+
 import { PiStudent } from 'react-icons/pi'
+import { useRouter } from 'next/router'
 
 interface Props {
   submissionId: string
@@ -16,6 +19,7 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
     queryFn: () => getAnswerHistory(submissionId),
     enabled: !!submissionId,
   })
+  const router = useRouter()
 
   if (isLoading)
     return <div className="h-32 animate-pulse rounded-lg bg-gray-100" />
@@ -26,11 +30,22 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
     is_correct?: boolean
   }[]
 
+  const handleBack = () => {
+    router.push(`/dashboard/student/assignment/history/${submissionId}`)
+  }
   return (
     <div className="w-full rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-xl font-bold text-gray-800">
-        ประวัติการตรวจการบ้าน
-      </h2>
+      <div className="flex justify-between">
+        <h2 className="mb-4 text-xl font-bold text-gray-800">
+          ประวัติการตรวจการบ้าน
+        </h2>
+        <button
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-black bg-white p-2 duration-300 hover:border-blue-600 hover:text-blue-600"
+          onClick={handleBack}
+        >
+          <IoShareSocial className="size-4" />
+        </button>
+      </div>
       <div className="flex flex-col gap-3 px-2">
         {sendhistory.map((msg, index) => (
           <div

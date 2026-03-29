@@ -83,7 +83,7 @@ export default function AssignmentHead({ assignmentId }: AssignmentHeadProps) {
               }`}
             >
               {submissionStatus.label}
-              <p className="text-lg text-green-700">
+              <p className="flex items-end justify-end text-end text-lg text-green-700">
                 ได้ {mySubmission?.score ?? 0} คะแนน
               </p>
             </p>
