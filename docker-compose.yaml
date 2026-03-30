@@ -29,3 +29,14 @@ services:
       - db
     env_file:
       - ./apps/bot/.env
+
+  bot-assignment:
+    container_name: classroom-bot-assignment
+    build:
+      context: ./apps/assignment-bot
+      dockerfile: Dockerfile
+    restart: on-failure
+    depends_on:
+      - db
+    env_file:
+      - ./apps/assignment-bot/.env

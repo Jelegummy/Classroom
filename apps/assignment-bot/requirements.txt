@@ -24,3 +24,5 @@ numpy>=1.24.0
 python-dotenv>=1.0.0      # อ่านไฟล์ .env
 httpx>=0.27.0             # ยิง API ไปหา NestJS
 websockets>=12.0          # จำเป็นสำหรับ WebSocket ของ FastAPI
+
+opencv-python-headless>=4.8.0
