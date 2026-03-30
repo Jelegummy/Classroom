@@ -22,7 +22,7 @@ load_dotenv()
 
 NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
 os.environ["SDL_VIDEODRIVER"] = "dummy"
-os.environ["SDL_AUDIODRIVER"] = "coreaudio"
+os.environ["SDL_AUDIODRIVER"] = "alsa"
 TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
 
 
