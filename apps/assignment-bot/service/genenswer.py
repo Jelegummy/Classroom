@@ -1,14 +1,22 @@
 import os
-import json  # นำเข้า json
+import json
 import logging
-from langchain_ollama import OllamaLLM
+from langchain_openai import ChatOpenAI
+from langchain_core.output_parsers import StrOutputParser
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
 logger = logging.getLogger(__name__)
 
-llm = OllamaLLM(
-    model="scb10x/typhoon-translate1.5-4b",
-    temperature=0.2,
-    num_ctx=8192
+llm = ChatOpenAI(
+    base_url="https://api.opentyphoon.ai/v1",
+    api_key=TYPHOON_API_KEY,
+    model='typhoon-v2.5-30b-a3b-instruct',
+    temperature=0.1,
+    max_tokens=8192,
 )
 
 ANSWER_DIR = os.path.join(os.path.dirname(
@@ -28,7 +36,7 @@ def run_genanswer(assignment_id: str, txt_path: str, questions: list[str]) -> li
     with open(txt_path, "r", encoding="utf-8") as f:
         content = f.read()
 
-    answers_data = []  # สร้าง list ว่างสำหรับเก็บ JSON
+    answers_data = []
 
     for i, question in enumerate(questions, start=1):
         logger.info(f"[genanswer] Answering question {i}/{len(questions)}...")
@@ -53,7 +61,8 @@ def run_genanswer(assignment_id: str, txt_path: str, questions: list[str]) -> li
         """
 
         try:
-            answer_text = llm.invoke(prompt).strip()
+            chain = llm | StrOutputParser()
+            answer_text = chain.invoke(prompt).strip()
         except Exception as e:
             logger.error(f"[genanswer] Error answering question {i}: {e}")
             answer_text = f"(เกิดข้อผิดพลาดในการสร้างคำตอบ: {e})"

@@ -1,6 +1,6 @@
 from database import get_db
 from sqlalchemy.orm import Session
-from langchain_ollama import OllamaLLM
+from langchain_openai import ChatOpenAI
 from scipy.io.wavfile import write
 import sounddevice as sd
 import whisper
@@ -14,10 +14,16 @@ import pygame
 import os
 import httpx
 import random
+from langchain_core.output_parsers import StrOutputParser
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 os.environ["SDL_AUDIODRIVER"] = "coreaudio"
+TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
 
 
 VOICE = "th-TH-NiwatNeural"
@@ -32,9 +38,12 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 whisper_model = whisper.load_model("medium", device=device)
 
-llm = OllamaLLM(
-    model="scb10x/typhoon-translate1.5-4b:latest",
+llm = ChatOpenAI(
+    base_url="https://api.opentyphoon.ai/v1",
+    api_key=TYPHOON_API_KEY,
+    model='typhoon-v2.5-30b-a3b-instruct',
     temperature=0.1,
+    max_tokens=8192,
 )
 
 
@@ -228,7 +237,8 @@ def normalize_answer(text: str) -> str:
     *ห้ามเติมเนื้อหาเข้ามาเองเด็ดขาด*
     คำตอบ: {text}
     """
-    return llm.invoke(prompt).strip()
+    chain = llm | StrOutputParser()
+    return chain.invoke(prompt).strip()
 
 
 def is_correct_with_answer_file(

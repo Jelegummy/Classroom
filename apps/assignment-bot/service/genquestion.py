@@ -1,12 +1,19 @@
-from langchain_ollama import OllamaLLM
+from langchain_openai import ChatOpenAI
 import os
 import json
 import sys
+from dotenv import load_dotenv
 
-llm = OllamaLLM(
-    model="scb10x/typhoon-translate1.5-4b",
+load_dotenv()
+
+TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
+
+llm = ChatOpenAI(
+    base_url="https://api.opentyphoon.ai/v1",
+    api_key=TYPHOON_API_KEY,
+    model='typhoon-v2.5-30b-a3b-instruct',
     temperature=0.3,
-    num_ctx=8192
+    max_tokens=8192,
 )
 
 
@@ -32,7 +39,7 @@ def generate_questions(pdf_content):
     ข้อมูลการบ้าน: {pdf_content}
     """
     result = llm.invoke(prompt)
-    return [line.strip() for line in result.split("\n") if line.strip()]
+    return [line.strip() for line in result.content.split("\n") if line.strip()]
 
 
 def save_file(selected_questions):
