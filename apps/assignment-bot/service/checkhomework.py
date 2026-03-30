@@ -1,66 +1,30 @@
-import os
-import sys
-import pygame
-import asyncio
-import json
-import random
-import re
-import torch
-import numpy as np
-import whisper
-import edge_tts
-import httpx
-import sounddevice as sd
-from scipy.io.wavfile import write
-from sqlalchemy import text
+from database import get_db
 from sqlalchemy.orm import Session
 from langchain_openai import ChatOpenAI
+from scipy.io.wavfile import write
+import sounddevice as sd
+import whisper
+import torch
+import re
+import edge_tts
+import asyncio
+import json
+from sqlalchemy import text
+import pygame
+import os
+import httpx
+import random
 from langchain_core.output_parsers import StrOutputParser
-from dotenv import load_dotenv
 
-from database import get_db
+from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- 1. ระบบจัดการ Driver เสียงอัตโนมัติ (OS-Specific Fallback) ---
-
-
-def init_pygame_audio():
-    try:
-        # พยายามเปิดระบบเสียงตามปกติก่อน
-        pygame.mixer.init()
-        print("✅ Audio initialized successfully via auto-detect.")
-    except (pygame.error, Exception) as e:
-        print(
-            f"⚠️ Default audio init failed: {e}. Attempting OS-specific fallback...")
-
-        if sys.platform == 'darwin':    # macOS
-            os.environ['SDL_AUDIODRIVER'] = 'coreaudio'
-        elif sys.platform == 'win32':   # Windows
-            os.environ['SDL_AUDIODRIVER'] = 'directsound'
-        elif sys.platform.startswith('linux'):  # Linux / WSL
-            # พยายามใช้ pulseaudio
-            os.environ['SDL_AUDIODRIVER'] = 'pulseaudio'
-
-        try:
-            pygame.mixer.init()
-            print(
-                f"✅ Audio initialized via {os.environ.get('SDL_AUDIODRIVER')} fallback.")
-        except pygame.error as fallback_e:
-            print(
-                f"❌ Fallback failed: {fallback_e}. Running with 'dummy' driver (No Sound).")
-            # ถ้าไม่มี Driver จริงๆ ให้ใช้ dummy เพื่อไม่ให้โค้ดพัง
-            os.environ['SDL_AUDIODRIVER'] = 'dummy'
-            pygame.mixer.init()
-
-
-# เรียกใช้งานทันทีเมื่อเริ่มรัน Script
-init_pygame_audio()
-
-# --- 2. ตั้งค่าตัวแปรระบบ ---
 NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
 os.environ["SDL_VIDEODRIVER"] = "dummy"
+os.environ["SDL_AUDIODRIVER"] = "coreaudio"
 TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
+
 
 VOICE = "th-TH-NiwatNeural"
 SAMPLE_RATE = 44100
@@ -71,7 +35,6 @@ TXT_DIR = os.path.join(BASE_DIR, "data", "extractpdf-txt")
 TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-# --- 3. โหลด AI Models ---
 device = "mps" if torch.backends.mps.is_available() else "cpu"
 whisper_model = whisper.load_model("medium", device=device)
 
@@ -83,8 +46,8 @@ llm = ChatOpenAI(
     max_tokens=8192,
 )
 
-# --- 4. DB Loaders ---
 
+# --- DB Loaders ---
 
 def load_questions_from_db(assignment_id: str) -> list[str]:
     db: Session = next(get_db())
@@ -129,7 +92,7 @@ def load_answer_file_from_db(assignment_id: str) -> list[dict]:
         if isinstance(data, str):
             data = json.loads(data)
 
-        return data
+        return data  # [{question: ..., answer: ...}, ...]
     except Exception as e:
         print(f"โหลด answer_file ไม่สำเร็จ: {e}")
         return []
@@ -166,7 +129,8 @@ def load_assignment_context(assignment_id: str) -> str:
         db.close()
 
 
-# --- 5. Answer File Helpers ---
+# --- Answer File Helpers ---
+
 def find_expected_answer(question: str, answer_file: list[dict]) -> str:
     """จับคู่คำถามกับ expected answer จาก answer_file"""
     # ตรงเป๊ะก่อน
@@ -181,7 +145,8 @@ def find_expected_answer(question: str, answer_file: list[dict]) -> str:
     return ""
 
 
-# --- 6. Helper Functions ---
+# --- Helper Functions ---
+
 def th_num(num_str):
     thai_numbers = {
         '0': 'ศูนย์', '1': 'หนึ่ง', '2': 'สอง', '3': 'สาม',
@@ -235,66 +200,29 @@ async def speak(text: str, session_id: str):
                 print(f"เชื่อมต่อระบบเสียงไม่ได้: {e}")
                 return
 
-    # ถ้าเป็น Dummy ไม่ต้องพยายามเล่นเสียงเพื่อหลีกเลี่ยงบั๊กหรือความล่าช้า
-    if os.environ.get("SDL_AUDIODRIVER") == "dummy":
-        print("🔇 (Mode: Dummy) ระบบทำงานต่อโดยไม่มีเสียงออกลำโพงเซิร์ฟเวอร์")
-        if os.path.exists(temp_mp3):
-            os.remove(temp_mp3)
-        return
-
+    pygame.mixer.init()
     try:
-        # เช็คให้ชัวร์ว่า Pygame ยังทำงานอยู่
-        if not pygame.mixer.get_init():
-            pygame.mixer.init()
-
         pygame.mixer.music.load(temp_mp3)
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
             await asyncio.sleep(0.1)
-    except Exception as e:
-        print(f"เกิดข้อผิดพลาดขณะเล่นเสียง: {e}")
     finally:
-        # unload ไฟล์เพื่อให้ระบบ OS ยอมให้ลบไฟล์ได้
-        try:
-            pygame.mixer.music.unload()
-        except AttributeError:
-            # สำรองไว้กรณีใช้ pygame เวอร์ชันเก่าที่ไม่มี unload()
-            pygame.mixer.music.stop()
-
+        pygame.mixer.quit()
         if os.path.exists(temp_mp3):
-            try:
-                os.remove(temp_mp3)
-            except Exception as e:
-                print(f"ไม่สามารถลบไฟล์เสียงชั่วคราวได้: {e}")
+            os.remove(temp_mp3)
 
 
 def record_answer(session_id: str, duration: int):
     temp_wav = os.path.join(TEMP_DIR, f"input_student_{session_id}.wav")
-    print(f"🎙️ ระบบกำลังพยายามอัดเสียง ({duration} วินาที)...")
-
-    try:
-        recording = sd.rec(
-            int(duration * SAMPLE_RATE),
-            samplerate=SAMPLE_RATE,
-            channels=1
-        )
-        sd.wait()
-        write(temp_wav, SAMPLE_RATE, recording)
-        return temp_wav
-
-    except Exception as e:
-        print(f"❌ ไม่พบไมโครโฟนบน Server (Error: {e})")
-        print("⚠️ จำลองการอัดเสียง: สร้างไฟล์เสียงเปล่าๆ เพื่อให้ระบบทำงานต่อได้...")
-
-        # ถ่วงเวลาให้เหมือนมีการอัดเสียงจริงๆ
-        import time
-        time.sleep(duration)
-
-        # สร้างไฟล์เสียงที่มีแต่ความเงียบ (Silence) แทน
-        silence_audio = np.zeros(int(duration * SAMPLE_RATE), dtype=np.float32)
-        write(temp_wav, SAMPLE_RATE, silence_audio)
-
-        return temp_wav
+    print("🎙️ บันทึกคำตอบ...")
+    recording = sd.rec(
+        int(duration * SAMPLE_RATE),
+        samplerate=SAMPLE_RATE,
+        channels=1
+    )
+    sd.wait()
+    write(temp_wav, SAMPLE_RATE, recording)
+    return temp_wav
 
 
 def transcribe_answer(wav_path: str) -> str:
@@ -318,6 +246,13 @@ def is_correct_with_answer_file(
     student_answer: str,
     expected_answer: str
 ) -> tuple[bool, str]:
+    """
+    ตรวจคำตอบโดยเทียบกับ expected_answer จาก answer_file
+    LLM วิเคราะห์ type ของคำถามก่อน แล้วใช้เกณฑ์ที่เหมาะสม:
+      - factual   → ต้องถูกทุกจุดสำคัญ (ตัวเลข, ชื่อ, สูตร)
+      - conceptual → ใจความหลักตรงก็พอ ไม่ต้องครบทุกคำ
+    คืนค่า (is_correct, reason)
+    """
     prompt = f"""
 คุณเป็นอาจารย์ตรวจการบ้านที่ยุติธรรมและมีประสบการณ์
 
@@ -348,8 +283,8 @@ def is_correct_with_answer_file(
 """
     try:
         res = llm.invoke(prompt)
-        start, end = res.content.find('{'), res.content.rfind('}') + 1
-        data = json.loads(res.content[start:end])
+        start, end = res.find('{'), res.rfind('}') + 1
+        data = json.loads(res[start:end])
         q_type = data.get("question_type", "?")
         reason = data.get("reason", "")
         is_ok = data.get("is_correct", False)
