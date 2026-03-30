@@ -6,6 +6,7 @@ import json
 import random
 import re
 import torch
+import numpy as np
 import whisper
 import edge_tts
 import httpx
@@ -269,15 +270,31 @@ async def speak(text: str, session_id: str):
 
 def record_answer(session_id: str, duration: int):
     temp_wav = os.path.join(TEMP_DIR, f"input_student_{session_id}.wav")
-    print("🎙️ บันทึกคำตอบ...")
-    recording = sd.rec(
-        int(duration * SAMPLE_RATE),
-        samplerate=SAMPLE_RATE,
-        channels=1
-    )
-    sd.wait()
-    write(temp_wav, SAMPLE_RATE, recording)
-    return temp_wav
+    print(f"🎙️ ระบบกำลังพยายามอัดเสียง ({duration} วินาที)...")
+
+    try:
+        recording = sd.rec(
+            int(duration * SAMPLE_RATE),
+            samplerate=SAMPLE_RATE,
+            channels=1
+        )
+        sd.wait()
+        write(temp_wav, SAMPLE_RATE, recording)
+        return temp_wav
+
+    except Exception as e:
+        print(f"❌ ไม่พบไมโครโฟนบน Server (Error: {e})")
+        print("⚠️ จำลองการอัดเสียง: สร้างไฟล์เสียงเปล่าๆ เพื่อให้ระบบทำงานต่อได้...")
+
+        # ถ่วงเวลาให้เหมือนมีการอัดเสียงจริงๆ
+        import time
+        time.sleep(duration)
+
+        # สร้างไฟล์เสียงที่มีแต่ความเงียบ (Silence) แทน
+        silence_audio = np.zeros(int(duration * SAMPLE_RATE), dtype=np.float32)
+        write(temp_wav, SAMPLE_RATE, silence_audio)
+
+        return temp_wav
 
 
 def transcribe_answer(wav_path: str) -> str:
