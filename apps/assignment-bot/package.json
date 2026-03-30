@@ -2,7 +2,7 @@
   "name": "@assignment-bot/bot",
   "scripts": {
     "dev": "./.venv/bin/python -m fastapi dev ./main.py",
-    "start": "concurrently './.venv/bin/python ./main.py'"
+    "start": "./.venv/bin/python ./main.py"
   },
   "keywords": [],
   "author": "",
