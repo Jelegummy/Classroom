@@ -402,3 +402,11 @@ async def stop_session(session_id: str):
             except:
                 pass
     return {"status": "stopped"}
+
+if __name__ == "__main__":
+    import uvicorn
+
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "4005"))
+
+    uvicorn.run("main:app", host=host, port=port, reload=True)
