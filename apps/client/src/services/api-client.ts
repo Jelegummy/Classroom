@@ -1,4 +1,4 @@
-const API_8000 = process.env.FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
+const API_8000 = process.env.NEXT_PUBLIC_FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
 
 const API_4000 = process.env.NEXT_PUBLIC_ENDPOINT ?? 'http://127.0.0.1:4000'
 
