@@ -8,7 +8,7 @@
     "dev:server": "dotenvx run -- turbo dev --filter=\"./apps/server\"",
     "build": "dotenvx run -- turbo build",
     "build:package": "dotenvx run -- turbo build --filter=\"./packages/*\"",
-    "start": "dotenvx run -- turbo start",
+    "start": "dotenvx run -- turbo start --filter=\"!./apps/assignment-bot\"",
     "test": "dotenvx run -- turbo test",
     "coverage": "dotenvx run -- turbo coverage",
     "lint": "eslint .",
