@@ -148,7 +148,7 @@ export default function Home() {
                 href={dashboardUrl}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-8 py-4 text-lg font-semibold text-white shadow-[0_8px_20px_-6px_rgba(31,87,207,0.5)] transition-all hover:-translate-y-1 hover:bg-blue-500 hover:shadow-[0_12px_25px_-6px_rgba(31,87,207,0.6)] sm:w-auto"
               >
-                ไปที่ Dashboard ของคุณ
+                ไปที่ Dashboard ของคุณ asdfghj
                 <LayoutDashboard className="h-5 w-5" />
               </Link>
             ) : (
