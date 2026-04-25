@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import { FaArrowLeft } from 'react-icons/fa6'
 import { RiRobot2Line } from 'react-icons/ri'
-import { getAnswerHistory } from '@/services/assignment'
+import { getSubmissionDetail } from '@/services/assignment'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 
@@ -15,7 +15,7 @@ function HistorySubmission() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['answerHistory', submissionId],
-    queryFn: () => getAnswerHistory(submissionId),
+    queryFn: () => getSubmissionDetail(submissionId),
     enabled: !!submissionId,
   })
 

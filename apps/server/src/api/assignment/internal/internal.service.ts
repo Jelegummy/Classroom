@@ -6,19 +6,22 @@ import {
   UnauthorizedException,
 } from '@nestjs/common'
 import { Context, getUserFromContext } from '@app/common'
-import { CheckStatus } from '@app/db/dist/generated/enums'
-import { ApproveSubmissionArgs, SubmitHomeworkArgs } from './internal.dto'
+import { ApproveSubmissionArgs, SubmitAssignmentArgs } from './internal.dto'
 
 @Injectable()
 export class AssignmentInternalService {
   constructor(private readonly db: PrismaService) {}
 
-  async getAssignment(args: { assignmentId: string }, ctx: Context) {
+  private requireUser(ctx: Context) {
     const user = getUserFromContext(ctx)
-
     if (!user) {
-      throw new UnauthorizedException('User not authenticated')
+      throw new UnauthorizedException('User not found')
     }
+    return user
+  }
+
+  async getAssignment(args: { assignmentId: string }, ctx: Context) {
+    const user = this.requireUser(ctx)
 
     const assignment = await this.db.assignment.findUnique({
       where: {
@@ -27,8 +30,8 @@ export class AssignmentInternalService {
       select: {
         id: true,
         title: true,
-        answerFile: true,
         chatHistory: true,
+        answerFile: true,
         filePdf: true,
         description: true,
         creatorId: true,
@@ -59,10 +62,7 @@ export class AssignmentInternalService {
   }
 
   async deleteAssignment(args: { assignmentId: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated')
-    }
+    const user = this.requireUser(ctx)
 
     if (!args.assignmentId) {
       throw new BadRequestException('assignmentId is required')
@@ -81,17 +81,13 @@ export class AssignmentInternalService {
     }
   }
 
-  // internal.service.ts
   async getAllAssignments(ctx: Context, classroomId?: string) {
-    const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated')
-    }
+    const user = this.requireUser(ctx)
 
     return this.db.assignment.findMany({
       where: {
         classrooms: {
-          some: { classroomId: classroomId }, // กรองเฉพาะ Assignment ที่อยู่ในห้องนี้
+          some: { classroomId: classroomId },
         },
       },
       select: {
@@ -117,15 +113,24 @@ export class AssignmentInternalService {
     })
   }
 
+  async submitAssignment(args: SubmitAssignmentArgs, ctx: Context) {
+    const user = this.requireUser(ctx)
+    return this.db.homeworkSubmission.create({
+      data: {
+        userId: user.id,
+        classroomAssignmentId: args.classroomAssignmentId,
+        score: args.score,
+        answerHistory: args.answerHistory,
+      },
+    })
+  }
+
   async getSubmissionsByAssignment(
     assignmentId: string,
     classroomId: string,
     ctx: Context,
   ) {
-    const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated')
-    }
+    const user = this.requireUser(ctx)
     const classroomAssignment = await this.db.classroomOnAssignment.findFirst({
       where: {
         assignmentId,
@@ -134,7 +139,7 @@ export class AssignmentInternalService {
     })
 
     if (!classroomAssignment) {
-      throw new NotFoundException('Assignment not found in classroom')
+      throw new NotFoundException('Assignment not found in this classroom')
     }
 
     return this.db.homeworkSubmission.findMany({
@@ -163,18 +168,104 @@ export class AssignmentInternalService {
     })
   }
 
-  async approveSubmission(args: ApproveSubmissionArgs, ctx: Context) {
-    const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated')
+  async getSubmissionDetail(submissionId: string, ctx: Context) {
+    const user = this.requireUser(ctx)
+    const submission = await this.db.homeworkSubmission.findUnique({
+      where: { id: submissionId },
+      select: {
+        id: true,
+        score: true,
+        isApproved: true,
+        submittedAt: true,
+        aiFeedback: true,
+        transcription: true,
+        answerHistory: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            studentId: true,
+          },
+        },
+        classroomAssignment: {
+          select: {
+            classroomId: true,
+            assignmentId: true,
+            assignment: {
+              select: {
+                title: true,
+                description: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found')
     }
 
-    // 1. Fetch data พร้อมดึง classroomId จาก Assignment
+    return submission
+  }
+
+  private calculateResult(score: number) {
+    const MAX_SCORE = 5
+    const isPassed = score / MAX_SCORE >= 0.7
+    return { currentScore: score, MAX_SCORE, isPassed, pointsToAdd: score }
+  }
+
+  private async updateUserPoints(tx: any, userId: string, points: number) {
+    await tx.user.update({
+      where: { id: userId },
+      data: { points: { increment: points } },
+    })
+  }
+
+  private async updateClassroomScore(
+    tx: any,
+    userId: string,
+    classroomId: string,
+    points: number,
+  ) {
+    await tx.classroomOnUser.update({
+      where: { userId_classroomId: { userId, classroomId } },
+      data: { score: { increment: points } },
+    })
+  }
+
+  private async upsertAttendance(
+    tx: any,
+    userId: string,
+    submissionId: string,
+    points: number,
+  ) {
+    await tx.attendance.upsert({
+      where: {
+        userId_homeworkSubmissionId: {
+          userId,
+          homeworkSubmissionId: submissionId,
+        },
+      },
+      update: { scoreEarned: points, status: 'PRESENT' },
+      create: {
+        userId,
+        homeworkSubmissionId: submissionId,
+        scoreEarned: points,
+        status: 'PRESENT',
+      },
+    })
+  }
+
+  async approveSubmission(args: ApproveSubmissionArgs, ctx: Context) {
+    const user = this.requireUser(ctx)
+
     const submission = await this.db.homeworkSubmission.findUnique({
       where: { id: args.submissionId },
       include: {
         user: true,
-        classroomAssignment: true, // เพื่อเอา classroomId
+        classroomAssignment: true,
       },
     })
 
@@ -186,59 +277,28 @@ export class AssignmentInternalService {
       throw new BadRequestException('Already approved')
     }
 
-    const currentScore = submission.score ?? 0
-    const MAX_SCORE = 5
-    const isPassed = currentScore / MAX_SCORE >= 0.7
-    const pointsToAdd = currentScore
-
-    // 3. Database Transaction
+    const { currentScore, MAX_SCORE, isPassed, pointsToAdd } =
+      this.calculateResult(submission.score ?? 0)
     const updated = await this.db.$transaction(async tx => {
-      // A) Update สถานะการส่งงาน
       const subUpdate = await tx.homeworkSubmission.update({
         where: { id: args.submissionId },
         data: { isApproved: args.isApproved },
       })
 
       if (args.isApproved) {
-        // B) Update คะแนนรวมของ User (Global Points)
-        await tx.user.update({
-          where: { id: submission.userId },
-          data: { points: { increment: pointsToAdd } },
-        })
-
-        // C) Update คะแนนในห้องเรียน (Classroom Score)
-        // ใช้ userId และ classroomId เป็น Unique identifier
-        await tx.classroomOnUser.update({
-          where: {
-            userId_classroomId: {
-              userId: submission.userId,
-              classroomId: submission.classroomAssignment.classroomId,
-            },
-          },
-          data: {
-            score: { increment: pointsToAdd },
-          },
-        })
-
-        //บันทึกลง Attendance (Session Record)
-        await tx.attendance.upsert({
-          where: {
-            userId_homeworkSubmissionId: {
-              userId: submission.userId,
-              homeworkSubmissionId: submission.id,
-            },
-          },
-          update: {
-            scoreEarned: pointsToAdd,
-            status: 'PRESENT',
-          },
-          create: {
-            userId: submission.userId,
-            homeworkSubmissionId: submission.id,
-            scoreEarned: pointsToAdd,
-            status: 'PRESENT',
-          },
-        })
+        await this.updateUserPoints(tx, submission.userId, pointsToAdd)
+        await this.updateClassroomScore(
+          tx,
+          submission.userId,
+          submission.classroomAssignment.classroomId,
+          pointsToAdd,
+        )
+        await this.upsertAttendance(
+          tx,
+          submission.userId,
+          submission.id,
+          pointsToAdd,
+        )
       }
       return subUpdate
     })
@@ -257,48 +317,21 @@ export class AssignmentInternalService {
     }
   }
 
-  async getAnswerHistory(submissionId: string, ctx: Context) {
-    const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new UnauthorizedException('User not authenticated')
-    }
-    const submission = await this.db.homeworkSubmission.findUnique({
-      where: { id: submissionId },
+  async getClassroomAssignment(assignmentId: string, classroomId: string) {
+    const result = await this.db.classroomOnAssignment.findFirst({
+      where: { assignmentId, classroomId },
       select: {
         id: true,
-        answerHistory: true,
-        user: {
+        dueDate: true,
+        assignment: {
           select: {
-            firstName: true,
-            lastName: true,
+            title: true,
+            status: true,
           },
         },
       },
     })
-
-    if (!submission) {
-      throw new NotFoundException('Submission not found')
-    }
-
-    return submission
-  }
-  async getClassroomAssignment(assignmentId: string, classroomId: string) {
-    const result = await this.db.classroomOnAssignment.findFirst({
-      where: { assignmentId, classroomId },
-      select: { id: true },
-    })
     if (!result) throw new NotFoundException('ClassroomAssignment not found')
     return result
-  }
-
-  async submitHomework(args: SubmitHomeworkArgs) {
-    return this.db.homeworkSubmission.create({
-      data: {
-        userId: args.userId,
-        classroomAssignmentId: args.classroomAssignmentId,
-        score: args.score,
-        answerHistory: args.answerHistory,
-      },
-    })
   }
 }

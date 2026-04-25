@@ -2,6 +2,7 @@ import { createZodDto, patchNestJsSwagger } from 'nestjs-zod'
 import { z } from 'zod'
 
 patchNestJsSwagger()
+
 export class GetAssignmentArgs extends createZodDto(
   z.object({
     assignmentId: z.string().uuid(),
@@ -39,7 +40,7 @@ export class GetAnswerHistoryArgs extends createZodDto(
     submissionId: z.string().uuid(),
   }),
 ) {}
-export class SubmitHomeworkArgs extends createZodDto(
+export class SubmitAssignmentArgs extends createZodDto(
   z.object({
     userId: z.string().uuid(),
     classroomAssignmentId: z.string().uuid(),

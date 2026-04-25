@@ -12,15 +12,7 @@ import {
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { AssignmentInternalService } from './internal.service'
-import {
-  GetAssignmentArgs,
-  DeleteAssignmentArgs,
-  GetAssignmentsByClassroomArgs,
-  GetSubmissionsByAssignmentArgs,
-  ApproveSubmissionArgs,
-  GetAnswerHistoryArgs,
-  SubmitHomeworkArgs,
-} from './internal.dto'
+import { ApproveSubmissionArgs, SubmitAssignmentArgs } from './internal.dto'
 import { Context } from '@app/common'
 
 @ApiTags('Assignment - Internal')
@@ -53,7 +45,7 @@ export class AssignmentInternalController {
   @Get('/all')
   async getAllAssignments(
     @Req() ctx: Context,
-    @Query('classroomId') classroomId?: string, // เปลี่ยนจาก @Param เป็น @Query
+    @Query('classroomId') classroomId?: string,
   ) {
     const res = await this.service.getAllAssignments(ctx, classroomId)
     return { statusCode: HttpStatus.OK, data: res }
@@ -74,6 +66,16 @@ export class AssignmentInternalController {
     return { statusCode: HttpStatus.OK, data: res }
   } //TODO : fix Route
 
+  @Get('/submission/:submissionId')
+  async getSubmissionDetail(
+    @Param('submissionId') submissionId: string,
+    @Req() ctx: Context,
+  ) {
+    const res = await this.service.getSubmissionDetail(submissionId, ctx)
+
+    return { statusCode: HttpStatus.OK, data: res }
+  }
+
   @Post('/approvesubmission')
   async approveSubmission(
     @Body() args: ApproveSubmissionArgs,
@@ -82,16 +84,6 @@ export class AssignmentInternalController {
     const res = await this.service.approveSubmission(args, ctx)
 
     return { statusCode: HttpStatus.OK, message: res }
-  }
-
-  @Get('/answerhistory/:submissionId')
-  async getAnswerHistory(
-    @Param('submissionId') submissionId: string,
-    @Req() ctx: Context,
-  ) {
-    const res = await this.service.getAnswerHistory(submissionId, ctx)
-
-    return { statusCode: HttpStatus.OK, data: res }
   }
 
   @Get('/classroom-assignment/:assignmentId/:classroomId')
@@ -105,10 +97,14 @@ export class AssignmentInternalController {
     )
     return { statusCode: HttpStatus.OK, data: res }
   }
+
   @Post('/submit')
   @HttpCode(HttpStatus.OK)
-  async submitHomework(@Body() args: SubmitHomeworkArgs) {
-    const res = await this.service.submitHomework(args)
+  async submitAssignment(
+    @Body() args: SubmitAssignmentArgs,
+    @Req() ctx: Context,
+  ) {
+    const res = await this.service.submitAssignment(args, ctx)
     return { statusCode: HttpStatus.OK, data: res }
   }
 }
