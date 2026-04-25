@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { getSubmissionDetail, approveSubmission } from '@/services/assignment'
+import { useRouter } from 'next/router'
+import {
+  getSubmissionDetail,
+  approveSubmission,
+  getAssignment,
+} from '@/services/assignment'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import { FaArrowLeft } from 'react-icons/fa6'
@@ -14,8 +18,7 @@ const PASS_THRESHOLD = 4
 
 export default function SubmissionDetail() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const submissionId = searchParams.get('submissionId') as string
+  const submissionId = router.query.submissionId as string
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -23,16 +26,6 @@ export default function SubmissionDetail() {
     queryFn: () => getSubmissionDetail(submissionId),
     enabled: !!submissionId,
   })
-
-  // const { data: assignment } = useQuery({
-  //   queryKey: ['getAssignment', assignmentId],
-  //   queryFn: () => getAssignment(assignmentId),
-  //   enabled: !!assignmentId,
-  // })
-
-  // const mySubmission = assignment?.classrooms
-  //   ?.flatMap(c => c.submissions)
-  //   ?.find(s => s.id === submissionId)
 
   const { mutate: approve, isPending } = useMutation({
     mutationFn: (isApproved: boolean) =>
