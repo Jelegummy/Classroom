@@ -9,6 +9,6 @@ export class CreateTutorVoiceLogArgs extends createZodDto(
     audioUrl: z.string().min(1),
     voiceChannelName: z.string().min(1),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

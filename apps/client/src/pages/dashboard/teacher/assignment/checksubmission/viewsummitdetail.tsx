@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
 import {
-  getAnswerHistory,
+  getSubmissionDetail,
   approveSubmission,
   getAssignment,
 } from '@/services/assignment'
@@ -19,24 +19,13 @@ const PASS_THRESHOLD = 4
 export default function SubmissionDetail() {
   const router = useRouter()
   const submissionId = router.query.submissionId as string
-  const assignmentId = router.query.assignmentId as string
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['answerHistory', submissionId],
-    queryFn: () => getAnswerHistory(submissionId),
+    queryFn: () => getSubmissionDetail(submissionId),
     enabled: !!submissionId,
   })
-
-  const { data: assignment } = useQuery({
-    queryKey: ['getAssignment', assignmentId],
-    queryFn: () => getAssignment(assignmentId),
-    enabled: !!assignmentId,
-  })
-
-  const mySubmission = assignment?.classrooms
-    ?.flatMap(c => c.submissions)
-    ?.find(s => s.id === submissionId)
 
   const { mutate: approve, isPending } = useMutation({
     mutationFn: (isApproved: boolean) =>
@@ -86,14 +75,14 @@ export default function SubmissionDetail() {
                 </h3>
                 <p className="text-xs text-gray-400">
                   ส่งเมื่อ{' '}
-                  {dayjs(mySubmission?.submittedAt)
+                  {dayjs(data?.submittedAt)
                     .locale('th')
                     .format('D MMM YYYY HH:mm น.')}
                 </p>
               </div>
             </div>
             <div className="flex flex-col items-end gap-1">
-              {mySubmission?.isApproved ? (
+              {data?.isApproved ? (
                 <span className="rounded-full px-2 py-0.5 text-xl text-green-600">
                   ยืนยันแล้ว
                 </span>
@@ -152,7 +141,7 @@ export default function SubmissionDetail() {
               ))}
             </div>
           </div>
-          {mySubmission?.isApproved === false && (
+          {data?.isApproved === false && (
             <div className="mb-10 flex justify-end gap-3">
               <button
                 onClick={() => approve(false)}

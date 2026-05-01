@@ -12,7 +12,6 @@ if not GEMINI_API_KEY:
 
 MODEL_NAME = "gemini-2.5-flash"
 
-# Prompt สั้นๆ และครอบคลุมเงื่อนไขการจัดรูปแบบของคุณ
 PROMPT = """
 OCR this pdf file to txt file. 
 Make subquestions like 1.1, 1.2, 1.3 if it has e.g., question 1 and in the table or text there are 1 2 3 4 5, make it to sub questions.

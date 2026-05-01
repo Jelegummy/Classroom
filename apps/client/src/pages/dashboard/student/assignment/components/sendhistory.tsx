@@ -1,13 +1,14 @@
+'use client'
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { getAnswerHistory } from '@/services/assignment'
+import { getSubmissionDetail } from '@/services/assignment'
 import dayjs from 'dayjs'
 import 'dayjs/locale/th'
 import { RiRobot2Line } from 'react-icons/ri'
 import { IoShareSocial, IoShareSocialOutline } from 'react-icons/io5'
 
 import { PiStudent } from 'react-icons/pi'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 
 interface Props {
   submissionId: string
@@ -16,7 +17,7 @@ interface Props {
 export default function SendhomeWorkhistory({ submissionId }: Props) {
   const { data, isLoading } = useQuery({
     queryKey: ['answerHistory', submissionId],
-    queryFn: () => getAnswerHistory(submissionId),
+    queryFn: () => getSubmissionDetail(submissionId),
     enabled: !!submissionId,
   })
   const router = useRouter()

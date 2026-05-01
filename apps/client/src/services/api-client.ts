@@ -1,6 +1,5 @@
-const API_8000 = process.env.NEXT_PUBLIC_FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
-
-const API_4000 = process.env.NEXT_PUBLIC_ENDPOINT ?? 'http://127.0.0.1:4000'
+const API_8000 =
+  process.env.NEXT_PUBLIC_FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
 
 async function request<T>(
   base: string,
@@ -39,26 +38,9 @@ export const api8000 = {
       body: JSON.stringify(body),
     }),
 
-  // 👇 เพิ่มอันนี้เข้าไป
   postForm: <T>(url: string, formData: FormData) =>
     request<T>(API_8000, url, {
       method: 'POST',
       body: formData,
     }),
-}
-
-export const api4000 = {
-  get: <T>(url: string, params?: Record<string, string>) => {
-    const query = params ? '?' + new URLSearchParams(params).toString() : ''
-    return request<T>(API_4000, url + query, { method: 'GET' })
-  },
-  post: <T>(url: string, body?: unknown) =>
-    request<T>(API_4000, url, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-  delete: <T>(url: string, params?: Record<string, string>) => {
-    const query = params ? '?' + new URLSearchParams(params).toString() : ''
-    return request<T>(API_4000, url + query, { method: 'DELETE' })
-  },
 }

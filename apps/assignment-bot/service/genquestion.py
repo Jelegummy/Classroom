@@ -17,7 +17,7 @@ llm = ChatOpenAI(
 )
 
 
-def load_extractedpdf(file_path):
+def load_text_file(file_path):
     if not os.path.exists(file_path):
         return None
     with open(file_path, "r", encoding="utf-8") as f:
@@ -42,7 +42,7 @@ def generate_questions(pdf_content):
     return [line.strip() for line in result.content.split("\n") if line.strip()]
 
 
-def save_file(selected_questions):
+def save_questions_log(selected_questions):
     log_dir = os.path.join(os.path.dirname(__file__), "..", "log")
     filename = os.path.join(log_dir, "generated_questions.json")
 
@@ -56,32 +56,32 @@ def save_file(selected_questions):
         json.dump(data_to_save, f, ensure_ascii=False, indent=4)
 
 
-def run_gen_question(pdf_content):
+def generate_questions_from_content(pdf_content):
     if not pdf_content:
         return []
     questions = generate_questions(pdf_content)
     if questions:
-        save_file(questions)
+        save_questions_log(questions)
     return questions
 
 
-def run_genquestiontext(txt_path: str):
+def generate_questions_from_file(txt_path: str):
 
-    pdf_text = load_extractedpdf(txt_path)
+    pdf_text = load_text_file(txt_path)
 
     if not pdf_text:
         return []
 
-    return run_gen_question(pdf_text)
+    return generate_questions_from_content(pdf_text)
 
 
 def main():
     log_dir = os.path.join(os.path.dirname(__file__), "..", "log")
     test_path = os.path.join(log_dir, "extractpdf.txt")
 
-    pdf_text = load_extractedpdf(test_path)
+    pdf_text = load_text_file(test_path)
     if pdf_text:
-        questions = run_gen_question(pdf_text)
+        questions = generate_questions_from_content(pdf_text)
         for q in questions:
             print(f"Generated: {q}")
     else:

@@ -88,7 +88,7 @@ export default function CreateButtonAnnounce({
               <input
                 type="text"
                 className="input input-bordered w-full"
-                placeholder="เช่น การส่งงานสำหรับ ..."
+                placeholder="เช่น รับ ..."
                 value={form.title}
                 onChange={e => setForm({ ...form, title: e.target.value })}
               />

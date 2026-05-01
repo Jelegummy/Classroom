@@ -101,8 +101,12 @@ export type ApproveSubmissionResponse = {
   isApproved: boolean
 }
 
-export type GetAnswerHistoryResponse = {
+export type GetSubmissionDetailResponse = {
   id: string
+  isApproved: boolean
+  submittedAt: string
+  aiFeedback: string | null
+  score?: number | null
   answerHistory:
     | {
         role: 'bot' | 'student'
