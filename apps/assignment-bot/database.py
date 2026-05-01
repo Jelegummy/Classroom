@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 # DATABASE_URL = os.getenv("DATABASE_URL")
 
-DATABASE_URL = "postgresql://local:local@127.0.0.1:5436/classroom"
+DATABASE_URL = "postgresql://local:local@127.0.0.1:5435/classroom"
 
 
 engine = create_engine(DATABASE_URL)

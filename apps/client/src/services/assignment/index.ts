@@ -1,5 +1,5 @@
 import { getSession } from 'next-auth/react'
-import { api8000, api4000 } from '../api-client'
+import { api8000 } from '../api-client'
 import {
   AnalyzeAssignmentResponse,
   CreateAssignmentArgs,
@@ -29,7 +29,7 @@ export async function generateQuestions(
   }>('/api/upload', formData)
 
   return api8000.post<AnalyzeAssignmentResponse>(
-    '/api/assignments/generate-questions',
+    '/api/assignments/process-pdf',
     {
       title,
       filePdf: uploadRes.filePdf,
@@ -39,7 +39,6 @@ export async function generateQuestions(
   )
 }
 
-// regenerate คำถามใหม่ — ไม่ save DB
 export async function regenerateQuestions(
   filePdf: string,
   classroomId: string,
@@ -47,12 +46,11 @@ export async function regenerateQuestions(
   title: string,
 ): Promise<AnalyzeAssignmentResponse> {
   return api8000.post<AnalyzeAssignmentResponse>(
-    '/api/assignments/generate-questions',
+    '/api/assignments/process-pdf',
     { filePdf, classroomId, creatorId, title },
   )
 }
 
-// save DB ครั้งเดียวตอนกด "ยืนยัน"
 export async function confirmAssignment(payload: {
   title: string
   filePdf?: string
