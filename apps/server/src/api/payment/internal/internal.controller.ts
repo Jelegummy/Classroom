@@ -1,9 +1,9 @@
-import { Body, Controller, HttpStatus, Param, Post, Req } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
-import { read } from 'fs'
-import { PaymentInternalService } from './internal.service'
 import { Context } from '@app/common'
+import { Body, Controller, HttpStatus, Post, Req } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
+
 import { UploadSlipArgs } from './internal.dto'
+import { PaymentInternalService } from './internal.service'
 
 @ApiTags('Payment - Internal')
 @Controller('payment/internal')

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+
 import { AnnounceInternalController } from './internal/internal.controller'
 import { AnnounceInternalService } from './internal/internal.service'
 

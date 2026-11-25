@@ -87,7 +87,7 @@
 //       }
 //     },
 
-//     onError: (error: any) => {
+//     onError: (error: Error) => {
 //       toast.error(error?.message || 'การวิเคราะห์ไฟล์ล้มเหลว')
 //       setStep(1)
 //     },
@@ -104,7 +104,7 @@
 //         toast.error('ไม่พบคำถามจาก AI')
 //       }
 //     },
-//     onError: (error: any) => {
+//     onError: (error: Error) => {
 //       toast.error(error?.message || 'สร้างคำถามใหม่ล้มเหลว')
 //     },
 //   })
@@ -321,12 +321,12 @@
 // }
 
 import {
+  confirmAssignment,
   generateQuestions,
   regenerateQuestions,
-  confirmAssignment,
 } from '@/services/assignment'
 import { useMutation } from '@tanstack/react-query'
-import { useState, useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
@@ -364,14 +364,11 @@ export default function CreateButtonAssignment({
     dueDate: '',
   })
 
-  if (status !== 'authenticated' || !session?.user?.id) {
-    return null
-  }
-
-  const creatorId = session.user.id
+  const creatorId = session?.user?.id ?? ''
 
   const getFreshFile = () => {
     if (!pdfBytesRef.current) return null
+
     return new File([pdfBytesRef.current], pdfNameRef.current, {
       type: 'application/pdf',
     })
@@ -396,6 +393,7 @@ export default function CreateButtonAssignment({
     mutationFn: () => {
       const freshFile = getFreshFile()
       if (!freshFile) throw new Error('ไม่พบไฟล์ PDF')
+
       return generateQuestions(
         form.title,
         freshFile,
@@ -417,7 +415,7 @@ export default function CreateButtonAssignment({
         setStep(1)
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'การวิเคราะห์ไฟล์ล้มเหลว')
       setStep(1)
     },
@@ -441,7 +439,7 @@ export default function CreateButtonAssignment({
         toast.error('ไม่พบคำถามจาก AI')
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'สร้างคำถามใหม่ล้มเหลว')
     },
   })
@@ -464,10 +462,16 @@ export default function CreateButtonAssignment({
       toast.success('มอบหมายงานสำเร็จ')
       handleClose()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error?.message || 'บันทึกงานล้มเหลว')
     },
   })
+
+  // Render nothing until the session is known; placed after every hook so the
+  // hook order stays stable between renders.
+  if (status !== 'authenticated' || !creatorId) {
+    return null
+  }
 
   const handleClose = () => {
     setOpen(false)

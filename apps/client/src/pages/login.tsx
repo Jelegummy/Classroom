@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { getSession, signIn, useSession } from 'next-auth/react'
 import { SubmitHandler, useForm } from 'react-hook-form'
-import { FaLock, FaUser, FaDiscord } from 'react-icons/fa6'
+import { FaDiscord, FaLock, FaUser } from 'react-icons/fa6'
 import { toast } from 'sonner'
 import { LoginArgs } from '@/services/user'
 import { IoChevronBackSharp } from 'react-icons/io5'
@@ -37,6 +37,7 @@ const Login = () => {
       if (['TEACHER', 'ADMIN', 'STUDENT'].includes(userRole)) {
         router.replace('/dashboard/setting')
       }
+
       return
     }
 
@@ -64,9 +65,7 @@ const Login = () => {
         redirect: false,
       })
       if (!res?.ok) {
-        throw new Error(
-          res?.error ?? 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ โปรดลองอีกครั้ง',
-        )
+        throw new Error(res?.error ?? 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ โปรดลองอีกครั้ง')
       }
 
       const currentSession = await getSession()
@@ -87,6 +86,7 @@ const Login = () => {
         ) {
           router.push('/dashboard/setting')
         }
+
         return
       }
 
@@ -126,9 +126,7 @@ const Login = () => {
               width={56}
               height={56}
             />
-            <h1 className="text-2xl font-bold text-black">
-              ยินดีต้อนรับเข้าสู่ระบบ
-            </h1>
+            <h1 className="text-2xl font-bold text-black">ยินดีต้อนรับเข้าสู่ระบบ</h1>
             <p className="text-center text-sm text-gray-500">
               กรุณากรอกอีเมลและรหัสผ่านเพื่อเริ่มต้นใช้งาน
             </p>

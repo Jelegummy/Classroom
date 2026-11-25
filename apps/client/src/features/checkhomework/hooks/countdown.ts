@@ -6,6 +6,7 @@ export function Countdown(active: boolean, duration: number) {
   useEffect(() => {
     if (!active) {
       setTimeLeft(duration)
+
       return
     }
     setTimeLeft(duration)
@@ -13,11 +14,14 @@ export function Countdown(active: boolean, duration: number) {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(interval)
+
           return 0
         }
+
         return prev - 1
       })
     }, 1000)
+
     return () => clearInterval(interval)
   }, [active])
 

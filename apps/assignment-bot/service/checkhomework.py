@@ -1,29 +1,38 @@
-from database import get_db
-from sqlalchemy.orm import Session
-from langchain_openai import ChatOpenAI
-from scipy.io.wavfile import write
-import sounddevice as sd
-import whisper
-import torch
-import re
-import edge_tts
 import asyncio
 import json
-from sqlalchemy import text
-import pygame
+import logging
 import os
-import httpx
 import random
-from langchain_core.output_parsers import StrOutputParser
+import re
+import sys
+import threading
 
+import edge_tts
+import httpx
+import pygame
+import sounddevice as sd
 from dotenv import load_dotenv
+from langchain_core.output_parsers import StrOutputParser
+from scipy.io.wavfile import write
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from database import get_db
+from service.llm import get_llm
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 NESTJS_URL = os.getenv("NESTJS_URL", "http://localhost:4000")
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-os.environ["SDL_AUDIODRIVER"] = "coreaudio"
-TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
+# Shared secret expected by POST /assignment/internal/submit on the API.
+BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium")
+
+os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+if sys.platform == "darwin":
+    # CoreAudio only exists on macOS; elsewhere let SDL pick a driver.
+    os.environ.setdefault("SDL_AUDIODRIVER", "coreaudio")
 
 
 VOICE = "th-TH-NiwatNeural"
@@ -35,16 +44,22 @@ TXT_DIR = os.path.join(BASE_DIR, "data", "extractpdf-txt")
 TEMP_DIR = os.path.join(BASE_DIR, "data", "temp")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
-device = "mps" if torch.backends.mps.is_available() else "cpu"
-whisper_model = whisper.load_model("medium", device=device)
+_whisper_model = None
+_whisper_lock = threading.Lock()
 
-llm = ChatOpenAI(
-    base_url="https://api.opentyphoon.ai/v1",
-    api_key=TYPHOON_API_KEY,
-    model='typhoon-v2.5-30b-a3b-instruct',
-    temperature=0.1,
-    max_tokens=8192,
-)
+
+def get_whisper_model():
+    """Load Whisper on first use (it is large and slow to load) and reuse it."""
+    global _whisper_model
+    with _whisper_lock:
+        if _whisper_model is None:
+            import torch
+            import whisper
+
+            device = "mps" if torch.backends.mps.is_available() else "cpu"
+            logger.info(f"Loading Whisper '{WHISPER_MODEL}' on {device}...")
+            _whisper_model = whisper.load_model(WHISPER_MODEL, device=device)
+        return _whisper_model
 
 
 # --- DB Loaders ---
@@ -104,14 +119,16 @@ def load_assignment_context(assignment_id: str) -> str:
     db: Session = next(get_db())
     try:
         result = db.execute(
-            text("SELECT filePdf FROM assignments WHERE id = :id"),
+            text("SELECT file_pdf FROM assignments WHERE id = :id"),
             {"id": assignment_id}
         ).fetchone()
 
         if not result:
             return ""
 
-        pdf_name = result.filePdf
+        pdf_name = result.file_pdf
+        if not pdf_name:
+            return ""
         txt_name = os.path.splitext(pdf_name)[0] + ".txt"
         txt_path = os.path.join(TXT_DIR, txt_name)
 
@@ -226,7 +243,10 @@ def record_answer(session_id: str, duration: int):
 
 
 def transcribe_answer(wav_path: str) -> str:
-    result = whisper_model.transcribe(wav_path, language='th', fp16=False)
+    # Whisper inference is serialised: the model is not safe for concurrent use.
+    model = get_whisper_model()
+    with _whisper_lock:
+        result = model.transcribe(wav_path, language='th', fp16=False)
     return result["text"]
 
 
@@ -237,7 +257,7 @@ def normalize_answer(text: str) -> str:
     *ห้ามเติมเนื้อหาเข้ามาเองเด็ดขาด*
     คำตอบ: {text}
     """
-    chain = llm | StrOutputParser()
+    chain = get_llm(0.1) | StrOutputParser()
     return chain.invoke(prompt).strip()
 
 
@@ -282,7 +302,9 @@ def is_correct_with_answer_file(
 }}
 """
     try:
-        res = llm.invoke(prompt)
+        # invoke() returns an AIMessage; the old code called .find() on the
+        # message object itself, which always raised and marked every answer wrong.
+        res = get_llm(0.1).invoke(prompt).content
         start, end = res.find('{'), res.rfind('}') + 1
         data = json.loads(res[start:end])
         q_type = data.get("question_type", "?")
@@ -363,9 +385,7 @@ async def run_check_session(
             return
 
         await send("", "start_recording")
-        wav_path = await asyncio.get_event_loop().run_in_executor(
-            None, record_answer, session_id, duration
-        )
+        wav_path = await asyncio.to_thread(record_answer, session_id, duration)
 
         if is_stopped():
             if os.path.exists(wav_path):
@@ -375,8 +395,15 @@ async def run_check_session(
         await wait_if_paused()
         await send("", "transcript")
 
-        raw_ans = transcribe_answer(wav_path)
-        clean_ans = normalize_answer(raw_ans)
+        # Whisper + LLM calls are blocking; keep them off the event loop so other
+        # sessions and WebSocket traffic are not frozen meanwhile.
+        try:
+            raw_ans = await asyncio.to_thread(transcribe_answer, wav_path)
+            clean_ans = await asyncio.to_thread(normalize_answer, raw_ans)
+        except Exception as e:
+            logger.error(f"Transcription failed: {e}")
+            clean_ans = ""
+
         print(f"คำตอบที่ตรวจพบ: {clean_ans}")
 
         if is_stopped():
@@ -385,8 +412,8 @@ async def run_check_session(
             return
 
         expected = find_expected_answer(q_text, answer_file)
-        result, reason = is_correct_with_answer_file(
-            q_text, clean_ans, expected)
+        result, reason = await asyncio.to_thread(
+            is_correct_with_answer_file, q_text, clean_ans, expected)
 
         if result:
             correct_count += 1
@@ -439,6 +466,7 @@ async def run_check_session(
                     "score": correct_count,
                     "answerHistory": answer_history,
                 },
+                headers={"x-bot-secret": BOT_API_SECRET},
                 timeout=10.0,
             )
             res.raise_for_status()
@@ -449,12 +477,15 @@ async def run_check_session(
     await send("", "session_end")
     ws = session.get("ws")
     if ws:
-        await ws.send_json({
-            "type": "session_result",
-            "correct": correct_count,
-            "total": total,
-            "passed": passed
-        })
+        try:
+            await ws.send_json({
+                "type": "session_result",
+                "correct": correct_count,
+                "total": total,
+                "passed": passed
+            })
+        except Exception as e:
+            logger.warning(f"WebSocket closed before result was sent: {e}")
 
     active_sessions[session_id]["status"] = "done"
     active_sessions[session_id]["result"] = {

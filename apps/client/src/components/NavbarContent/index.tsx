@@ -16,6 +16,7 @@ export default function NavbarContent({
 }: Props) {
   const { data: session } = useSession()
   const [open, setOpen] = useState(false)
+
   return (
     <>
       <div className="hidden md:block">

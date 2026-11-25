@@ -14,6 +14,11 @@ services:
       - POSTGRES_PASSWORD=local
     volumes:
       - classroom_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U local -d classroom']
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   bot-discord:
     container_name: classroom-bot-discord
@@ -21,12 +26,9 @@ services:
       context: ./apps/bot
       dockerfile: Dockerfile
     restart: on-failure
-    # environment:
-    #   - DATABASE_URL=postgresql://local:local@db:5432/classroom
-    #   - DISCORD_TOKEN=${DISCORD_TOKEN}
-    #   - TYPHOON_KEY=${TYPHOON_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - ./apps/bot/.env
 
@@ -37,6 +39,12 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - ./apps/assignment-bot/.env
+    environment:
+      # Inside the compose network the database is `db:5432`, not 127.0.0.1.
+      - DATABASE_URL=postgresql://local:local@db:5432/classroom
+    ports:
+      - 4005:4005

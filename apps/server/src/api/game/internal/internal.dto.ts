@@ -9,9 +9,9 @@ export class CreateGameArgs extends createZodDto(
     isActive: z.boolean().default(true),
     classroomId: z.string().min(1),
     characterId: z.string().min(1),
-    timeLimit: z.number().min(0).optional(),
-    damageBoost: z.number().min(0).optional(),
-    maxHpBoss: z.number().min(0).optional(),
+    timeLimit: z.number().int().min(0).optional(),
+    damageBoost: z.number().int().min(0).optional(),
+    maxHpBoss: z.number().int().min(0).optional(),
   }),
 ) {}
 
@@ -28,8 +28,14 @@ export class UpdateGameArgs extends createZodDto(
 export class AttackGameArgs extends createZodDto(
   z.object({
     gameId: z.string().min(1),
-    damage: z.number().min(1),
+    damage: z.number().int().min(1).max(1_000_000),
   }),
 ) {}
 
 patchNestJsSwagger()
+
+export class GameIdArgs extends createZodDto(
+  z.object({
+    gameId: z.string().min(1),
+  }),
+) {}

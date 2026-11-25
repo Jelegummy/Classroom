@@ -1,12 +1,22 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src",
+    "module": "commonjs",
+    "target": "es2022",
     "outDir": "./dist",
     "strict": true,
     "declaration": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": "./src"
   },
-  "include": ["./src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "./src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.test.ts"
+  ]
 }

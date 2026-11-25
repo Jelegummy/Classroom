@@ -1,12 +1,10 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAnswerHistory } from '@/services/assignment'
-import dayjs from 'dayjs'
 import 'dayjs/locale/th'
 import { RiRobot2Line } from 'react-icons/ri'
-import { IoShareSocial, IoShareSocialOutline } from 'react-icons/io5'
+import { IoShareSocial } from 'react-icons/io5'
 
-import { PiStudent } from 'react-icons/pi'
 import { useRouter } from 'next/router'
 
 interface Props {
@@ -33,6 +31,7 @@ export default function SendhomeWorkhistory({ submissionId }: Props) {
   const handleBack = () => {
     router.push(`/dashboard/student/assignment/history/${submissionId}`)
   }
+
   return (
     <div className="w-full rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex justify-between">

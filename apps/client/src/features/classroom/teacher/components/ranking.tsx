@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { rewardStudent } from '@/services/classroom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { IoClose } from 'react-icons/io5'
-import { IoAddOutline } from 'react-icons/io5'
+import { IoAddOutline, IoClose } from 'react-icons/io5'
 import { RankingProps, SelectedStudent } from '../types'
 
 export default function Ranking({

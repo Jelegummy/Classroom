@@ -10,17 +10,22 @@
     "generate": "prisma generate",
     "migrate:dev": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
-    "migrate:reset": "prisma migrate reset"
+    "migrate:reset": "prisma migrate reset",
+    "typecheck": "tsc --noEmit -p .",
+    "migrate:resolve": "prisma migrate resolve",
+    "migrate:status": "prisma migrate status"
   },
   "dependencies": {
-    "@nestjs/common": "11.0.12",
-    "@prisma/client": "7.0.1",
-    "@prisma/adapter-pg": "7.0.1",
-    "@prisma/client-runtime-utils": "7.0.1",
-    "pg": "^8.16.3"
+    "@nestjs/common": "11.2.11",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "@prisma/client-runtime-utils": "7.10.1",
+    "pg": "8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.15.6",
-    "prisma": "7.0.1"
+    "@app/auth": "workspace:*",
+    "@types/pg": "8.23.1",
+    "prisma": "7.10.1",
+    "tsx": "4.23.15"
   }
 }

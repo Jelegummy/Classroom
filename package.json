@@ -9,8 +9,8 @@
     "build": "dotenvx run -- turbo build",
     "build:package": "dotenvx run -- turbo build --filter=\"./packages/*\"",
     "start": "dotenvx run -- turbo start --filter=\"!./apps/assignment-bot\"",
-    "test": "dotenvx run -- turbo test",
-    "coverage": "dotenvx run -- turbo coverage",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "lint": "eslint .",
     "fmt": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "db:push": "dotenvx run -- pnpm --filter=@app/db push",
@@ -20,32 +20,34 @@
     "db:migrate:draft": "dotenvx run -- pnpm --filter=@app/db migrate:draft",
     "db:migrate:deploy": "dotenvx run -- pnpm --filter=@app/db migrate:deploy",
     "db:migrate:reset": "dotenvx run -- pnpm --filter=@app/db migrate:reset",
-    "maps:execute": "dotenvx run -- pnpm --filter=@app/maps-service execute"
+    "typecheck": "turbo typecheck",
+    "db:seed": "dotenvx run -- pnpm --filter=@app/db seed",
+    "db:migrate:resolve": "dotenvx run -- pnpm --filter=@app/db migrate:resolve",
+    "test:e2e": "dotenvx run -- node scripts/smoke-test.mjs"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "1.51.1",
-    "button": "link:@/components/ui/button",
-    "csv-parser": "^3.2.0",
-    "dayjs": "1.11.13",
-    "lucide-react": "^0.555.0"
+    "@dotenvx/dotenvx": "1.75.1"
   },
   "devDependencies": {
-    "@swc/cli": "0.7.9",
-    "@swc/core": "1.15.3",
-    "@types/node": "24.10.1",
-    "@vitest/coverage-v8": "4.0.14",
-    "eslint": "9.39.1",
-    "eslint-config-next": "16.0.6",
+    "@eslint/js": "9.39.5",
+    "@swc/cli": "0.7.10",
+    "@swc/core": "1.16.22",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "4.1.12",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.4.6",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-unused-imports": "4.3.0",
-    "prettier": "3.7.3",
-    "prettier-plugin-tailwindcss": "0.7.2",
-    "rimraf": "6.1.2",
-    "turbo": "2.6.1",
+    "eslint-plugin-unused-imports": "4.4.1",
+    "globals": "16.5.0",
+    "prettier": "3.10.1",
+    "prettier-plugin-tailwindcss": "0.7.4",
+    "rimraf": "6.1.4",
+    "turbo": "2.11.13",
     "typescript": "5.9.3",
-    "unplugin-swc": "1.5.9",
-    "vitest": "4.0.14"
+    "typescript-eslint": "8.74.0",
+    "unplugin-swc": "1.6.0",
+    "vitest": "4.1.12"
   },
   "packageManager": "pnpm@10.12.4",
   "prettier": {
@@ -60,5 +62,8 @@
   },
   "pnpm": {
     "neverBuiltDependencies": []
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

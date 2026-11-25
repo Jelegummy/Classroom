@@ -31,9 +31,7 @@ export default function ManagementUser() {
         <div className="p-6">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">
-                จัดการผู้ใช้งาน
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">จัดการผู้ใช้งาน</h2>
               <p className="text-sm text-gray-500">
                 รายชื่อและข้อมูลผู้ใช้งานทั้งหมดในระบบ
               </p>

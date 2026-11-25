@@ -32,8 +32,32 @@ DEVICE = os.getenv("DEVICE", "cpu")
 LANGUAGE = os.getenv("LANGUAGE", "th")
 BOT_API_SECRET = os.getenv("BOT_API_SECRET", "super-secret-bot-key")
 NESTJS_BASE_URL = os.getenv("NESTJS_BASE_URL", "http://localhost:4000")
-TYPHOON_KEY = os.getenv("TYPHOON_KEY")
+TYPHOON_KEY = os.getenv("TYPHOON_KEY") or os.getenv("TYPHOON_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("classroom-bot")
+
+# Every call to the NestJS API shares one session with sane timeouts; the old
+# code opened a new ClientSession per request without any timeout.
+HTTP_TIMEOUT = aiohttp.ClientTimeout(total=30, connect=10)
+http_session: aiohttp.ClientSession | None = None
+
+
+def api() -> aiohttp.ClientSession:
+    global http_session
+    if http_session is None or http_session.closed:
+        http_session = aiohttp.ClientSession(timeout=HTTP_TIMEOUT)
+    return http_session
+
+
+async def is_active_tutor_channel(channel_id: str) -> bool:
+    try:
+        async with api().get(f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id}/active") as response:
+            return response.status == 200
+    except Exception as e:
+        log.warning(f"Active-session lookup failed for {channel_id}: {e}")
+        return False
 
 BASE_RECORD_DIR = "recordings"
 os.makedirs(BASE_RECORD_DIR, exist_ok=True)
@@ -178,22 +202,33 @@ llm = ChatOpenAI(
     model='typhoon-v2.5-30b-a3b-instruct',
     temperature=0.3,
     max_tokens=8192,
+    timeout=180,
+    max_retries=2,
 )
-print("กำลัง downloadโมเดล Whisper (ครั้งแรกอาจใช้เวลานานหน่อยนะครับ)...")
 
-# Load Model
-# model = WhisperModel(MODEL_SIZE, device=DEVICE, compute_type="int8")
-# print("Whisper พร้อมใช้งาน")
-
-groq_client = AsyncGroq(api_key=GROQ_API_KEY)
-print("Groq API พร้อมใช้งาน")
+# max_retries lets the SDK back off on 429 rate limits and transient 5xx errors.
+groq_client = AsyncGroq(api_key=GROQ_API_KEY, max_retries=4, timeout=300)
+log.info("Groq API พร้อมใช้งาน")
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
 intents.guilds = True
 intents.members = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+class ClassroomBot(commands.Bot):
+    async def setup_hook(self):
+        # Runs once per process. on_ready fires again after every reconnect,
+        # which previously spawned an extra AI worker each time.
+        self.add_view(MainEntryPointView())
+        self.ai_worker_task = asyncio.create_task(ai_worker())
+
+    async def close(self):
+        if http_session and not http_session.closed:
+            await http_session.close()
+        await super().close()
+
+
+bot = ClassroomBot(command_prefix="!", intents=intents)
 active_sessions = {}
 registered_names = {}
 
@@ -314,22 +349,29 @@ async def transcribe_with_groq(path: str):
         return []
 
     mp3_path = path.replace(".wav", ".mp3")
-    try:
-        audio = AudioSegment.from_wav(path)
-        audio.export(mp3_path, format="mp3", bitrate="64k")
-    except Exception as e:
-        print(f"Error converting to MP3: {e}")
-        mp3_path = path
+
+    def _to_mp3():
+        AudioSegment.from_wav(path).export(mp3_path, format="mp3", bitrate="64k")
 
     try:
+        await asyncio.to_thread(_to_mp3)  # CPU-bound: keep the gateway heartbeat alive
+    except Exception as e:
+        log.warning(f"Error converting to MP3: {e}")
+        mp3_path = path
+
+    def _read():
         with open(mp3_path, "rb") as file:
-            transcription = await groq_client.audio.transcriptions.create(
-                file=(os.path.basename(mp3_path), file.read()),
-                model="whisper-large-v3",
-                response_format="verbose_json",
-                language="th",
-                temperature=0.0
-            )
+            return file.read()
+
+    try:
+        audio_bytes = await asyncio.to_thread(_read)
+        transcription = await groq_client.audio.transcriptions.create(
+            file=(os.path.basename(mp3_path), audio_bytes),
+            model="whisper-large-v3",
+            response_format="verbose_json",
+            language="th",
+            temperature=0.0
+        )
 
         if mp3_path != path and os.path.exists(mp3_path):
             os.remove(mp3_path)
@@ -407,6 +449,46 @@ async def ai_worker():
             ai_processing_queue.task_done()
 
 
+def mix_and_upload_recording(record_dir: str, files: list, channel_id: str):
+    """Overlay every speaker track and upload the mix to R2 (blocking; run in a thread).
+
+    Returns the public URL, or None. Failures are logged and never abort the
+    transcript/score processing, which used to be lost when ffmpeg was missing.
+    """
+    if not files:
+        return None
+    try:
+        log.info("กำลังรวมไฟล์เสียงเข้าด้วยกันแบบซ้อนทับ (Overlay)...")
+        combined_audio = AudioSegment.from_wav(os.path.join(record_dir, files[0]))
+        for file in files[1:]:
+            try:
+                combined_audio = combined_audio.overlay(
+                    AudioSegment.from_wav(os.path.join(record_dir, file)))
+            except Exception as e:
+                log.warning(f"Error mixing {file}: {e}")
+
+        if len(combined_audio) == 0:
+            return None
+
+        session_mp3_path = os.path.join(record_dir, "session_full.mp3")
+        combined_audio.export(session_mp3_path, format="mp3", bitrate="64k")
+
+        object_key = f"classrooms/{channel_id}_{int(time.time())}.mp3"
+        log.info("กำลังอัปโหลดไฟล์เสียงหลักขึ้น R2...")
+        s3_client.upload_file(
+            session_mp3_path,
+            S3_BUCKET,
+            object_key,
+            ExtraArgs={'ContentType': 'audio/mpeg'}
+        )
+        audio_url = f"{S3_PUBLIC_DOMAIN}/{object_key}"
+        log.info(f"อัปโหลดสำเร็จ: {audio_url}")
+        return audio_url
+    except Exception as e:
+        log.error(f"รวม/อัปโหลดไฟล์เสียงล้มเหลว: {e}")
+        return None
+
+
 async def process_session_data(channel_id: str, text_channel: discord.TextChannel, session_data: dict, voice_name: str):
     status_msg = await text_channel.send(f"**บันทึกเสียงเสร็จสิ้น กำลังถอดรหัสเสียง** (ขั้นตอน 1/2)...")
 
@@ -445,43 +527,10 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
             except Exception as e:
                 print(f"Error STT: {e}")
 
-        print("กำลังรวมไฟล์เสียงเข้าด้วยกันแบบซ้อนทับ (Overlay)...")
-        combined_audio = AudioSegment.empty()
+        audio_url = await asyncio.to_thread(
+            mix_and_upload_recording, record_dir, files, channel_id)
 
-        if files:
-            first_file_path = os.path.join(record_dir, files[0])
-            combined_audio = AudioSegment.from_wav(first_file_path)
-
-            for file in files[1:]:
-                full_path = os.path.join(record_dir, file)
-                try:
-                    audio_seg = AudioSegment.from_wav(full_path)
-                    combined_audio = combined_audio.overlay(audio_seg)
-                except Exception as e:
-                    print(f"Error mixing {file}: {e}")
-
-        audio_url = None
-        if len(combined_audio) > 0:
-            session_mp3_path = os.path.join(record_dir, "session_full.mp3")
-            combined_audio.export(
-                session_mp3_path, format="mp3", bitrate="64k")
-
-            object_key = f"classrooms/{channel_id}_{int(time.time())}.mp3"
-            try:
-                print("กำลังอัปโหลดไฟล์เสียงหลักขึ้น R2...")
-                s3_client.upload_file(
-                    session_mp3_path,
-                    os.getenv("S3_BUCKET", "your-bucket-name"),
-                    object_key,
-                    ExtraArgs={'ContentType': 'audio/mpeg'}
-                )
-                S3_PUBLIC_DOMAIN = os.getenv("S3_PUBLIC_DOMAIN")
-                audio_url = f"{S3_PUBLIC_DOMAIN}/{object_key}"
-                print(f"อัปโหลดสำเร็จ: {audio_url}")
-            except Exception as e:
-                print(f"อัปโหลด R2 ล้มเหลว: {e}")
-
-    shutil.rmtree(record_dir, ignore_errors=True)
+    await asyncio.to_thread(shutil.rmtree, record_dir, True)
 
     if not speaker_blocks:
         await status_msg.edit(content=f"❌ ไม่มีเสียงพูดในคลาสเรียนนี้ครับ")
@@ -535,9 +584,13 @@ async def process_session_data(channel_id: str, text_channel: discord.TextChanne
             "Content-Type": "application/json"
         }
 
-        async with aiohttp.ClientSession() as http_session:
-            async with http_session.post(post_url, json=payload, headers=headers) as response:
-                print(f"API Response: {response.status}")
+        async with api().post(post_url, json=payload, headers=headers) as response:
+            if response.status >= 400:
+                body = await response.text()
+                log.error(f"Saving tutor log failed ({response.status}): {body[:500]}")
+                await text_channel.send("⚠️ บันทึกผลการเรียนลงระบบไม่สำเร็จ กรุณาแจ้งผู้ดูแลระบบ")
+            else:
+                log.info(f"Tutor log saved: {response.status}")
 
         embed_color = discord.Color.green(
         ) if session_type == "Tutoring" else discord.Color.light_grey()
@@ -596,22 +649,22 @@ class RegistrationModal(discord.ui.Modal, title='ยืนยันการเ�
             headers = {"x-bot-secret": BOT_API_SECRET,
                        "Content-Type": "application/json"}
 
-            async with aiohttp.ClientSession() as http_session:
-                async with http_session.post(post_url, json=payload, headers=headers) as response:
-                    if response.status in (200, 201):
-                        registered_names[user_id] = real_name
-                        print(
-                            f"ยืนยัน Discord ID {user_id} กับชื่อ {real_name} สำเร็จ")
-                        await interaction.followup.send(
-                            f"ยืนยันการเข้าร่วม **{real_name}** สำเร็จ!\n*(ระบบจำบัญชีของคุณแล้ว ไม่ต้องกดซ้ำในคาบเรียนต่อๆ ไป)*",
-                            ephemeral=True
-                        )
-                    else:
-                        error_data = await response.json()
-                        error_msg = error_data.get(
-                            "message", "เกิดข้อผิดพลาดในการตรวจสอบข้อมูล")
-                        await interaction.followup.send(f"**ยืนยันไม่สำเร็จ**\n{error_msg}", ephemeral=True)
+            async with api().post(post_url, json=payload, headers=headers) as response:
+                if response.status in (200, 201):
+                    registered_names[user_id] = real_name
+                    print(
+                        f"ยืนยัน Discord ID {user_id} กับชื่อ {real_name} สำเร็จ")
+                    await interaction.followup.send(
+                        f"ยืนยันการเข้าร่วม **{real_name}** สำเร็จ!\n*(ระบบจำบัญชีของคุณแล้ว ไม่ต้องกดซ้ำในคาบเรียนต่อๆ ไป)*",
+                        ephemeral=True
+                    )
+                else:
+                    error_data = await response.json(content_type=None) or {}
+                    error_msg = error_data.get(
+                        "message", "เกิดข้อผิดพลาดในการตรวจสอบข้อมูล")
+                    await interaction.followup.send(f"**ยืนยันไม่สำเร็จ**\n{error_msg}", ephemeral=True)
         except Exception as e:
+            log.error(f"register-discord failed: {e}")
             await interaction.followup.send("ระบบขัดข้อง: ไม่สามารถเชื่อมต่อกับฐานข้อมูลเว็บไซต์ได้", ephemeral=True)
 
 
@@ -642,18 +695,17 @@ class HostView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as http_session:
-                async with http_session.get(get_url) as response:
-                    if response.status == 200:
-                        res_json = await response.json()
-                        data = res_json.get("data", {})
-                        tutor_id = data.get("tutorId")
-                        discord_id = data.get("discordId")
-                        hostName = data.get("hostName")
-                        api_users = data.get("mapped_users", {})
-                    else:
-                        await interaction.followup.send("❌ ไม่พบ Session สำหรับห้องนี้ กรุณาสร้างบนเว็บก่อนครับ")
-                        return
+            async with api().get(get_url) as response:
+                if response.status == 200:
+                    res_json = await response.json()
+                    data = res_json.get("data", {})
+                    tutor_id = data.get("tutorId")
+                    discord_id = data.get("discordId")
+                    hostName = data.get("hostName")
+                    api_users = data.get("mapped_users", {})
+                else:
+                    await interaction.followup.send("❌ ไม่พบ Session สำหรับห้องนี้ กรุณาสร้างบนเว็บก่อนครับ")
+                    return
         except Exception:
             await interaction.followup.send("⚠️ การเชื่อมต่อกับฐานข้อมูลล้มเหลว")
             return
@@ -777,8 +829,14 @@ class HostView(discord.ui.View):
         except Exception:
             pass
 
-        asyncio.create_task(process_session_data(
-            channel_id_str, interaction.channel, session_data, voice_name))
+        # Same serialized queue as the auto-stop path: one session is processed at
+        # a time, and the task is owned by the worker (no orphaned create_task).
+        await ai_processing_queue.put({
+            "channel_id": channel_id_str,
+            "text_channel": interaction.channel,
+            "session_data": session_data,
+            "voice_name": voice_name,
+        })
         await interaction.followup.send("⏹️ หยุดบันทึกแล้ว ระบบกำลังนำไปประมวลผลสรุปเนื้อหาคลาสเรียนครับ...")
 
 
@@ -802,18 +860,17 @@ class MainEntryPointView(discord.ui.View):
 
         try:
             get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as http_session:
-                async with http_session.get(get_url) as response:
-                    if response.status == 200:
-                        res_json = await response.json()
-                        data = res_json.get("data", {})
+            async with api().get(get_url) as response:
+                if response.status == 200:
+                    res_json = await response.json()
+                    data = res_json.get("data", {})
 
-                        discord_id = data.get("discordId")
-                        host_name = data.get("hostName")
-                        tutor_id = data.get("tutorId")
+                    discord_id = data.get("discordId")
+                    host_name = data.get("hostName")
+                    tutor_id = data.get("tutorId")
 
-                        if str(interaction.user.id) == str(discord_id):
-                            is_host = True
+                    if str(interaction.user.id) == str(discord_id):
+                        is_host = True
         except Exception as e:
             print(f"API Error: {e}")
 
@@ -840,15 +897,7 @@ async def on_voice_state_update(member, before, after):
         voice_channel = after.channel
         channel_id_str = str(voice_channel.id)
 
-        is_active_session = False
-        try:
-            get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-            async with aiohttp.ClientSession() as http_session:
-                async with http_session.get(get_url) as response:
-                    if response.status == 200:
-                        is_active_session = True
-        except Exception as e:
-            print(f"API Error in on_voice_state_update: {e}")
+        is_active_session = await is_active_tutor_channel(channel_id_str)
 
         if is_active_session:
             if len([m for m in voice_channel.members if not m.bot]) == 1:
@@ -867,15 +916,7 @@ async def on_voice_state_update(member, before, after):
         channel_id_str = str(voice_channel.id)
 
         if len([m for m in voice_channel.members if not m.bot]) == 0:
-            is_active_session_before = False
-            try:
-                get_url = f"{NESTJS_BASE_URL}/tutor/public/channel/{channel_id_str}/active"
-                async with aiohttp.ClientSession() as http_session:
-                    async with http_session.get(get_url) as response:
-                        if response.status == 200:
-                            is_active_session_before = True
-            except Exception:
-                pass
+            is_active_session_before = await is_active_tutor_channel(channel_id_str)
 
             if is_active_session_before:
                 try:
@@ -910,10 +951,11 @@ async def on_voice_state_update(member, before, after):
 
 @bot.event
 async def on_ready():
-    print(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
-    bot.add_view(MainEntryPointView())
-    bot.loop.create_task(ai_worker())
+    log.info(f"ระบบ discord.py เชื่อมต่อสำเร็จ: {bot.user}")
 
 
 if __name__ == "__main__":
-    bot.run(TOKEN)
+    if not TOKEN:
+        raise SystemExit("DISCORD_TOKEN is not set (apps/bot/.env)")
+    # discord.py handles reconnects/resumes and gateway rate limits itself.
+    bot.run(TOKEN, log_handler=None)

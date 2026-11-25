@@ -1,16 +1,43 @@
+import { Context, getUserFromContext } from '@app/common'
+import { env } from '@app/config'
 import { PrismaService } from '@app/db'
+import { HttpService } from '@nestjs/axios'
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common'
+
 import { SlipVerifyConfig, SlipVerifyResponse } from './internal.dto'
-import { env } from '@app/config'
-import { Context, getUserFromContext } from '@app/common'
-import { HttpService } from '@nestjs/axios'
+
+/** Receiving account that top-up slips must be paid to. */
+const SYSTEM_BANK_CONFIG: SlipVerifyConfig = {
+  bankCode: '006',
+  accountNumber: '7520491552',
+  promptPay: '1160101866141',
+}
+
+const TOKEN_PACKAGES = [
+  { price: 10, tokens: 100 },
+  { price: 100, tokens: 1010 },
+  { price: 300, tokens: 3100 },
+  { price: 500, tokens: 5000 },
+  { price: 1000, tokens: 10000 },
+] as const
+
+const SLIP_VERIFY_TIMEOUT_MS = 15_000
+
+const isUniqueViolation = (e: unknown) =>
+  typeof e === 'object' &&
+  e !== null &&
+  (e as { code?: string }).code === 'P2002'
 
 @Injectable()
 export class PaymentInternalService {
+  private readonly logger = new Logger(PaymentInternalService.name)
+
   constructor(
     private readonly db: PrismaService,
     private readonly httpService: HttpService,
@@ -31,9 +58,7 @@ export class PaymentInternalService {
 
       return { mimeType, slipBuffer }
     } catch {
-      throw new BadRequestException(
-        'รูปแบบไฟล์สลิปไม่ถูกต้อง (รองรับเฉพาะ JPEG, PNG)',
-      )
+      throw new BadRequestException('รูปแบบไฟล์สลิปไม่ถูกต้อง (รองรับเฉพาะ JPEG, PNG)')
     }
   }
 
@@ -68,8 +93,6 @@ export class PaymentInternalService {
     }
 
     return amount
-
-    return amount
   }
 
   private async inquiry(slipBuffer: Buffer, mimeType: string) {
@@ -86,6 +109,7 @@ export class PaymentInternalService {
             username: env.SLIP_VERIFY_CLIENT_ID,
             password: env.SLIP_VERIFY_CLIENT_SECRET,
           },
+          timeout: SLIP_VERIFY_TIMEOUT_MS,
         },
       )
 
@@ -94,7 +118,8 @@ export class PaymentInternalService {
         valid: data.valid,
         data: data.data,
       }
-    } catch {
+    } catch (error) {
+      this.logger.warn(`Slip inquiry failed: ${(error as Error).message}`)
       throw new InternalServerErrorException(
         'ไม่สามารถตรวจสอบสลิปได้ โปรดลองอีกครั้ง',
       )
@@ -117,7 +142,7 @@ export class PaymentInternalService {
       }
 
       if (attempt < maxRetries) {
-        console.log(
+        this.logger.log(
           `[Slip Verify] ไม่พบข้อมูลในรอบที่ ${attempt} กำลังรอ ${delayMs / 1000} วินาทีเพื่อลองใหม่...`,
         )
         await new Promise(resolve => setTimeout(resolve, delayMs))
@@ -135,8 +160,8 @@ export class PaymentInternalService {
     return { amount, metadata }
   }
 
-  private checkSame(input: string, origin: string, sendingBank?: string) {
-    const isNumeric = (n: any) => !isNaN(parseFloat(n)) && isFinite(n)
+  private checkSame(input: string, origin: string) {
+    const isNumeric = (n: string) => /^[0-9]$/.test(n)
 
     origin = origin?.trim().replaceAll('-', '').replaceAll(' ', '')
     input = input?.trim().replaceAll('-', '').replaceAll(' ', '')
@@ -162,18 +187,14 @@ export class PaymentInternalService {
 
   async uploadSlip(slipBase64: string, ctx: Context, userId: string) {
     const user = getUserFromContext(ctx)
-
-    if (!user) {
-      throw new Error('User not found')
+    if (userId !== user.id && user.role !== 'ADMIN') {
+      throw new ForbiddenException('You can only top up your own account')
     }
 
-    const systemConfig = {
-      bankCode: '006',
-      accountNumber: '7520491552',
-      promptPay: '1160101866141',
-    }
-
-    const { amount, metadata } = await this.verifyBank(slipBase64, systemConfig)
+    const { amount, metadata } = await this.verifyBank(
+      slipBase64,
+      SYSTEM_BANK_CONFIG,
+    )
     const transRef = metadata.data.transRef
 
     const existingTransaction = await this.db.transaction.findUnique({
@@ -183,14 +204,6 @@ export class PaymentInternalService {
     if (existingTransaction) {
       throw new BadRequestException('สลิปนี้ถูกใช้งานเติมเงินไปแล้ว')
     }
-
-    const TOKEN_PACKAGES = [
-      { price: 10, tokens: 100 },
-      { price: 100, tokens: 1010 },
-      { price: 300, tokens: 3100 },
-      { price: 500, tokens: 5000 },
-      { price: 1000, tokens: 10000 },
-    ]
 
     const selectedPackage = TOKEN_PACKAGES.find(pkg => pkg.price === amount)
 
@@ -202,26 +215,30 @@ export class PaymentInternalService {
 
     const tokensToAdd = selectedPackage.tokens
 
-    await this.db.$transaction(async tx => {
-      await tx.transaction.create({
-        data: {
-          userId: userId,
-          amount: amount,
-          tokensPoints: tokensToAdd,
-          referenceId: transRef,
-          status: 'SUCCESS',
-        },
-      })
-
-      await tx.user.update({
-        where: { id: userId },
-        data: {
-          points: {
-            increment: tokensToAdd,
+    try {
+      await this.db.$transaction(async tx => {
+        await tx.transaction.create({
+          data: {
+            userId: userId,
+            amount: amount,
+            tokensPoints: tokensToAdd,
+            referenceId: transRef,
+            status: 'SUCCESS',
           },
-        },
+        })
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { points: { increment: tokensToAdd } },
+        })
       })
-    })
+    } catch (error) {
+      // Same slip submitted twice concurrently: unique reference_id wins once.
+      if (isUniqueViolation(error)) {
+        throw new BadRequestException('สลิปนี้ถูกใช้งานเติมเงินไปแล้ว')
+      }
+      throw error
+    }
 
     return {
       message: 'เติม Points สำเร็จ',

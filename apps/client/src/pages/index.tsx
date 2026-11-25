@@ -1,7 +1,7 @@
 'use client'
 
 import Navbar from '@/components/Navbar'
-import { Lightbulb, LayoutDashboard } from 'lucide-react'
+import { LayoutDashboard, Lightbulb } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -137,8 +137,8 @@ export default function Home() {
 
           <div className="flex max-w-2xl flex-col items-center justify-center text-gray-500">
             <p className="text-lg sm:text-xl">
-              ค้นพบประสบการณ์การเรียนรูปแบบใหม่ ที่เทคโนโลยีช่วยให้บทเรียนสนุก
-              เข้าใจง่าย และมีปฏิสัมพันธ์มากขึ้น ทั้งในและนอกห้องเรียน
+              ค้นพบประสบการณ์การเรียนรูปแบบใหม่ ที่เทคโนโลยีช่วยให้บทเรียนสนุก เข้าใจง่าย
+              และมีปฏิสัมพันธ์มากขึ้น ทั้งในและนอกห้องเรียน
             </p>
           </div>
 

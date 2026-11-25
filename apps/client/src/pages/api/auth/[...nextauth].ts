@@ -4,6 +4,7 @@ import Credentials from 'next-auth/providers/credentials'
 import DiscordProvider from 'next-auth/providers/discord'
 
 import { User as BaseUser, getMe, login, loginDiscord } from '@/services/user'
+import { ENDPOINT } from '@/utils/constants'
 
 declare module 'next-auth' {
   interface User {
@@ -81,15 +82,14 @@ const options: NextAuthOptions = {
           (token as { accessToken: string }).accessToken,
           {},
         )
+
         return { ...token, ...user, ..._user }
       }
 
       if (account?.provider === 'discord') {
         if (token?.accessToken) {
           try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL
-
-            const res = await fetch(`${apiUrl}/discord-id`, {
+            const res = await fetch(`${ENDPOINT}/user/internal/discord-id`, {
               method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
@@ -106,6 +106,7 @@ const options: NextAuthOptions = {
             }
 
             const _updatedUser = await getMe(token.accessToken as string, {})
+
             return { ...token, ..._updatedUser }
           } catch (error) {
             console.error('Failed to link Discord via backend:', error)
@@ -142,6 +143,7 @@ const options: NextAuthOptions = {
     session: async ({ session, token }) => {
       const _token = token as BaseUser & { accessToken: string }
       session.user = _token
+
       return session
     },
   },

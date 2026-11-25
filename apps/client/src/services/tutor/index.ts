@@ -1,4 +1,4 @@
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 import { getSession } from 'next-auth/react'
 import { CreateTutorArgs, Tutor, TutorContent, TutorContentUser } from './types'
 

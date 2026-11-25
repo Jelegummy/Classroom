@@ -6,9 +6,10 @@ export class CreateTutorVoiceLogArgs extends createZodDto(
     topic: z.string().min(1),
     summary: z.string().min(1),
     dataContent: z.record(z.any()),
-    audioUrl: z.string().min(1),
+    // The bot sends null when the R2 upload fails; keep the log anyway.
+    audioUrl: z.string().min(1).nullish(),
     voiceChannelName: z.string().min(1),
   }),
-) { }
+) {}
 
 patchNestJsSwagger()

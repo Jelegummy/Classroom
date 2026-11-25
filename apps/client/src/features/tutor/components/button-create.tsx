@@ -44,10 +44,12 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
   const onSubmit = () => {
     if (!form.discordChannelId) {
       toast.error('กรุณากรอก Discord Channel ID')
+
       return
     }
     if (!form.inviteLink) {
       toast.error('กรุณากรอกลิ้งก์เชิญผู้ร่วมติวเข้าร่วม Discord Channel')
+
       return
     }
     createTutorMutation.mutate(form)
@@ -77,7 +79,7 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
         <dialog className="modal modal-open">
           <div className="modal-box">
             <h3 className="mb-4 text-lg font-bold">
-              ขอรับลิ้งก์ Bot Discord เพื่อเชิญ​ Bot เข้าสู่ Discord Channel
+              ขอรับลิ้งก์ Bot Discord เพื่อเชิญ Bot เข้าสู่ Discord Channel
             </h3>
             <div className="mb-3">
               <label className="label">
@@ -97,8 +99,7 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
             <div className="mb-3">
               <label className="label">
                 <span className="label-text">
-                  เปิดห้องติว (voice chat id){' '}
-                  <span className="text-error">*</span>
+                  เปิดห้องติว (voice chat id) <span className="text-error">*</span>
                 </span>
               </label>
               <input
@@ -161,12 +162,10 @@ export default function CreateButtonTutor(props: CreateButtonTutorProps) {
       {successOpen && (
         <dialog className="modal modal-open">
           <div className="modal-box">
-            <h3 className="mb-4 text-lg font-bold text-success">
-              สร้างสำเร็จ!
-            </h3>
+            <h3 className="mb-4 text-lg font-bold text-success">สร้างสำเร็จ!</h3>
             <p className="mb-4 text-sm text-gray-600">
-              กรุณาคัดลอกลิ้งก์ด้านล่างเพื่อนำไปเชิญ Bot เข้าสู่ Discord Channel
-              ของคุณ ที่ Application Discord
+              กรุณาคัดลอกลิ้งก์ด้านล่างเพื่อนำไปเชิญ Bot เข้าสู่ Discord Channel ของคุณ ที่
+              Application Discord
             </p>
 
             <div className="mb-2 flex gap-2">

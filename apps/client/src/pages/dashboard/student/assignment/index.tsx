@@ -54,6 +54,7 @@ export default function AssignmentTaskStudent({
     if (mode === 'submitted') return isSubmitted
     if (mode === 'overdue') return !isSubmitted && isOverdue
     if (mode === 'pending') return !isSubmitted && !isOverdue
+
     return true
   })
 

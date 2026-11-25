@@ -48,10 +48,12 @@ export default function CreateButtonAnnounce({
   const onSubmit = () => {
     if (!form.title.trim()) {
       toast.error('กรุณากรอกหัวข้อประกาศ')
+
       return
     }
     if (!form.message.trim()) {
       toast.error('กรุณากรอกเนื้อหาประกาศ')
+
       return
     }
 

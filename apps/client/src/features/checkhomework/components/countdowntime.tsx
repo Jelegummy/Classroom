@@ -12,7 +12,7 @@ export default function CountdownTimer({ active, duration }: Props) {
 
   return (
     <div className="flex flex-col items-center">
-      {timeLeft == 0 ? (
+      {timeLeft === 0 ? (
         <div className="grid items-center rounded-2xl bg-slate-900 p-3 text-xl text-white">
           กำลังประมวลผล...
         </div>

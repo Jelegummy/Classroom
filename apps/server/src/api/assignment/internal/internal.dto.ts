@@ -49,6 +49,8 @@ export class SubmitHomeworkArgs extends createZodDto(
         role: z.enum(['bot', 'student']),
         content: z.string(),
         is_correct: z.boolean().optional(),
+        expected: z.string().optional(),
+        reason: z.string().optional(),
       }),
     ),
   }),

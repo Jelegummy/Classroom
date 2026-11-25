@@ -11,6 +11,7 @@ export function useTypewriter(text: string, speed = 60) {
       i++
       if (i >= text.length) clearInterval(interval)
     }, speed)
+
     return () => clearInterval(interval)
   }, [text])
 

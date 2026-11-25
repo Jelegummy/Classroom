@@ -7,7 +7,6 @@ import { CiClock2 } from 'react-icons/ci'
 import { HiOutlineDocumentText } from 'react-icons/hi2'
 import dayjs from 'dayjs'
 import 'dayjs/locale/th'
-import type { GetAssignmentsByClassroomResponse } from '@/services/assignment/types'
 
 interface AssignmentTaskProps {
   classroomId: string
@@ -47,7 +46,7 @@ export default function AssignmentTaskTeacher({
       {assignmentList.length > 0 ? (
         assignmentList.map(assignment => {
           const classroomData = assignment.classrooms?.find(
-            (c: any) => c.classroomId === classroomId,
+            c => c.classroomId === classroomId,
           )
           const dueDate = classroomData?.dueDate
           const submissions = classroomData?.submissions ?? []

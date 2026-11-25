@@ -11,6 +11,7 @@ export default function Endresult({ result, onEnd }: Props) {
 
   useEffect(() => {
     const t = setTimeout(() => setCanEnd(true), 1000)
+
     return () => clearTimeout(t)
   }, [])
 

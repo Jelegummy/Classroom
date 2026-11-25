@@ -1,20 +1,10 @@
-from langchain_openai import ChatOpenAI
-import os
 import json
-import sys
-from dotenv import load_dotenv
+import os
 
-load_dotenv()
+from service.llm import get_llm
 
-TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
-
-llm = ChatOpenAI(
-    base_url="https://api.opentyphoon.ai/v1",
-    api_key=TYPHOON_API_KEY,
-    model='typhoon-v2.5-30b-a3b-instruct',
-    temperature=0.3,
-    max_tokens=8192,
-)
+# Keep prompts within the model context; very long PDFs are truncated.
+MAX_CONTENT_CHARS = int(os.getenv("MAX_CONTENT_CHARS", "60000"))
 
 
 def load_extractedpdf(file_path):
@@ -36,9 +26,9 @@ def generate_questions(pdf_content):
     - ไม่เอาตอบใช่หรือไม่
     ตอบเป็นคำถาม 10 ข้อเท่านั้น
     
-    ข้อมูลการบ้าน: {pdf_content}
+    ข้อมูลการบ้าน: {pdf_content[:MAX_CONTENT_CHARS]}
     """
-    result = llm.invoke(prompt)
+    result = get_llm(0.3).invoke(prompt)
     return [line.strip() for line in result.content.split("\n") if line.strip()]
 
 

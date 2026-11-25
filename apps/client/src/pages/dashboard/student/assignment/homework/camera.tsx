@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useRouter } from 'next/router'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import { FaArrowLeft } from 'react-icons/fa6'
-import OpenCam from '../components/opencam'
+import OpenCam from '@/features/assignment/student/components/opencam'
 
 export default function Opencampage() {
   const router = useRouter()

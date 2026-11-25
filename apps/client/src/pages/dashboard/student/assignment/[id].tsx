@@ -1,18 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
-import { FaArrowLeft, FaRegFilePdf, FaRegPenToSquare } from 'react-icons/fa6'
+import React, { useEffect, useState } from 'react'
+import { FaArrowLeft, FaRegFilePdf } from 'react-icons/fa6'
 import { HiOutlineDownload } from 'react-icons/hi'
 import { getAssignment } from '@/services/assignment'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
-import AssignmentHead from './components/headerinfo'
+import AssignmentHead from '@/features/assignment/student/components/headerinfo'
 import { useSession } from 'next-auth/react'
-import SendhomeWorkhistory from './components/sendhistory'
+import SendhomeWorkhistory from '@/features/assignment/student/components/sendhistory'
 
 function AssignmentDescriptionStudent() {
   const router = useRouter()
-  if (!router.isReady) return null
   // console.log('router.query:', router.query)
   const assignmentId = router.query.id as string | undefined
   const classroomId = router.query.cid as string | undefined
@@ -50,6 +49,10 @@ function AssignmentDescriptionStudent() {
         .catch(() => setFileSize('ไม่ทราบขนาด'))
     }
   }, [assignment?.filePdf])
+
+  if (!router.isReady) {
+    return null
+  }
 
   if (isLoading)
     return <div className="h-32 animate-pulse rounded-lg bg-gray-100" />

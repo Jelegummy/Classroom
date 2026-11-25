@@ -1,3 +1,4 @@
+import { Context } from '@app/common'
 import {
   Body,
   Controller,
@@ -10,10 +11,15 @@ import {
   Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { GameInternalService } from './internal.service'
-import { AttackGameArgs, CreateGameArgs, UpdateGameArgs } from './internal.dto'
-import { Context } from '@app/common'
+
 import { GameGateway } from './game.gateway'
+import {
+  AttackGameArgs,
+  CreateGameArgs,
+  GameIdArgs,
+  UpdateGameArgs,
+} from './internal.dto'
+import { GameInternalService } from './internal.service'
 
 @ApiTags('game-internal')
 @Controller('game/internal')
@@ -83,7 +89,7 @@ export class GameInternalController {
   }
 
   @Patch('/attack-timeout')
-  async timeoutBossGame(@Req() ctx: Context, @Body() args: { gameId: string }) {
+  async timeoutBossGame(@Req() ctx: Context, @Body() args: GameIdArgs) {
     await this.service.timeoutBossGame(ctx, args)
 
     const updatedGame = await this.service.getGameSession(

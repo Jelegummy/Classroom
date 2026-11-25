@@ -17,8 +17,8 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
     queryFn: () => getAllGameSessions(),
     select: games => {
       return (
-        games?.filter((g: any) =>
-          g.classrooms?.some((room: any) => room.classroomId === classroomId),
+        games?.filter(g =>
+          g.classrooms?.some(room => room.classroomId === classroomId),
         ) || []
       )
     },
@@ -31,7 +31,7 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
     onSuccess: (data, gameId) => {
       router.push(`/session/game/${gameId}`)
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error('ไม่สามารถเข้าห้องได้: ' + error.message)
     },
   })
@@ -46,8 +46,7 @@ export default function JoinGame({ classroomId }: JoinGameProps) {
           ยังไม่มีการเล่นเกมในขณะนี้
         </h3>
         <p className="mt-2 max-w-sm text-sm text-gray-500">
-          ยังไม่มีการกำหนดการเล่นเกมสำหรับห้องเรียนนี้
-          โปรดตรวจสอบอีกครั้งในภายหลัง
+          ยังไม่มีการกำหนดการเล่นเกมสำหรับห้องเรียนนี้ โปรดตรวจสอบอีกครั้งในภายหลัง
         </p>
       </div>
     )

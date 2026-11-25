@@ -1,6 +1,5 @@
 import { PrismaService } from '@app/db'
-import { BadRequestException, Injectable } from '@nestjs/common'
-import { SchoolPublicDto } from './public.dto'
+import { Injectable } from '@nestjs/common'
 
 @Injectable()
 export class SchoolPublicService {

@@ -25,6 +25,7 @@ export default function JoinButton() {
   const onSubmit = () => {
     if (!form.code.trim()) {
       toast.error('กรุณากรอกรหัสห้องเรียน')
+
       return
     }
 
@@ -70,9 +71,7 @@ export default function JoinButton() {
                 onClick={onSubmit}
                 disabled={createClassroom.isPending}
               >
-                {createClassroom.isPending
-                  ? 'กำลังเข้าร่วม...'
-                  : 'เข้าร่วมห้องเรียน'}
+                {createClassroom.isPending ? 'กำลังเข้าร่วม...' : 'เข้าร่วมห้องเรียน'}
               </button>
             </div>
           </div>

@@ -35,6 +35,7 @@ export default function CreateItems() {
   const onSubmit = () => {
     if (!form.name.trim()) {
       toast.error('กรุณากรอกชื่อไอเทม')
+
       return
     }
 

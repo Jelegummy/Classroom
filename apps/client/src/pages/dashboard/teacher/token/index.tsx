@@ -1,20 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import { uploadSlip } from '@/services/token'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  UploadCloud,
-  Wallet,
-  ImageIcon,
-  X,
-  CheckCircle2,
-  Coins,
-  Zap,
-} from 'lucide-react'
+import { CheckCircle2, Coins, UploadCloud, Wallet, X, Zap } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import NavbarPayment from '@/components/NavbarContent/navbar-payment'
 
@@ -59,6 +51,7 @@ export default function TokenPage() {
     if (selectedPkg) {
       setIsGeneratingQR(true)
       const timer = setTimeout(() => setIsGeneratingQR(false), 800)
+
       return () => clearTimeout(timer)
     }
   }, [selectedPkg])
@@ -78,11 +71,13 @@ export default function TokenPage() {
   const handleFileChange = (selectedFile: File | undefined | null) => {
     if (!selectedPkg) {
       toast.error('กรุณาเลือกแพ็กเกจที่ต้องการเติมก่อนครับ')
+
       return
     }
     if (selectedFile) {
       if (!selectedFile.type.startsWith('image/')) {
         toast.error('กรุณาอัปโหลดไฟล์รูปภาพเท่านั้น')
+
         return
       }
       setFile(selectedFile)
@@ -220,7 +215,7 @@ export default function TokenPage() {
                       )}
                     </div>
                     <p className="mt-6 text-sm font-medium text-gray-500">
-                      ชื่อบัญชี: จีระศักดิ์​ ดาระดาษ (ธ.กรุงไทย)
+                      ชื่อบัญชี: จีระศักดิ์ ดาระดาษ (ธ.กรุงไทย)
                     </p>
                   </div>
                 )}

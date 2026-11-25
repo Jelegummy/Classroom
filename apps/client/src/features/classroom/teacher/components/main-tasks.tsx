@@ -1,8 +1,7 @@
 import { getAnnounce } from '@/services/announce'
 import { useQueries } from '@tanstack/react-query'
-import { MoreVertical, FileText } from 'lucide-react'
+import { FileText, MoreVertical } from 'lucide-react'
 import { GrAnnounce } from 'react-icons/gr'
-import Image from 'next/image'
 
 export default function MainTasks({ announcesId }: { announcesId: string[] }) {
   const queries = useQueries({
@@ -14,18 +13,17 @@ export default function MainTasks({ announcesId }: { announcesId: string[] }) {
   })
 
   const announces = queries
-    .map(q => q.data)
-    .filter(Boolean)
-    .flat()
+    .flatMap(q => q.data ?? [])
+    .filter(a => a !== undefined)
     .sort(
-      (a: any, b: any) =>
+      (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       {announces.length ? (
-        announces.map((a: any) => (
+        announces.map(a => (
           <div key={a.id} className="rounded-xl border bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-3">

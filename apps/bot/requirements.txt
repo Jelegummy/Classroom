@@ -1,13 +1,18 @@
-discord.py
-
+# Discord (voice extra pulls in PyNaCl for voice encryption)
+discord.py[voice]>=2.7.1,<3.0
 git+https://github.com/imayhaveborkedit/discord-ext-voice-recv
-# faster-whisper
-pythainlp
-python-dotenv
-transformers
-langchain_openai
-# torch
-groq
-pydub
+# DAVE end-to-end voice decryption used by main.py's receive patch.
+# Previously missing here, so audio recorded inside Docker could not be decrypted.
+davey>=0.1.5
 
-boto3
+# AI
+groq>=1.1.0                 # Whisper large-v3 transcription
+langchain-core>=1.2.0
+langchain-openai>=1.1.0     # Typhoon (OpenAI-compatible API)
+pythainlp>=5.0
+
+# Audio / storage / config
+pydub>=0.25.1               # requires ffmpeg (installed in the Dockerfile)
+boto3>=1.34
+aiohttp>=3.9
+python-dotenv>=1.0

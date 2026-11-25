@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { MdMenuOpen } from 'react-icons/md'
 
 import SidebarItem from './Item'
-import { STUDENT_ROUTES, TEARCHER_ROUTES, ADMIN_ROUTES } from './constants'
+import { ADMIN_ROUTES, STUDENT_ROUTES, TEARCHER_ROUTES } from './constants'
 
 interface SidebarProps {
   isOpen: boolean

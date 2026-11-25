@@ -1,6 +1,6 @@
 import { getSession } from 'next-auth/react'
 import { Character, CreateCharacter } from './types'
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 export const createCharacter = async (args: CreateCharacter) => {
   const session = await getSession()
@@ -16,6 +16,7 @@ export const createCharacter = async (args: CreateCharacter) => {
   if (res.statusCode >= HttpStatus.BAD_REQUEST) {
     throw new Error(res.message)
   }
+
   return res.data
 }
 

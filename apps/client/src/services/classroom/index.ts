@@ -1,4 +1,4 @@
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 import {
   Classroom,
   CreateClassroom,
@@ -8,7 +8,6 @@ import {
   UserInClassroom,
 } from './types'
 import { getSession } from 'next-auth/react'
-import ClassroomId from '@/pages/dashboard/student/classroom/[id]'
 
 export const CreateClassRoom = async (args: CreateClassroom) => {
   const session = await getSession()

@@ -28,10 +28,16 @@ export type Tutor = {
   voiceLogs: {
     voiceChannelName: string
   }
+  classroomSessions?: {
+    id: string
+    classroomId: string
+    startTime: string
+  }[]
 }
 
 export type TutorContent = {
   id: string
+  audioUrl?: string | null
   topic: string
   voiceChannelName: string
   summary: string
