@@ -1,17 +1,18 @@
 import { Canvas } from '@react-three/fiber'
 import {
+  Center,
+  ContactShadows,
+  Environment,
+  Html,
   OrbitControls,
   useGLTF,
-  Environment,
-  ContactShadows,
-  Center,
-  Html,
   useProgress,
 } from '@react-three/drei'
 import { Suspense } from 'react'
 
 function Loader() {
   const { progress } = useProgress()
+
   return (
     <Html center>
       <div className="text-sm font-bold text-gray-700">

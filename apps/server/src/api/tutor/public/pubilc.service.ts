@@ -1,162 +1,166 @@
+import { assertBotSecret } from '@app/common'
+import { env } from '@app/config'
 import { PrismaService } from '@app/db'
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+
 import { CreateTutorVoiceLogArgs } from './pubilc.dto'
+
+/** Points per role detected by the Discord bot's AI analysis. */
+const ROLE_POINTS = {
+  main_speaker: 5,
+  active_participants: 3,
+  silent_participants: 1,
+} as const
+
+type Roles = {
+  main_speaker?: unknown
+  active_participants?: unknown
+  silent_participants?: unknown
+}
+
+const normalizeName = (name: string) => name.trim().replace(/\s+/g, ' ')
+
+/** name -> points, keeping the highest role if a name appears more than once. */
+const collectAwards = (roles: Roles) => {
+  const awards = new Map<string, number>()
+  const add = (name: unknown, points: number) => {
+    if (typeof name !== 'string' || !name.trim()) {
+      return
+    }
+    const key = normalizeName(name)
+    awards.set(key, Math.max(awards.get(key) ?? 0, points))
+  }
+
+  add(roles.main_speaker, ROLE_POINTS.main_speaker)
+  for (const key of ['active_participants', 'silent_participants'] as const) {
+    const names = roles[key]
+    if (Array.isArray(names)) {
+      names.forEach(name => add(name, ROLE_POINTS[key]))
+    }
+  }
+
+  return awards
+}
 
 @Injectable()
 export class TutorPublicService {
-  constructor(private readonly db: PrismaService) { }
+  private readonly logger = new Logger(TutorPublicService.name)
+
+  constructor(private readonly db: PrismaService) {}
 
   async createTutorBot(
     id: string,
     args: CreateTutorVoiceLogArgs,
     botSecret?: string,
   ) {
-    if (botSecret !== 'super-secret-bot-key') {
-      throw new UnauthorizedException('Invalid bot secret')
-    }
-    const tutor = await this.db.tutorVoiceLog.create({
-      data: {
-        tutorId: id,
-        topic: args.topic,
-        summary: args.summary,
-        audioUrl: args.audioUrl,
-        dataContent: args.dataContent,
-        voiceChannelName: args.voiceChannelName,
-      },
+    assertBotSecret(botSecret, env.BOT_API_SECRET)
+
+    const tutorExists = await this.db.tutor.findUnique({
+      where: { id },
+      select: { id: true },
     })
+    if (!tutorExists) {
+      throw new NotFoundException('Tutor session not found')
+    }
 
     const content =
       typeof args.dataContent === 'string'
         ? JSON.parse(args.dataContent)
         : args.dataContent
+    const roles: Roles | undefined = content?.roles
 
-    const roles = content?.roles
-
-    if (roles) {
-      const activeTutorSession = await this.db.classroomOnTutor.findFirst({
-        where: { tutorId: id },
+    return this.db.$transaction(async tx => {
+      const voiceLog = await tx.tutorVoiceLog.create({
+        data: {
+          tutorId: id,
+          topic: args.topic,
+          summary: args.summary,
+          audioUrl: args.audioUrl,
+          dataContent: args.dataContent,
+          voiceChannelName: args.voiceChannelName,
+        },
       })
 
-      if (activeTutorSession) {
-        const classroomId = activeTutorSession.classroomId
-        const activeTutorId = activeTutorSession.id
+      const session = roles
+        ? await tx.classroomOnTutor.findFirst({
+            where: { tutorId: id },
+            select: { id: true, classroomId: true },
+          })
+        : null
 
-        const prepareScoreQueries = async (
-          fullName: string,
-          pointsEarned: number,
-        ) => {
-          const nameParts = fullName.trim().split(/\s+/)
+      const unmatched: string[] = []
+      if (roles && session) {
+        const awards = collectAwards(roles)
 
-          const searchFirstName = nameParts[0] || ''
-          const searchLastName = nameParts.slice(1).join(' ') || ''
+        // Only match names against students enrolled in this classroom; the
+        // previous global first-name lookup could credit the wrong person.
+        const members = await tx.classroomOnUser.findMany({
+          where: { classroomId: session.classroomId },
+          select: {
+            userId: true,
+            user: { select: { firstName: true, lastName: true } },
+          },
+        })
+        const byName = new Map<string, string>()
+        for (const m of members) {
+          const full = normalizeName(`${m.user.firstName} ${m.user.lastName}`)
+          byName.set(full, m.userId)
+          if (!byName.has(m.user.firstName)) {
+            byName.set(m.user.firstName, m.userId)
+          }
+        }
 
-          const user = await this.db.user.findFirst({
+        for (const [name, points] of awards) {
+          const userId = byName.get(name)
+          if (!userId) {
+            unmatched.push(name)
+            continue
+          }
+
+          await tx.user.update({
+            where: { id: userId },
+            data: { points: { increment: points } },
+          })
+          await tx.classroomOnUser.update({
             where: {
-              firstName: searchFirstName,
-              ...(searchLastName ? { lastName: searchLastName } : {}),
+              userId_classroomId: { userId, classroomId: session.classroomId },
+            },
+            data: { score: { increment: points } },
+          })
+          await tx.attendance.upsert({
+            where: {
+              userId_activeTutorId: { userId, activeTutorId: session.id },
+            },
+            update: { scoreEarned: { increment: points } },
+            create: {
+              userId,
+              activeTutorId: session.id,
+              scoreEarned: points,
+              status: 'PRESENT',
             },
           })
-
-          if (!user) {
-            throw new NotFoundException(
-              `User with name "${fullName}" not found`,
-            )
-          }
-
-          return [
-            this.db.user.update({
-              where: { id: user.id },
-              data: { points: { increment: pointsEarned } },
-            }),
-
-            this.db.classroomOnUser.update({
-              where: {
-                userId_classroomId: {
-                  userId: user.id,
-                  classroomId: classroomId,
-                },
-              },
-              data: { score: { increment: pointsEarned } },
-            }),
-
-            this.db.attendance.upsert({
-              where: {
-                userId_activeTutorId: {
-                  userId: user.id,
-                  activeTutorId: activeTutorId,
-                },
-              },
-              update: {
-                scoreEarned: { increment: pointsEarned },
-              },
-              create: {
-                userId: user.id,
-                activeTutorId: activeTutorId,
-                scoreEarned: pointsEarned,
-                status: 'PRESENT',
-              },
-            }),
-          ]
-        }
-
-        const allTransactions = []
-
-        if (roles.main_speaker && typeof roles.main_speaker === 'string') {
-          const queries = await prepareScoreQueries(roles.main_speaker, 5)
-          allTransactions.push(...queries)
-        }
-
-        if (Array.isArray(roles.active_participants)) {
-          for (const name of roles.active_participants) {
-            const queries = await prepareScoreQueries(name, 3)
-            allTransactions.push(...queries)
-          }
-        }
-
-        if (Array.isArray(roles.silent_participants)) {
-          for (const name of roles.silent_participants) {
-            const queries = await prepareScoreQueries(name, 1)
-            allTransactions.push(...queries)
-          }
-        }
-
-        if (allTransactions.length > 0) {
-          try {
-            await this.db.$transaction(allTransactions)
-          } catch (e) {
-            throw new NotFoundException('เกิดข้อผิดพลาดในการแจกคะแนน: ' + e)
-          }
         }
       }
-    }
 
-    return tutor
-  } // create tutor bot and points to students based on roles
+      if (unmatched.length > 0) {
+        this.logger.warn(
+          `Tutor ${id}: no enrolled user matched ${unmatched.join(', ')}`,
+        )
+      }
+
+      return { ...voiceLog, unmatchedParticipants: unmatched }
+    })
+  }
 
   async getActiveTutorId(channelId: string) {
     const activeSession = await this.db.tutor.findFirst({
-      where: {
-        discordChannelId: channelId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        host: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            discordId: true,
-          },
-        },
+      where: { discordChannelId: channelId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        host: { select: { firstName: true, lastName: true, discordId: true } },
       },
     })
-
     if (!activeSession) {
       throw new NotFoundException('ไม่พบ Session ที่กำลังทำงานสำหรับห้องนี้')
     }

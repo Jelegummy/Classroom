@@ -1,3 +1,4 @@
+import { Context } from '@app/common'
 import {
   Body,
   Controller,
@@ -6,12 +7,13 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { TutorInternalService } from './internal.service'
+
 import { CreateTutorArgs } from './internal.dto'
-import { Context } from '@app/common'
+import { TutorInternalService } from './internal.service'
 
 @ApiTags('Tutor - Internal')
 @Controller('tutor/internal')
@@ -28,7 +30,8 @@ export class TutorInternalController {
   @Get('/all')
   async getAllTutors(
     @Req() ctx: Context,
-    @Param('classroomId') classroomId?: string,
+    // Was @Param on a route without params, so the filter was always undefined.
+    @Query('classroomId') classroomId?: string,
   ) {
     const res = await this.service.getAllTutors(ctx, classroomId)
 

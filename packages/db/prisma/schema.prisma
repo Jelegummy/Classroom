@@ -1,415 +1,437 @@
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
 }
 
 generator client {
-    provider = "prisma-client"
-    output   = "../src/generated"
+  provider = "prisma-client"
+  output   = "../src/generated"
 }
 
 model School {
-    id          String  @id @default(uuid())
-    name        String  @unique
-    address     String?
-    phoneNumber String? @map("phone_number")
+  id          String  @id @default(uuid())
+  name        String  @unique
+  address     String?
+  phoneNumber String? @map("phone_number")
 
-    users      User[]
-    classrooms Classroom[]
+  users      User[]
+  classrooms Classroom[]
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("schools")
+  @@map("schools")
 }
 
 model User {
-    id       String  @id @default(uuid())
-    email    String  @unique
-    password String?
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String?
 
-    role Role @default(STUDENT)
+  role Role @default(STUDENT)
 
-    firstName   String  @map("first_name")
-    lastName    String  @map("last_name")
-    phoneNumber String? @map("phone_number")
-    discordId   String? @map("discord_id")
-    studentId   String? @map("student_id")
-    teacherId   String? @map("teacher_id")
+  firstName   String  @map("first_name")
+  lastName    String  @map("last_name")
+  phoneNumber String? @map("phone_number")
+  discordId   String? @map("discord_id")
+  studentId   String? @map("student_id")
+  teacherId   String? @map("teacher_id")
 
-    points Int     @default(0)
-    major  String?
+  points Int     @default(0)
+  major  String?
 
-    schoolId String @map("school_id")
-    school   School @relation(fields: [schoolId], references: [id])
+  schoolId String @map("school_id")
+  school   School @relation(fields: [schoolId], references: [id])
 
-    inventory         UserItem[]
-    enrollments       ClassroomOnUser[]
-    createAssignments Assignment[]      @relation("AssignmentCreator")
+  inventory         UserItem[]
+  enrollments       ClassroomOnUser[]
+  createAssignments Assignment[]      @relation("AssignmentCreator")
 
-    createdGames Game[]               @relation("GameCreator")
-    hostedTutors Tutor[]              @relation("TutorHost")
-    submissions  HomeworkSubmission[]
+  createdGames Game[]               @relation("GameCreator")
+  hostedTutors Tutor[]              @relation("TutorHost")
+  submissions  HomeworkSubmission[]
 
-    attendances       Attendance[]
-    createdCharacters Character[]
+  attendances       Attendance[]
+  createdCharacters Character[]
 
-    createdAt          DateTime            @default(now()) @map("created_at")
-    updatedAt          DateTime            @updatedAt @map("updated_at")
-    classroomAnnounces ClassroomAnnounce[]
-    transactions       Transaction[]
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  classroomAnnounces ClassroomAnnounce[]
+  transactions       Transaction[]
 
-    @@map("users")
+  @@index([schoolId])
+  @@index([discordId])
+  @@map("users")
 }
 
 model Transaction {
-    id String @id @default(uuid())
+  id String @id @default(uuid())
 
-    amount       Int
-    tokensPoints Int           @map("tokens_points")
-    referenceId  String?       @unique @map("reference_id")
-    status       PaymentStatus @default(PENDING)
+  amount       Int
+  tokensPoints Int           @map("tokens_points")
+  referenceId  String?       @unique @map("reference_id")
+  status       PaymentStatus @default(PENDING)
 
-    userId String @map("user_id")
-    user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
 }
 
 model Classroom {
-    id         String  @id @default(uuid())
-    name       String
-    code       String  @unique
-    hoverImage String? @map("hover_image")
-    filePdf    String? @map("file_pdf")
-    announce   String?
-    title      String?
-    schoolId   String  @map("school_id")
-    school     School  @relation(fields: [schoolId], references: [id])
+  id         String  @id @default(uuid())
+  name       String
+  code       String  @unique
+  hoverImage String? @map("hover_image")
+  filePdf    String? @map("file_pdf")
+  announce   String?
+  title      String?
+  schoolId   String  @map("school_id")
+  school     School  @relation(fields: [schoolId], references: [id])
 
-    users ClassroomOnUser[]
+  users ClassroomOnUser[]
 
-    announces         ClassroomAnnounce[]
-    activeGames       ClassroomOnGame[]
-    activeTutors      ClassroomOnTutor[]
-    activeAssignments ClassroomOnAssignment[]
+  announces         ClassroomAnnounce[]
+  activeGames       ClassroomOnGame[]
+  activeTutors      ClassroomOnTutor[]
+  activeAssignments ClassroomOnAssignment[]
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("classrooms")
+  @@index([schoolId])
+  @@map("classrooms")
 }
 
 model ClassroomAnnounce {
-    id      String  @id @default(uuid())
-    title   String?
-    message String
-    filePdf String? @map("file_pdf")
+  id      String  @id @default(uuid())
+  title   String?
+  message String
+  filePdf String? @map("file_pdf")
 
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  classroomId String    @map("classroom_id")
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
-    creatorId String @map("creator_id")
-    creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String @map("creator_id")
+  creator   User   @relation(fields: [creatorId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-    @@map("classroom_announces")
+  @@index([classroomId])
+  @@map("classroom_announces")
 }
 
 model ClassroomOnUser {
-    userId      String
-    classroomId String
-    user        User      @relation(fields: [userId], references: [id])
-    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-    score       Int       @default(0)
-    isRewarded  Boolean   @default(false) @map("is_rewarded")
+  userId      String
+  classroomId String
+  user        User      @relation(fields: [userId], references: [id])
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  score       Int       @default(0)
+  isRewarded  Boolean   @default(false) @map("is_rewarded")
 
-    @@id([userId, classroomId])
-    @@map("classroom_users")
+  @@id([userId, classroomId])
+  @@index([classroomId])
+  @@map("classroom_users")
 }
 
 model Game {
-    id          String     @id @default(uuid())
-    name        String
-    timeLimit   Int        @default(0) @map("time_limit")
-    damageBoost Int        @default(0) @map("damage_boost")
-    maxHpBoss   Int        @default(0) @map("max_hp_boss")
-    imageUrl    String?    @map("image_url")
-    description String?
-    isActive    Boolean    @default(true)
-    status      GameStatus @default(WAITING)
+  id          String     @id @default(uuid())
+  name        String
+  timeLimit   Int        @default(0) @map("time_limit")
+  damageBoost Int        @default(0) @map("damage_boost")
+  maxHpBoss   Int        @default(0) @map("max_hp_boss")
+  imageUrl    String?    @map("image_url")
+  description String?
+  isActive    Boolean    @default(true)
+  status      GameStatus @default(WAITING)
 
-    creatorId String? @map("creator_id")
-    creator   User?   @relation("GameCreator", fields: [creatorId], references: [id])
+  creatorId String? @map("creator_id")
+  creator   User?   @relation("GameCreator", fields: [creatorId], references: [id])
 
-    items       GameOnItem[]
-    classrooms  ClassroomOnGame[]
-    characterId String?           @map("character_id")
-    character   Character?        @relation(fields: [characterId], references: [id])
+  items       GameOnItem[]
+  classrooms  ClassroomOnGame[]
+  characterId String?           @map("character_id")
+  character   Character?        @relation(fields: [characterId], references: [id])
 
-    startedAt DateTime?
-    createdAt DateTime  @default(now()) @map("created_at")
-    updatedAt DateTime  @updatedAt @map("updated_at")
+  startedAt DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
-    @@map("game_sessions")
+  @@index([creatorId])
+  @@map("game_sessions")
 }
 
 model Character {
-    id          String  @id @default(uuid())
-    bossName    String  @map("boss_name")
-    pointBoss   Int     @default(0) @map("point_boss")
-    maxHp       Int     @map("max_hp")
-    timeLimit   Int     @map("time_limit")
-    description String?
-    modelUrl    String? @map("model_url")
-    imageUrl    String? @map("image_url")
+  id          String  @id @default(uuid())
+  bossName    String  @map("boss_name")
+  pointBoss   Int     @default(0) @map("point_boss")
+  maxHp       Int     @map("max_hp")
+  timeLimit   Int     @map("time_limit")
+  description String?
+  modelUrl    String? @map("model_url")
+  imageUrl    String? @map("image_url")
 
-    game Game[]
+  game Game[]
 
-    creatorId String @map("creator_id")
-    creator   User   @relation(fields: [creatorId], references: [id])
+  creatorId String @map("creator_id")
+  creator   User   @relation(fields: [creatorId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("characters")
+  @@map("characters")
 }
 
 model ClassroomOnGame {
-    id        String  @id @default(uuid())
-    isActive  Boolean @default(true)
-    currentHp Int     @map("current_hp")
+  id        String  @id @default(uuid())
+  isActive  Boolean @default(true)
+  currentHp Int     @map("current_hp")
 
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  classroomId String    @map("classroom_id")
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
-    gameId String @map("game_id")
-    game   Game   @relation(fields: [gameId], references: [id])
+  gameId String @map("game_id")
+  game   Game   @relation(fields: [gameId], references: [id])
 
-    attendances Attendance[]
+  attendances Attendance[]
 
-    @@unique([classroomId, gameId])
-    @@map("classroom_games")
+  @@unique([classroomId, gameId])
+  @@index([gameId])
+  @@map("classroom_games")
 }
 
 model Tutor {
-    id               String   @id @default(uuid())
-    topic            String? //not used
-    summary          String? //not used
-    dataContent      Json     @map("data_content")
-    discordChannelId String   @map("discord_channel_id")
-    inviteLink       String?  @map("invite_link")
-    name             String?  @map("name")
-    botLink          String?  @map("bot_link") //not used
-    startTime        DateTime @default(now()) @map("start_time")
+  id               String   @id @default(uuid())
+  topic            String? //not used
+  summary          String? //not used
+  dataContent      Json     @map("data_content")
+  discordChannelId String   @map("discord_channel_id")
+  inviteLink       String?  @map("invite_link")
+  name             String?  @map("name")
+  botLink          String?  @map("bot_link") //not used
+  startTime        DateTime @default(now()) @map("start_time")
 
-    hostId String @map("host_id")
-    host   User   @relation("TutorHost", fields: [hostId], references: [id])
+  hostId String @map("host_id")
+  host   User   @relation("TutorHost", fields: [hostId], references: [id])
 
-    classroomSessions ClassroomOnTutor[]
-    voiceLogs         TutorVoiceLog[]
+  classroomSessions ClassroomOnTutor[]
+  voiceLogs         TutorVoiceLog[]
 
-    createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-    @@map("tutor_sessions")
+  @@index([discordChannelId, createdAt])
+  @@index([hostId])
+  @@map("tutor_sessions")
 }
 
 model TutorVoiceLog {
-    id      String @id @default(uuid())
-    tutorId String @map("tutor_id")
+  id      String @id @default(uuid())
+  tutorId String @map("tutor_id")
 
-    voiceChannelName String? @map("voice_channel_name")
-    audioUrl         String? @map("audio_url")
-    topic            String?
-    summary          String?
-    dataContent      Json    @map("data_content")
+  voiceChannelName String? @map("voice_channel_name")
+  audioUrl         String? @map("audio_url")
+  topic            String?
+  summary          String?
+  dataContent      Json    @map("data_content")
 
-    createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-    tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
 
-    @@map("tutor_voice_logs")
+  @@index([tutorId, createdAt])
+  @@map("tutor_voice_logs")
 }
 
 model ClassroomOnTutor {
-    id          String    @id @default(uuid())
-    classroomId String    @map("classroom_id")
-    classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-    tutorId     String    @map("tutor_id")
-    tutor       Tutor     @relation(fields: [tutorId], references: [id])
+  id          String    @id @default(uuid())
+  classroomId String    @map("classroom_id")
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  tutorId     String    @map("tutor_id")
+  tutor       Tutor     @relation(fields: [tutorId], references: [id])
 
-    startTime DateTime @default(now()) @map("start_time")
+  startTime DateTime @default(now()) @map("start_time")
 
-    attendances Attendance[]
+  attendances Attendance[]
 
-    @@map("classroom_tutors")
+  @@index([tutorId])
+  @@index([classroomId])
+  @@map("classroom_tutors")
 }
 
 model Assignment {
-    id    String @id @default(uuid())
-    title String @default("Untitled Assignment")
+  id    String @id @default(uuid())
+  title String @default("Untitled Assignment")
 
-    chatHistory Json?   @map("chat_history")
-    filePdf     String? @map("file_pdf")
-    textContent String? @map("text_content")
-    description String?
-    answerFile  Json?   @map("answer_file")
+  chatHistory Json?   @map("chat_history")
+  filePdf     String? @map("file_pdf")
+  textContent String? @map("text_content")
+  description String?
+  answerFile  Json?   @map("answer_file")
 
-    generatedContent String? @map("generated_content")
-    generatedFileTxt String? @map("generated_file_txt")
+  generatedContent String? @map("generated_content")
+  generatedFileTxt String? @map("generated_file_txt")
 
-    gradingCriteria String? @map("grading_criteria")
+  gradingCriteria String? @map("grading_criteria")
 
-    status AssignmentStatus @default(DRAFT)
+  status AssignmentStatus @default(DRAFT)
 
-    classrooms ClassroomOnAssignment[]
-    creatorId  String?                 @map("creator_id")
-    creator    User?                   @relation("AssignmentCreator", fields: [creatorId], references: [id])
+  classrooms ClassroomOnAssignment[]
+  creatorId  String?                 @map("creator_id")
+  creator    User?                   @relation("AssignmentCreator", fields: [creatorId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("assignments")
+  @@index([creatorId])
+  @@map("assignments")
 }
 
 model ClassroomOnAssignment {
-    id      String    @id @default(uuid())
-    dueDate DateTime? @map("due_date")
+  id      String    @id @default(uuid())
+  dueDate DateTime? @map("due_date")
 
-    classroomId  String     @map("classroom_id")
-    classroom    Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
-    assignmentId String     @map("assignment_id")
-    assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  classroomId  String     @map("classroom_id")
+  classroom    Classroom  @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  assignmentId String     @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
 
-    submissions HomeworkSubmission[]
+  submissions HomeworkSubmission[]
 
-    @@map("classroom_assignments")
+  @@index([assignmentId, classroomId])
+  @@index([classroomId])
+  @@map("classroom_assignments")
 }
 
 model HomeworkSubmission {
-    id String @id @default(uuid())
+  id String @id @default(uuid())
 
-    isApproved  Boolean  @default(false) @map("is_approved")
-    submittedAt DateTime @default(now()) @map("submitted_at")
+  isApproved  Boolean  @default(false) @map("is_approved")
+  submittedAt DateTime @default(now()) @map("submitted_at")
 
-    transcription String?
+  transcription String?
 
-    aiFeedback    String? @map("ai_feedback")
-    answerHistory Json?   @map("answer_history")
-    score         Int?    @default(0)
+  aiFeedback    String? @map("ai_feedback")
+  answerHistory Json?   @map("answer_history")
+  score         Int?    @default(0)
 
-    classroomAssignmentId String                @map("assignment_id")
-    classroomAssignment   ClassroomOnAssignment @relation(fields: [classroomAssignmentId], references: [id])
+  classroomAssignmentId String                @map("assignment_id")
+  classroomAssignment   ClassroomOnAssignment @relation(fields: [classroomAssignmentId], references: [id])
 
-    userId String @map("user_id")
-    user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
 
-    attendances Attendance[]
+  attendances Attendance[]
 
-    updatedAt DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@map("homework_submissions")
+  @@index([classroomAssignmentId])
+  @@index([userId])
+  @@map("homework_submissions")
 }
 
 model Item {
-    id          String   @id @default(uuid())
-    name        String
-    description String?
-    imageUrl    String?  @map("image_url")
-    price       Int
-    effectValue Int      @map("effect_value")
-    type        ItemType
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  imageUrl    String?  @map("image_url")
+  price       Int
+  effectValue Int      @map("effect_value")
+  type        ItemType
 
-    games     GameOnItem[]
-    userItems UserItem[]
+  games     GameOnItem[]
+  userItems UserItem[]
 
-    @@map("items")
+  @@map("items")
 }
 
 model GameOnItem {
-    gameId String @map("game_id")
-    itemId String @map("item_id")
-    game   Game   @relation(fields: [gameId], references: [id])
-    item   Item   @relation(fields: [itemId], references: [id])
+  gameId String @map("game_id")
+  itemId String @map("item_id")
+  game   Game   @relation(fields: [gameId], references: [id])
+  item   Item   @relation(fields: [itemId], references: [id])
 
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-    @@id([gameId, itemId])
-    @@map("game_items")
+  @@id([gameId, itemId])
+  @@map("game_items")
 }
 
 model UserItem {
-    id     String @id @default(uuid())
-    amount Int    @default(1)
+  id     String @id @default(uuid())
+  amount Int    @default(1)
 
-    userId String @map("user_id")
-    user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
 
-    itemId String @map("item_id")
-    item   Item   @relation(fields: [itemId], references: [id])
+  itemId String @map("item_id")
+  item   Item   @relation(fields: [itemId], references: [id])
 
-    @@unique([userId, itemId], name: "user_item_unique")
-    @@map("user_items")
+  @@unique([userId, itemId], name: "user_item_unique")
+  @@map("user_items")
 }
 
 model Attendance {
-    id          String      @id @default(uuid())
-    scoreEarned Int         @default(0)
-    damageDealt Int         @default(0) @map("damage_dealt")
-    status      CheckStatus @default(PRESENT)
-    createdAt   DateTime    @default(now()) @map("created_at")
+  id          String      @id @default(uuid())
+  scoreEarned Int         @default(0)
+  damageDealt Int         @default(0) @map("damage_dealt")
+  status      CheckStatus @default(PRESENT)
+  createdAt   DateTime    @default(now()) @map("created_at")
 
-    userId String @map("user_id")
-    user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id])
 
-    activeGameId String?          @map("active_game_id")
-    activeGame   ClassroomOnGame? @relation(fields: [activeGameId], references: [id])
+  activeGameId String?          @map("active_game_id")
+  activeGame   ClassroomOnGame? @relation(fields: [activeGameId], references: [id])
 
-    activeTutorId String?           @map("active_tutor_id")
-    activeTutor   ClassroomOnTutor? @relation(fields: [activeTutorId], references: [id])
+  activeTutorId String?           @map("active_tutor_id")
+  activeTutor   ClassroomOnTutor? @relation(fields: [activeTutorId], references: [id])
 
-    homeworkSubmissionId String?             @map("homework_submission_id")
-    homeworkSubmission   HomeworkSubmission? @relation(fields: [homeworkSubmissionId], references: [id])
+  homeworkSubmissionId String?             @map("homework_submission_id")
+  homeworkSubmission   HomeworkSubmission? @relation(fields: [homeworkSubmissionId], references: [id])
 
-    @@unique([userId, activeGameId])
-    @@unique([userId, activeTutorId])
-    @@unique([userId, homeworkSubmissionId])
-    @@map("attendances")
+  @@unique([userId, activeGameId])
+  @@unique([userId, activeTutorId])
+  @@unique([userId, homeworkSubmissionId])
+  @@index([activeGameId])
+  @@index([activeTutorId])
+  @@index([homeworkSubmissionId])
+  @@map("attendances")
 }
 
 enum Role {
-    ADMIN
-    TEACHER
-    STUDENT
+  ADMIN
+  TEACHER
+  STUDENT
 }
 
 enum AssignmentStatus {
-    DRAFT
-    PUBLISHED
-    ARCHIVED
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
 enum CheckStatus {
-    PRESENT
-    LATE
-    ABSENT
+  PRESENT
+  LATE
+  ABSENT
 }
 
 enum ItemType {
-    ATTACK_BOOST
-    TIME_EXTEND
+  ATTACK_BOOST
+  TIME_EXTEND
 }
 
 enum GameStatus {
-    WAITING
-    ONGOING
-    FINISHED
+  WAITING
+  ONGOING
+  FINISHED
 }
 
 enum PaymentStatus {
-    PENDING
-    SUCCESS
-    FAILED
-    CANCELED
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELED
 }

@@ -38,9 +38,7 @@ export default function Page() {
               <SiGoogleclassroom className="h-12 w-12 text-primary" />
               <div className="flex flex-col">
                 <h1 className="text-xl font-bold">ห้องเรียน</h1>
-                <p className="text-sm text-gray-400">
-                  สามารถดูห้องเรียนของคุณได้ที่นี่
-                </p>
+                <p className="text-sm text-gray-400">สามารถดูห้องเรียนของคุณได้ที่นี่</p>
               </div>
             </div>
 

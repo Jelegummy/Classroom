@@ -1,15 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FaArrowLeft, FaRegFilePdf, FaRegPenToSquare } from 'react-icons/fa6'
 import { HiOutlineDownload } from 'react-icons/hi'
 import { getAssignment } from '@/services/assignment'
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
-import AssignmentHead from './components/headerinfo'
-import Changemode from './components/mode'
-import AssignmentSummit from './components/summit'
-import { useSession } from 'next-auth/react'
+import AssignmentHead from '@/features/assignment/teacher/components/headerinfo'
+import Changemode from '@/features/assignment/teacher/components/mode'
+import AssignmentSummit from '@/features/assignment/teacher/components/summit'
 
 function AssignmentDescription() {
   const router = useRouter()

@@ -1,3 +1,4 @@
+import { Context } from '@app/common'
 import {
   Body,
   Controller,
@@ -10,9 +11,9 @@ import {
   Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { AnnounceInternalService } from './internal.service'
+
 import { CreateAnnounceArgs, UpdateAnnounceArgs } from './internal.dto'
-import { Context } from '@app/common'
+import { AnnounceInternalService } from './internal.service'
 
 @ApiTags('Announce - Internal')
 @Controller('announce/internal')
@@ -20,7 +21,7 @@ export class AnnounceInternalController {
   constructor(private readonly service: AnnounceInternalService) {}
 
   @Post('/create')
-  async craeteAnnounce(@Body() args: CreateAnnounceArgs, @Req() ctx: Context) {
+  async createAnnounce(@Body() args: CreateAnnounceArgs, @Req() ctx: Context) {
     const res = await this.service.createAnnounce(args, ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
@@ -44,16 +45,16 @@ export class AnnounceInternalController {
     return { statusCode: HttpStatus.OK }
   }
 
-  @Get('/:id')
-  async getAnnounce(@Req() ctx: Context, @Param('id') id: string) {
-    const res = await this.service.getAnnounce(ctx, { id })
+  @Get('/all')
+  async getAllAnnounces(@Req() ctx: Context) {
+    const res = await this.service.getAllAnnounces(ctx)
 
     return { statusCode: HttpStatus.OK, data: res }
   }
 
-  @Get('/all')
-  async getAllAnnounces(@Req() ctx: Context) {
-    const res = await this.service.getAllAnnounces(ctx)
+  @Get('/:id')
+  async getAnnounce(@Req() ctx: Context, @Param('id') id: string) {
+    const res = await this.service.getAnnounce(ctx, { id })
 
     return { statusCode: HttpStatus.OK, data: res }
   }

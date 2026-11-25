@@ -31,7 +31,7 @@ export class UserPublicController {
   @Post('/users/register-discord')
   async registerDiscord(
     @Body() args: RegisterDiscordArgs,
-    @Headers('x-bot-secret') botSecret: 'super-secret-bot-key',
+    @Headers('x-bot-secret') botSecret?: string,
   ) {
     const res = await this.service.registerDiscord(args, botSecret)
 

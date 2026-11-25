@@ -5,7 +5,6 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import { CiClock2 } from 'react-icons/ci'
 import { HiOutlineDocumentText } from 'react-icons/hi2'
-import { FaRegPenToSquare } from 'react-icons/fa6'
 import { getAssignment } from '@/services/assignment'
 import { useSession } from 'next-auth/react'
 

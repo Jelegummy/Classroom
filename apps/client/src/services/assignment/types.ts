@@ -69,6 +69,7 @@ export type GetAssignmentsByClassroomResponse = {
   status: string
   classroomId: string
   classrooms: {
+    classroomId: string
     dueDate: string | null
     submissions: {
       id: string

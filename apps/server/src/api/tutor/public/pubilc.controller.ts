@@ -5,13 +5,12 @@ import {
   Headers,
   HttpStatus,
   Param,
-  Patch,
   Post,
-  Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { TutorPublicService } from './pubilc.service'
+
 import { CreateTutorVoiceLogArgs } from './pubilc.dto'
+import { TutorPublicService } from './pubilc.service'
 
 @ApiTags('Tutor - Public')
 @Controller('tutor/public')
@@ -22,7 +21,7 @@ export class TutorPublicController {
   async createTutorBot(
     @Param('id') id: string,
     @Body() args: CreateTutorVoiceLogArgs,
-    @Headers('x-bot-secret') botSecret: 'super-secret-bot-key',
+    @Headers('x-bot-secret') botSecret?: string,
   ) {
     const res = await this.service.createTutorBot(id, args, botSecret)
 

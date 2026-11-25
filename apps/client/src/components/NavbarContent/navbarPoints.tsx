@@ -23,11 +23,13 @@ export default function NavbarPoints({ classroomId }: Props) {
     queryFn: async () => {
       const result = await getRewards(classroomId)
       if (!result) throw new Error('Failed to fetch rewards')
+
       return result
     },
     refetchOnWindowFocus: false,
     refetchInterval: 1000,
   })
+
   return (
     <>
       <div className="hidden md:block">

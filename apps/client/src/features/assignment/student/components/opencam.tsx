@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { IoIosMic } from 'react-icons/io'
-import { IoMicOff, IoVideocam, IoVideocamOff, IoHeadset } from 'react-icons/io5'
+import { IoHeadset, IoMicOff, IoVideocam, IoVideocamOff } from 'react-icons/io5'
 import { useRouter } from 'next/router'
 import { getSession } from 'next-auth/react'
 import { getClassroomAssignment, startSession } from '@/services/assignment'
+
+/** `setSinkId` is not yet in every DOM lib typing. */
+type AudioWithSink = HTMLAudioElement & {
+  setSinkId(deviceId: string): Promise<void>
+}
 
 export default function OpenCam() {
   const DURATION = 10
@@ -39,6 +44,7 @@ export default function OpenCam() {
   const handleStart = async () => {
     if (!camOn) {
       alert('กรุณาเปิดกล้องก่อนเริ่ม')
+
       return
     }
 
@@ -46,6 +52,7 @@ export default function OpenCam() {
     console.log('classroomId:', classroomId)
     if (!assignmentId || !classroomId) {
       alert('ไม่พบข้อมูลที่จำเป็น')
+
       return
     }
     setLoading(true)
@@ -58,11 +65,13 @@ export default function OpenCam() {
 
       if (!caRes) {
         alert('ไม่พบข้อมูล classroom assignment')
+
         return
       }
 
       if (!userSession?.user?.id) {
         alert('ไม่พบข้อมูล user')
+
         return
       }
 
@@ -81,9 +90,9 @@ export default function OpenCam() {
           sid: res.session_id,
         },
       })
-    } catch (e: any) {
+    } catch (e) {
       console.error('Error:', e)
-      alert(`เริ่ม session ไม่สำเร็จ: ${e?.message}`)
+      alert(`เริ่ม session ไม่สำเร็จ: ${(e as Error)?.message}`)
     } finally {
       setLoading(false)
     }
@@ -186,14 +195,14 @@ export default function OpenCam() {
   const handleChangeSpeaker = async (deviceId: string) => {
     setSelectedSpeaker(deviceId)
     if (audioRef.current && 'setSinkId' in audioRef.current) {
-      await (audioRef.current as any).setSinkId(deviceId)
+      await (audioRef.current as AudioWithSink).setSinkId(deviceId)
     }
   }
 
   const testSpeaker = async () => {
     if (!audioRef.current) return
     if ('setSinkId' in audioRef.current) {
-      await (audioRef.current as any).setSinkId(selectedSpeaker)
+      await (audioRef.current as AudioWithSink).setSinkId(selectedSpeaker)
     }
     audioRef.current.src = '/test-sound.mp3'
     audioRef.current.play()

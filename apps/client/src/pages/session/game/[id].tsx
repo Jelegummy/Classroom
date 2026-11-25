@@ -1,20 +1,20 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSession } from 'next-auth/react'
 import {
-  getGameSession,
   attackBoss,
-  startGame,
   endGame,
+  getGameSession,
+  startGame,
   timeoutBossGame,
 } from '@/services/game-session'
-import { getAllItems, buyItems } from '@/services/Items'
+import { buyItems, getAllItems } from '@/services/Items'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import Link from 'next/link'
 import CharacterScene from '../../../features/game/components/character-scene'
-import { io, Socket } from 'socket.io-client'
+import { Socket, io } from 'socket.io-client'
 
 /* ─── Types ─────────────────────────────────────────── */
 interface Item {
@@ -132,6 +132,7 @@ export default function GameId() {
     socket.on('game-state-updated', (updatedGameData: Game) => {
       queryClient.setQueryData(['getGameSession', gameId], updatedGameData)
     })
+
     return () => {
       if (socket.connected) {
         socket.emit('leave-game-room', gameId)
@@ -179,6 +180,7 @@ export default function GameId() {
           }
           ctx.restore()
         })
+
         return alive.map(p => ({
           ...p,
           x: p.x + p.vx,
@@ -234,6 +236,7 @@ export default function GameId() {
               : Math.random() < 0.5
                 ? 'spark'
                 : 'circle'
+
           return {
             id: particleIdRef.current++,
             x: x + (Math.random() - 0.5) * 40,
@@ -260,6 +263,7 @@ export default function GameId() {
       ...Array.from({ length: Math.min(amount * 2, 15) }, () => {
         const angle = Math.random() * Math.PI * 2
         const speed = Math.random() * 4 + 1
+
         return {
           id: particleIdRef.current++,
           x: x + (Math.random() - 0.5) * 20,
@@ -286,7 +290,7 @@ export default function GameId() {
 
   const endGameMutation = useMutation({
     mutationFn: () => endGame(gameId),
-    onError: (err: any) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
+    onError: (err: Error) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
   })
 
   const timeoutMutation = useMutation({
@@ -308,13 +312,13 @@ export default function GameId() {
         amount: 1,
       }),
     onSuccess: () => toast.success('ซื้อไอเทมสำเร็จ!'),
-    onError: (err: any) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
+    onError: (err: Error) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
   })
 
   const startGameMutation = useMutation({
     mutationFn: () => startGame(gameId),
     onSuccess: () => toast.success('เริ่มเกมแล้ว!'),
-    onError: (err: any) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
+    onError: (err: Error) => toast.error(err.message || 'เกิดข้อผิดพลาด'),
   })
 
   const activeSession = game?.classrooms?.[0]
@@ -398,8 +402,10 @@ export default function GameId() {
     const itemBonus = currentUserData.user.inventory.reduce((sum, inv) => {
       if (inv.item.type === 'ATTACK_BOOST')
         return sum + (inv.item.effectValue ?? 0) * inv.amount
+
       return sum
     }, 0)
+
     return baseDamage + itemBonus
   }, [currentUserData, game?.damageBoost])
 
@@ -455,6 +461,7 @@ export default function GameId() {
     setCombo(prev => {
       const next = prev + 1
       if (next >= 3) setShowCombo(true)
+
       return next
     })
     if (comboTimerRef.current) clearTimeout(comboTimerRef.current)
@@ -469,6 +476,7 @@ export default function GameId() {
   const handleStartGame = () => {
     if (attendances.length === 0) {
       toast.error('รอนักเรียนเข้าห้องก่อนนะอาจารย์!')
+
       return
     }
     startGameMutation.mutate()
@@ -481,14 +489,17 @@ export default function GameId() {
     if (!session?.user?.id) return
     if (!currentUserData) {
       toast.error('คุณยังไม่ได้เข้าร่วมห้องเรียนนี้')
+
       return
     }
     if (checkIsOwned(item.id)) {
       toast.error('คุณมีไอเทมนี้อยู่แล้ว!')
+
       return
     }
     if (currentUserData.user.points < item.price) {
       toast.error('แต้มไม่พอจ้า!')
+
       return
     }
     buyItemMutation.mutate(item)
@@ -529,6 +540,7 @@ export default function GameId() {
         color: 'text-amber-600',
         bg: 'bg-amber-700/20 border-amber-600/40',
       }
+
     return {
       icon: `${index + 1}`,
       color: 'text-gray-400',
@@ -539,6 +551,7 @@ export default function GameId() {
   const timeColor = () => {
     if (timeLeft > 30) return 'text-white'
     if (timeLeft > 10) return 'text-orange-400'
+
     return 'text-red-500'
   }
 
@@ -867,6 +880,7 @@ export default function GameId() {
                   sortedAttendances.map((att, index) => {
                     const rank = getRank(index)
                     const isMe = att.user.id === session?.user?.id
+
                     return (
                       <div
                         key={att.id}
@@ -995,8 +1009,9 @@ export default function GameId() {
 
             {/* ── Shop items ────────────────────────── */}
             <div className="custom-scrollbar flex gap-2 overflow-x-auto px-4 py-3 md:gap-3">
-              {shopItems?.map((item: any) => {
+              {shopItems?.map(item => {
                 const isOwned = checkIsOwned(item.id)
+
                 return (
                   <button
                     key={item.id}

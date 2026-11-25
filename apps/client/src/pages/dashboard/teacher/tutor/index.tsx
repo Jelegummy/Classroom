@@ -17,9 +17,9 @@ export default function TutorSessionTeacher({
     queryFn: () => getAllTutors({ classroomId }),
     select: tutors => {
       return (
-        tutors?.filter((t: any) =>
+        tutors?.filter(t =>
           t.classroomSessions?.some(
-            (session: any) => session.classroomId === classroomId,
+            session => session.classroomId === classroomId,
           ),
         ) || []
       )

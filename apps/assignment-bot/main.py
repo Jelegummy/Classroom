@@ -1,27 +1,36 @@
-import os
-import shutil
-import uuid
-import logging
-import traceback
 import asyncio
+import logging
+import os
+import re
+import traceback
+import uuid
+from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Optional
 
 import cv2
 import numpy as np
-from contextlib import asynccontextmanager
-from pydantic import BaseModel
-
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
-from datetime import datetime
+
 from database import get_db
-from schemas import AssignmentUpsertRequest, ProcessPdfRequest
+from schemas import AssignmentUpsertRequest
 from services.assignment_service import create_assignment, attach_to_classroom
 from service.genquestion import run_genquestiontext
 from service.extractpdf import extract_pdf
 from service.checkhomework import run_check_session
 from service.genenswer import run_genanswer
+from service.llm import LLMNotConfiguredError
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,10 +42,47 @@ ASSIGNMENT_TXT_DIR = os.path.join(DATA_DIR, "assignments")
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(ASSIGNMENT_TXT_DIR, exist_ok=True)
 
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "25")) * 1024 * 1024
+# How long a finished session (and its result) is kept in memory.
+SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "600"))
+
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 active_sessions: dict = {}
+# Strong references so running session tasks are not garbage-collected.
+_session_tasks: set = set()
+
+
+def safe_pdf_name(filename: Optional[str]) -> str:
+    """Reduce an uploaded filename to a safe basename inside DATA_DIR.
+
+    The old upload handler joined the raw client filename onto DATA_DIR, so a
+    name like "../main.py" could overwrite arbitrary files.
+    """
+    name = os.path.basename((filename or "").replace("\\", "/")).strip()
+    # Allow the Thai block explicitly: its vowel/tone marks are not matched by \w.
+    name = re.sub(r"[^\w\u0E00-\u0E7F\-. ()]", "_", name)
+    if not name or name.startswith(".") or not name.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="รองรับเฉพาะไฟล์ PDF")
+    return name
+
+
+def data_path(filename: str) -> str:
+    """Resolve a stored PDF name, refusing anything outside DATA_DIR."""
+    path = os.path.realpath(os.path.join(DATA_DIR, os.path.basename(filename)))
+    if not path.startswith(os.path.realpath(DATA_DIR) + os.sep):
+        raise HTTPException(status_code=400, detail="Invalid file name")
+    return path
+
+
+def _schedule_session_cleanup(session_id: str):
+    def _drop():
+        session = active_sessions.get(session_id)
+        if session and session.get("status") in ("done", "stopped"):
+            active_sessions.pop(session_id, None)
+
+    asyncio.get_running_loop().call_later(SESSION_TTL_SECONDS, _drop)
 
 
 @asynccontextmanager
@@ -48,7 +94,7 @@ async def lifespan(app: FastAPI):
         if ws:
             try:
                 await asyncio.wait_for(ws.close(), timeout=1.0)
-            except:
+            except Exception:
                 pass
 
 
@@ -192,14 +238,13 @@ async def generate_questions_endpoint(payload: RegenerateQuestionsRequest):
         logger.info("========== GENERATE QUESTIONS START ==========")
 
         # 1. เตรียม Path ของไฟล์ PDF ต้นทาง
-        pdf_path = os.path.join(DATA_DIR, payload.filePdf)
+        pdf_path = data_path(payload.filePdf)
         if not os.path.exists(pdf_path):
             logger.error(f"PDF not found at: {pdf_path}")
             raise HTTPException(
                 status_code=404, detail="ไม่พบไฟล์ PDF ต้นฉบับ")
 
         # 2. จัดการเรื่อง Path ของไฟล์ Text
-        loop = asyncio.get_event_loop()
         pdf_filename = os.path.basename(payload.filePdf)
         file_name_no_ext = os.path.splitext(pdf_filename)[0]
 
@@ -213,7 +258,7 @@ async def generate_questions_endpoint(payload: RegenerateQuestionsRequest):
             logger.info(
                 f"Text file not found. Starting OCR for: {pdf_filename}")
             # รัน Gemini OCR ใน executor เพื่อไม่ให้ block event loop
-            await loop.run_in_executor(None, extract_pdf, pdf_path)
+            await asyncio.to_thread(extract_pdf, pdf_path)
 
             # เช็คอีกครั้งเผื่อเกิดความผิดพลาดในการสร้างไฟล์
             if not os.path.exists(final_txt_path):
@@ -230,8 +275,8 @@ async def generate_questions_endpoint(payload: RegenerateQuestionsRequest):
 
         # 5. สั่งสร้างคำถาม (Run Gen Question)
         logger.info("Generating questions using Typhoon LLM...")
-        questions_raw = await loop.run_in_executor(
-            None, run_genquestiontext, final_txt_path
+        questions_raw = await asyncio.to_thread(
+            run_genquestiontext, final_txt_path
         )
 
         if not questions_raw:
@@ -243,8 +288,8 @@ async def generate_questions_endpoint(payload: RegenerateQuestionsRequest):
         # 6. สั่งสร้างเฉลยมาตรฐาน (Run Gen Answer)
         temp_id = str(uuid.uuid4())
         logger.info("Generating standard answers for verification...")
-        answer_data = await loop.run_in_executor(
-            None, run_genanswer, temp_id, final_txt_path, questions_raw
+        answer_data = await asyncio.to_thread(
+            run_genanswer, temp_id, final_txt_path, questions_raw
         )
 
         # 7. จัดรูปแบบ chat_history สำหรับส่งกลับไปแสดงผลบน Frontend
@@ -268,6 +313,10 @@ async def generate_questions_endpoint(payload: RegenerateQuestionsRequest):
 
     except HTTPException as he:
         raise he
+    except (LLMNotConfiguredError, ValueError) as e:
+        # Missing TYPHOON_API_KEY / GEMINI_API_KEY: a configuration problem.
+        logger.error(f"GENERATE QUESTIONS CONFIG ERROR: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error(f"GENERATE QUESTIONS ERROR: {traceback.format_exc()}")
         raise HTTPException(
@@ -317,10 +366,24 @@ async def confirm_assignment(
 
 @app.post("/api/upload")
 def upload_pdf(file: UploadFile = File(...)):
-    upload_path = os.path.join(DATA_DIR, file.filename)
-    with open(upload_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"success": True, "filePdf": file.filename}
+    filename = safe_pdf_name(file.filename)
+    upload_path = data_path(filename)
+    tmp_path = f"{upload_path}.{uuid.uuid4().hex}.part"
+
+    written = 0
+    try:
+        with open(tmp_path, "wb") as buffer:
+            while chunk := file.file.read(1024 * 1024):
+                written += len(chunk)
+                if written > MAX_UPLOAD_BYTES:
+                    raise HTTPException(status_code=413, detail="ไฟล์มีขนาดใหญ่เกินไป")
+                buffer.write(chunk)
+        os.replace(tmp_path, upload_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+    return {"success": True, "filePdf": filename}
 
 
 # --- Face Check ---
@@ -341,7 +404,7 @@ class StartSessionRequest(BaseModel):
     assignment_id: str
     classroom_assignment_id: str
     user_id: str
-    duration: int = 10
+    duration: int = Field(default=10, ge=3, le=120)
 
 
 @app.post("/api/session/start")
@@ -355,10 +418,24 @@ async def start_session(payload: StartSessionRequest):
         "duration": payload.duration,
         "classroom_assignment_id": payload.classroom_assignment_id,
     }
-    asyncio.create_task(
+    task = asyncio.create_task(
         run_check_session(session_id, payload.assignment_id,
                           active_sessions, payload.duration)
     )
+    _session_tasks.add(task)
+
+    def _on_done(t: asyncio.Task):
+        _session_tasks.discard(t)
+        session = active_sessions.get(session_id)
+        if session is None:
+            return
+        if not t.cancelled() and t.exception():
+            logger.error(f"Session {session_id} failed: {t.exception()!r}")
+        if session.get("status") == "running":
+            session["status"] = "done"
+        _schedule_session_cleanup(session_id)
+
+    task.add_done_callback(_on_done)
     return {"session_id": session_id}
 
 
@@ -379,16 +456,23 @@ async def resume_session(session_id: str):
 @app.websocket("/ws/session/{session_id}")
 async def ws_session(websocket: WebSocket, session_id: str):
     await websocket.accept()
-    logger.info(f"connection open")
-    if session_id in active_sessions:
-        active_sessions[session_id]["ws"] = websocket
+    if session_id not in active_sessions:
+        await websocket.close(code=4404)
+        return
+
+    logger.info(f"connection open: {session_id}")
+    active_sessions[session_id]["ws"] = websocket
     try:
+        # Waiting on receive() is what surfaces a disconnect; the previous
+        # sleep-only loop never noticed and kept the handler alive forever.
         while True:
-            await asyncio.sleep(0.1)
+            await websocket.receive_text()
     except WebSocketDisconnect:
-        logger.info(f"connection closed")
-        if session_id in active_sessions:
-            active_sessions[session_id]["ws"] = None
+        logger.info(f"connection closed: {session_id}")
+    finally:
+        session = active_sessions.get(session_id)
+        if session and session.get("ws") is websocket:
+            session["ws"] = None
 
 
 @app.post("/api/session/{session_id}/stop")
@@ -399,8 +483,9 @@ async def stop_session(session_id: str):
         if ws:
             try:
                 await ws.close()
-            except:
+            except Exception:
                 pass
+        _schedule_session_cleanup(session_id)
     return {"status": "stopped"}
 
 if __name__ == "__main__":
@@ -409,4 +494,7 @@ if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "4005"))
 
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    # Auto-reload is a development convenience only (RELOAD=1).
+    reload = os.getenv("RELOAD", "0") == "1"
+
+    uvicorn.run("main:app", host=host, port=port, reload=reload)

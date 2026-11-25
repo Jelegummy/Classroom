@@ -5,7 +5,6 @@ import { getAllClassrooms } from '@/services/classroom'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { SiGoogleclassroom } from 'react-icons/si'
-import { CiSettings } from 'react-icons/ci'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import CreateButton from '@/features/classroom/teacher/components/create-button'
@@ -40,9 +39,7 @@ export default function Page() {
               <SiGoogleclassroom className="h-12 w-12 text-primary" />
               <div className="flex flex-col">
                 <h1 className="text-xl font-bold">ห้องเรียน</h1>
-                <p className="text-sm text-gray-400">
-                  สามารถดูห้องเรียนของคุณได้ที่นี่
-                </p>
+                <p className="text-sm text-gray-400">สามารถดูห้องเรียนของคุณได้ที่นี่</p>
               </div>
             </div>
 

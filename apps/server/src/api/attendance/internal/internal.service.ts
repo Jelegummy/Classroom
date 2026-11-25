@@ -1,27 +1,24 @@
+import { Context, requireStaff } from '@app/common'
 import { PrismaService } from '@app/db'
 import {
-  Injectable,
   BadRequestException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common'
+
 import { CreateGameAttendanceDto } from './internal.dto'
-import { Context, getUserFromContext } from '@app/common'
-import { CheckStatus } from '@app/db/dist/generated/enums'
 
 @Injectable()
 export class AttendanceInternalService {
   constructor(private readonly db: PrismaService) {}
 
   async createGameAttendance(args: CreateGameAttendanceDto, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (!user) {
-      throw new Error('User not found')
-    }
-
+    // Awards points, so it must not be callable by students (previously any
+    // authenticated user could grant arbitrary points to anyone).
+    const staff = requireStaff(ctx, 'record attendance')
     const targetUserId = args.userId
 
-    return await this.db.$transaction(async tx => {
+    return this.db.$transaction(async tx => {
       const classroomGame = await tx.classroomOnGame.findUnique({
         where: {
           classroomId_gameId: {
@@ -29,9 +26,15 @@ export class AttendanceInternalService {
             gameId: args.activeGameId,
           },
         },
+        include: { classroom: { select: { schoolId: true } } },
       })
-
       if (!classroomGame) {
+        throw new NotFoundException('Game session not found in this classroom')
+      }
+      if (
+        staff.role !== 'ADMIN' &&
+        classroomGame.classroom.schoolId !== staff.schoolId
+      ) {
         throw new NotFoundException('Game session not found in this classroom')
       }
 
@@ -43,7 +46,6 @@ export class AttendanceInternalService {
           },
         },
       })
-
       if (existingAttendance) {
         return existingAttendance
       }
@@ -55,8 +57,8 @@ export class AttendanceInternalService {
             classroomId: args.classroomId,
           },
         },
+        select: { userId: true },
       })
-
       if (!classroomUser) {
         throw new BadRequestException('User is not enrolled in this classroom')
       }
@@ -65,7 +67,7 @@ export class AttendanceInternalService {
         data: {
           userId: targetUserId,
           activeGameId: classroomGame.id,
-          status: args.status as CheckStatus,
+          status: args.status,
           scoreEarned: args.scoreEarned,
         },
       })
@@ -77,16 +79,12 @@ export class AttendanceInternalService {
             classroomId: args.classroomId,
           },
         },
-        data: {
-          score: { increment: args.scoreEarned },
-        },
+        data: { score: { increment: args.scoreEarned } },
       })
 
       await tx.user.update({
         where: { id: targetUserId },
-        data: {
-          points: { increment: args.scoreEarned },
-        },
+        data: { points: { increment: args.scoreEarned } },
       })
 
       return newAttendance

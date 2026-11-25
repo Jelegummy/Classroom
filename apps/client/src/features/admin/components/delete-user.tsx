@@ -88,9 +88,7 @@ export default function DeleteUser({ userId, email }: DeleteUserArgs) {
               <h3 className="mb-1 text-xl font-bold text-gray-900">
                 ยืนยันการลบผู้ใช้
               </h3>
-              <p className="text-sm text-gray-500">
-                การกระทำนี้ไม่สามารถย้อนกลับได้
-              </p>
+              <p className="text-sm text-gray-500">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
             </div>
 
             <p className="mb-4 text-center text-sm leading-relaxed text-gray-700">

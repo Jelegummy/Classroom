@@ -1,5 +1,7 @@
+import type { Character } from '@/services/charecter/types'
+
 export type CardCharacterProps = {
-  characters: any[]
+  characters: Character[]
   selectedId: string
   onSelect: (id: string) => void
 }

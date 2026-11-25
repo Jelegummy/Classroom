@@ -67,6 +67,7 @@ export interface Game {
   }
   classrooms: Array<{
     id: string
+    classroomId: string
     currentHp: number
     attendances?: Array<{
       id: string

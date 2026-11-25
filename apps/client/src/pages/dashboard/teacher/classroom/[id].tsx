@@ -17,7 +17,6 @@ import Image from 'next/image'
 import NavbarPoints from '@/components/NavbarContent/navbarPoints'
 import TutorSessionTeacher from '../tutor'
 import CreateButtonAssignment from '@/features/classroom/teacher/components/create-buttun-assignment'
-import AssignmentTask from '../assignment'
 import AssignmentTaskTeacher from '../assignment'
 
 export default function ClassroomId() {

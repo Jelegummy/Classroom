@@ -203,19 +203,19 @@
 // }
 
 import { getSession } from 'next-auth/react'
-import { api8000, api4000 } from '../api-client'
+import { api8000 } from '../api-client'
 import {
   AnalyzeAssignmentResponse,
+  ApproveSubmissionResponse,
   CreateAssignmentArgs,
   CreateAssignmentResponse,
   DeleteAssignmentResponse,
-  GetAssignmentsByClassroomResponse,
-  GetAssignmentResponse,
-  GetSubmissionsByAssignmentResponse,
-  ApproveSubmissionResponse,
   GetAnswerHistoryResponse,
+  GetAssignmentResponse,
+  GetAssignmentsByClassroomResponse,
+  GetSubmissionsByAssignmentResponse,
 } from './types'
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 // upload ไฟล์ + generate คำถาม — ไม่ save DB
 export async function generateQuestions(
@@ -319,6 +319,7 @@ export async function resumeSession(sessionId: string) {
 export async function checkFace(frame: Blob) {
   const formData = new FormData()
   formData.append('frame', frame, 'frame.jpg')
+
   return api8000.postForm<{ face_detected: boolean }>(
     '/api/check-face',
     formData,
@@ -332,6 +333,7 @@ export const getAssignment = async (assignmentId: string) => {
     { token: session?.user.accessToken },
   )
   if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
   return res.data
 }
 
@@ -342,14 +344,21 @@ export const getAllAssignments = async (args: { classroomId?: string }) => {
     `${ENDPOINT}/assignment/internal/all${queryString}`,
     { token: session?.user.accessToken },
   )
+
   return res.data
 }
 
 export async function deleteAssignment(assignmentId: string) {
-  return api4000.post<DeleteAssignmentResponse>(
-    '/assignment/internal/delete-assignment',
-    { assignmentId },
+  // The previous POST /assignment/internal/delete-assignment route never existed
+  // and the request carried no auth token, so deletion always failed.
+  const session = await getSession()
+  const res = await fetchers.Delete<DeleteAssignmentResponse>(
+    `${ENDPOINT}/assignment/internal/delete/${assignmentId}`,
+    { token: session?.user.accessToken },
   )
+  if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
+  return res.data
 }
 
 export const getClassroomAssignment = async (
@@ -362,6 +371,7 @@ export const getClassroomAssignment = async (
     { token: session?.user.accessToken },
   )
   if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
   return res.data
 }
 
@@ -375,6 +385,7 @@ export const getSubmissionsByAssignment = async (
     { token: session?.user.accessToken },
   )
   if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
   return res.data
 }
 
@@ -391,6 +402,7 @@ export const approveSubmission = async (
     },
   )
   if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
   return res.data
 }
 
@@ -401,6 +413,7 @@ export const getAnswerHistory = async (submissionId: string) => {
     { token: session?.user.accessToken },
   )
   if (res.statusCode >= HttpStatus.BAD_REQUEST) throw new Error(res.message)
+
   return res.data
 }
 

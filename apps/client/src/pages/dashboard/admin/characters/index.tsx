@@ -112,9 +112,7 @@ export default function Characters() {
                 <p className="mt-4 text-base font-semibold text-slate-600">
                   ไม่พบไอเทม
                 </p>
-                <p className="text-sm">
-                  ลองค้นหาด้วยคำอื่น หรือเพิ่มไอเทมใหม่ดูสิ
-                </p>
+                <p className="text-sm">ลองค้นหาด้วยคำอื่น หรือเพิ่มไอเทมใหม่ดูสิ</p>
               </div>
             )}
           </div>

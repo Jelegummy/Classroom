@@ -9,15 +9,17 @@ import DashboardLayout from '@/components/Layouts/Dashboard'
 
 function HistorySubmission() {
   const router = useRouter()
-  if (!router.isReady) return null
-
   const submissionId = router.query.id as string
 
   const { data, isLoading } = useQuery({
     queryKey: ['answerHistory', submissionId],
     queryFn: () => getAnswerHistory(submissionId),
-    enabled: !!submissionId,
+    enabled: router.isReady && !!submissionId,
   })
+
+  if (!router.isReady) {
+    return null
+  }
 
   if (isLoading)
     return <div className="h-32 animate-pulse rounded-lg bg-gray-100" />

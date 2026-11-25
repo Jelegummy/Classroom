@@ -3,13 +3,14 @@
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "build": "rimraf dist && tsc --build"
+    "build": "rimraf dist && tsc --build",
+    "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
     "@app/config": "workspace:*",
-    "@nestjs/common": "11.0.12",
-    "@nestjs/core": "11.0.12",
-    "argon2": "0.41.1",
-    "fast-jwt": "6.0.0"
+    "@nestjs/common": "11.2.11",
+    "@nestjs/core": "11.2.11",
+    "argon2": "0.45.2",
+    "fast-jwt": "6.3.7"
   }
 }

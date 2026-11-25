@@ -3,18 +3,18 @@
 import AppLayout from '@/components/Layouts/App'
 import DashboardLayout from '@/components/Layouts/Dashboard'
 import {
+  UpdatePasswordArgs,
+  UpdateUserArgs,
   connectDiscord,
   updatePassword,
-  UpdatePasswordArgs,
   updateUser,
-  UpdateUserArgs,
 } from '@/services/user'
 import { useMutation } from '@tanstack/react-query'
 import { signIn, useSession } from 'next-auth/react'
 import { toast } from 'sonner'
-import { SquarePen, Save, X, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Save, SquarePen, X } from 'lucide-react'
 import { useForm } from 'react-hook-form'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { FaDiscord } from 'react-icons/fa6'
 
 type PasswordFormValues = UpdatePasswordArgs & {
@@ -50,9 +50,7 @@ export default function Setting() {
       toast.success('อัปเดตข้อมูลสำเร็จ')
     },
     onError: error => {
-      toast.error(
-        'เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ' + (error as Error).message,
-      )
+      toast.error('เกิดข้อผิดพลาดในการอัปเดตข้อมูล: ' + (error as Error).message)
     },
   })
 
@@ -63,9 +61,7 @@ export default function Setting() {
       toast.success('อัปเดตรหัสผ่านสำเร็จ')
     },
     onError: error => {
-      toast.error(
-        'เกิดข้อผิดพลาดในการอัปเดตรหัสผ่าน: ' + (error as Error).message,
-      )
+      toast.error('เกิดข้อผิดพลาดในการอัปเดตรหัสผ่าน: ' + (error as Error).message)
     },
   })
 
@@ -77,9 +73,7 @@ export default function Setting() {
       toast.success('เชื่อมต่อ Discord สำเร็จ')
     },
     onError: error => {
-      toast.error(
-        'เกิดข้อผิดพลาดในการเชื่อมต่อ Discord: ' + (error as Error).message,
-      )
+      toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ Discord: ' + (error as Error).message)
     },
   })
 
@@ -90,6 +84,7 @@ export default function Setting() {
   const onSubmitPassword = (data: PasswordFormValues) => {
     if (data.newPassword !== data.confirmNewPassword) {
       toast.error('รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน')
+
       return
     }
     const payload: UpdatePasswordArgs = {
@@ -118,8 +113,7 @@ export default function Setting() {
                 <div>
                   <h3 className="font-bold">จำเป็นต้องเชื่อมต่อ Discord</h3>
                   <p className="text-sm text-amber-700">
-                    เพื่อเข้าสู่ห้องเรียนและรับการแจ้งเตือน
-                    กรุณาเชื่อมต่อบัญชีของคุณ
+                    เพื่อเข้าสู่ห้องเรียนและรับการแจ้งเตือน กรุณาเชื่อมต่อบัญชีของคุณ
                   </p>
                 </div>
               </div>
@@ -355,9 +349,7 @@ export default function Setting() {
               >
                 <Save size={18} />
                 <span>
-                  {updatePasswordMutation.isPending
-                    ? 'กำลังบันทึก...'
-                    : 'บันทึก'}
+                  {updatePasswordMutation.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
                 </span>
               </button>
             </div>

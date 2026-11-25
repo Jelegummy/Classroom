@@ -1,53 +1,48 @@
 import { env } from '@app/config'
 import { Injectable } from '@nestjs/common'
-import { hash as argon2Hash, argon2id } from 'argon2'
 import { createSigner, createVerifier } from 'fast-jwt'
+
+import { hashPassword, shouldRehash, verifyPassword } from './password'
 
 type TokenPayload = {
   id: string
-  sub: string
+  sub?: string
   iat: number
   exp: number
 }
 
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
 @Injectable()
 export class AuthService {
-  generateToken(id: string) {
-    const signSync = createSigner({
-      key: env.ENTROPY,
-      expiresIn: 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
+  // Signer/verifier construction is comparatively expensive; build them once.
+  private readonly sign = createSigner({
+    key: env.ENTROPY,
+    expiresIn: TOKEN_TTL_MS,
+  })
 
-    return signSync({ id })
+  private readonly verify = createVerifier({
+    key: env.ENTROPY,
+    cache: true,
+  })
+
+  generateToken(id: string) {
+    return this.sign({ id })
   }
 
   verifyToken(token: string): TokenPayload {
-    const verifySync = createVerifier({
-      key: env.ENTROPY,
-      cache: true,
-    })
-
-    return verifySync(token)
+    return this.verify(token)
   }
 
-  async hashPassword(input: string) {
-    const hash = await argon2Hash(input, {
-      version: 19,
-      type: argon2id,
-      hashLength: 64,
-      timeCost: 12,
-      parallelism: 8,
-      memoryCost: 2 ** 16,
-      raw: true,
-      salt: Buffer.from(env.ENTROPY, 'utf-8'),
-    }).then(hash => hash.toString('base64'))
-
-    return hash
+  hashPassword(input: string) {
+    return hashPassword(input)
   }
 
-  async verifyPassword(input: string, storedHash: string) {
-    const inputHash = await this.hashPassword(input)
+  verifyPassword(input: string, storedHash: string | null | undefined) {
+    return verifyPassword(input, storedHash, env.ENTROPY)
+  }
 
-    return inputHash === storedHash
+  shouldRehash(storedHash: string) {
+    return shouldRehash(storedHash)
   }
 }

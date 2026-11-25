@@ -6,7 +6,7 @@ export class CreateGameAttendanceDto extends createZodDto(
     activeGameId: z.string(), // ID Game Session
     userId: z.string(),
     classroomId: z.string(),
-    scoreEarned: z.number().min(0),
+    scoreEarned: z.number().int().min(0),
     status: z.enum(['PRESENT', 'LATE', 'ABSENT']),
   }),
 ) {}

@@ -4,7 +4,6 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Gamepad2, Swords, Users } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { toast } from 'sonner'
 
 interface JoinGameProps {
   classroomId: string
@@ -18,8 +17,8 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
     queryFn: () => getAllGameSessions(),
     select: games => {
       return (
-        games?.filter((g: any) =>
-          g.classrooms?.some((room: any) => room.classroomId === classroomId),
+        games?.filter(g =>
+          g.classrooms?.some(room => room.classroomId === classroomId),
         ) || []
       )
     },
@@ -32,7 +31,7 @@ export default function InfoGame({ classroomId }: JoinGameProps) {
     // onSuccess: gameId => {
     //   router.push(`/session/game/leader/${gameId}`)
     // },
-    // onError: (error: any) => {
+    // onError: (error: Error) => {
     //   toast.error('ไม่สามารถเข้าห้องได้: ' + error.message)
     // },
   })

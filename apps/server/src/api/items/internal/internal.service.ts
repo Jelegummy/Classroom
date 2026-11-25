@@ -1,54 +1,44 @@
+import { Context, getUserFromContext, isStaff, requireStaff } from '@app/common'
 import { PrismaService } from '@app/db'
-import { Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
+
 import {
   BuyItemsArgs,
   ItemsArgs,
   SpacialItemsArgs,
   UpdateItemsArgs,
 } from './internal.dto'
-import { Context, getUserFromContext } from '@app/common'
+
+const DEFAULT_ITEM_IMAGE = 'https://placehold.co/150x150?text=Item'
 
 @Injectable()
 export class ItemsInternalService {
   constructor(private readonly db: PrismaService) {}
 
   async createItems(args: ItemsArgs, ctx: Context) {
-    const user = getUserFromContext(ctx)
+    requireStaff(ctx, 'create items')
 
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-      throw new Error('Only teachers and admins can create items')
-    }
-
-    const item = await this.db.item.create({
+    return this.db.item.create({
       data: {
         name: args.name,
         description: args.description,
         price: args.price,
         effectValue: args.effectValue ?? 0,
         type: args.type,
-        imageUrl: args.imageUrl || 'https://via.placeholder.com/150',
+        imageUrl: args.imageUrl || DEFAULT_ITEM_IMAGE,
       },
     })
-
-    return item
   }
 
   async updateItems(args: UpdateItemsArgs, ctx: Context) {
-    const user = getUserFromContext(ctx)
+    requireStaff(ctx, 'update items')
 
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-      throw new Error('Only teachers and admins can update items')
-    }
-
-    const item = await this.db.item.update({
+    return this.db.item.update({
       where: { id: args.id },
       data: {
         name: args.name,
@@ -58,48 +48,29 @@ export class ItemsInternalService {
         type: args.type,
       },
     })
-
-    return item
   }
 
   async deleteItems(args: { id: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
+    requireStaff(ctx, 'delete items')
 
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-      throw new Error('Only teachers and admins can delete items')
-    }
-
-    await this.db.item.delete({
-      where: { id: args.id },
-    })
+    await this.db.item.delete({ where: { id: args.id } })
   }
 
   async getItems(args: { id: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
-    if (!user) throw new Error('User not found')
+    getUserFromContext(ctx)
 
-    const item = await this.db.item.findUnique({
-      where: { id: args.id },
-    })
-
+    const item = await this.db.item.findUnique({ where: { id: args.id } })
     if (!item) {
-      throw new Error('Item not found')
+      throw new NotFoundException('Item not found')
     }
 
     return item
   }
 
   async getAllItems(ctx: Context) {
-    const user = getUserFromContext(ctx)
-    if (!user) throw new Error('User not found')
+    getUserFromContext(ctx)
 
-    const items = await this.db.item.findMany()
-
-    return items
+    return this.db.item.findMany({ orderBy: { price: 'asc' } })
   }
 
   async createSpacialItems(
@@ -108,70 +79,49 @@ export class ItemsInternalService {
     userId: string,
     itemId: string,
   ) {
-    const user = getUserFromContext(ctx)
+    requireStaff(ctx, 'grant special items')
 
-    if (!user) {
-      throw new Error('User not found')
-    }
-
-    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-      throw new Error('Only teachers and admins can create spacial items')
-    }
-
-    return await this.db.userItem.upsert({
-      where: {
-        user_item_unique: {
-          userId,
-          itemId,
-        },
-      },
-      update: {
-        amount: {
-          increment: args.amount,
-        },
-      },
-      create: {
-        userId: userId,
-        itemId: itemId,
-        amount: args.amount,
-      },
+    return this.db.userItem.upsert({
+      where: { user_item_unique: { userId, itemId } },
+      update: { amount: { increment: args.amount } },
+      create: { userId, itemId, amount: args.amount },
     })
   }
 
   async buyItems(args: BuyItemsArgs, ctx: Context) {
-    const userContext = getUserFromContext(ctx)
-    if (!userContext) throw new Error('User not found')
+    const user = getUserFromContext(ctx)
 
-    const item = await this.db.item.findUnique({ where: { id: args.itemId } })
-    if (!item) throw new Error('Item not found')
+    // Students can only spend their own points.
+    const buyerId = args.userId
+    if (buyerId !== user.id && !isStaff(user)) {
+      throw new ForbiddenException('You can only buy items for yourself')
+    }
+
+    const item = await this.db.item.findUnique({
+      where: { id: args.itemId },
+      select: { price: true },
+    })
+    if (!item) {
+      throw new NotFoundException('Item not found')
+    }
 
     const totalPrice = item.price * args.amount
 
-    return await this.db.$transaction(async tx => {
-      const user = await tx.user.findUnique({
-        where: { id: args.userId },
-        select: { points: true },
-      })
-
-      if (!user || user.points < totalPrice) {
-        throw new Error('Not enough points to buy this item')
-      }
-
-      await tx.user.update({
-        where: { id: args.userId },
+    return this.db.$transaction(async tx => {
+      // Conditional decrement: atomic balance check, no lost updates under
+      // concurrent purchases (the previous read-then-write could overspend).
+      const { count } = await tx.user.updateMany({
+        where: { id: buyerId, points: { gte: totalPrice } },
         data: { points: { decrement: totalPrice } },
       })
+      if (count === 0) {
+        throw new BadRequestException('Not enough points to buy this item')
+      }
 
-      return await tx.userItem.upsert({
-        where: {
-          user_item_unique: { userId: args.userId, itemId: args.itemId },
-        },
+      return tx.userItem.upsert({
+        where: { user_item_unique: { userId: buyerId, itemId: args.itemId } },
         update: { amount: { increment: args.amount } },
-        create: {
-          userId: args.userId,
-          itemId: args.itemId,
-          amount: args.amount,
-        },
+        create: { userId: buyerId, itemId: args.itemId, amount: args.amount },
       })
     })
   }

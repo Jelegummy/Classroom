@@ -1,28 +1,33 @@
 import { AuthModule } from '@app/auth'
-import { LoggingInterceptor, UserMiddleware } from '@app/common'
-// import { env, mailerConfig } from '@app/config'
+import {
+  HttpExceptionFilter,
+  LoggingInterceptor,
+  UserMiddleware,
+} from '@app/common'
 import { mailerConfig } from '@app/config'
 import { PrismaModule } from '@app/db'
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common'
-import { APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { MailerModule } from '@nestjs-modules/mailer'
-// import { MinioModule } from 'nestjs-minio-client'
 import { ZodValidationPipe } from 'nestjs-zod'
 
-import { UserModule } from './api/user/user.module'
-import { SchoolModule } from './api/school/school.module'
-import { ClassroomModule } from './api/classroom/classroom.module'
-import { ItemsModule } from './api/items/items.module'
-import { GameModule } from './api/game/game.module'
 import { AnnounceModule } from './api/announce/announce.module'
+import { AssignmentModule } from './api/assignment/assignment.module'
 import { AttendanceModule } from './api/attendance/attendance.module'
 import { CharacterModule } from './api/character/character.module'
-import { TutorModule } from './api/tutor/tuter.module'
-import { AssignmentModule } from './api/assignment/assignment.module'
+import { ClassroomModule } from './api/classroom/classroom.module'
+import { GameModule } from './api/game/game.module'
+import { ItemsModule } from './api/items/items.module'
 import { PaymentModule } from './api/payment/payment.module'
+import { SchoolModule } from './api/school/school.module'
+import { TutorModule } from './api/tutor/tuter.module'
+import { UserModule } from './api/user/user.module'
 
 @Module({
   imports: [
+    PrismaModule,
+    AuthModule,
+    MailerModule.forRoot(mailerConfig),
     UserModule,
     SchoolModule,
     ClassroomModule,
@@ -33,32 +38,16 @@ import { PaymentModule } from './api/payment/payment.module'
     CharacterModule,
     ItemsModule,
     AnnounceModule,
-    AuthModule,
     AssignmentModule,
-    PrismaModule,
-    MailerModule.forRoot(mailerConfig),
-    // MinioModule.register({
-    //   endPoint: env.MINIO_ENDPOINT,
-    //   port: 443,
-    //   useSSL: true,
-    //   accessKey: env.MINIO_ACCESS_KEY,
-    //   secretKey: env.MINIO_SECRET_KEY,
-    //   isGlobal: true,
-    // }),
   ],
   providers: [
-    {
-      provide: APP_PIPE,
-      useClass: ZodValidationPipe,
-    },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: LoggingInterceptor,
-    },
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(UserMiddleware).forRoutes('*')
+    consumer.apply(UserMiddleware).forRoutes('{*splat}')
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MdContentCopy, MdCheck, MdClose } from 'react-icons/md'
+import { MdCheck, MdClose, MdContentCopy } from 'react-icons/md'
 
 export default function CopyCode({ text }: { text: string }) {
   const [isCopied, setIsCopied] = useState(false)

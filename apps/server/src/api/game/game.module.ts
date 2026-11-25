@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common'
+
+import { GameGateway } from './internal/game.gateway'
 import { GameInternalController } from './internal/internal.controller'
 import { GameInternalService } from './internal/internal.service'
-import { GameGateway } from './internal/game.gateway'
 
 @Module({
   controllers: [GameInternalController],

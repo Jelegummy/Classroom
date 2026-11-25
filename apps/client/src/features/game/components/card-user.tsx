@@ -11,6 +11,7 @@ export default function CardUser({ classroomId }: CardUserProps) {
     queryKey: ['classroom-users', classroomId],
     queryFn: async () => {
       const result = await getUsersByClassroomId(classroomId ?? '')
+
       return result ?? []
     },
     enabled: !!classroomId,

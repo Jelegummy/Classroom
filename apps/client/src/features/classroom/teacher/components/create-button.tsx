@@ -26,6 +26,7 @@ export default function CreateButton() {
   const onSubmit = () => {
     if (!form.name.trim()) {
       toast.error('กรุณากรอกชื่อห้องเรียน')
+
       return
     }
 

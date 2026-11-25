@@ -5,12 +5,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ดึง API Key
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("❌ ไม่พบ GEMINI_API_KEY กรุณาตรวจสอบไฟล์ .env")
+MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
-MODEL_NAME = "gemini-2.5-flash"
+
+def _gemini_key() -> str:
+    # Checked lazily so a missing key does not prevent the service from starting.
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        raise ValueError("❌ ไม่พบ GEMINI_API_KEY กรุณาตรวจสอบไฟล์ .env")
+    return key
 
 # Prompt สั้นๆ และครอบคลุมเงื่อนไขการจัดรูปแบบของคุณ
 PROMPT = """
@@ -31,7 +34,7 @@ def extract_pdf(pdf_path: str) -> str:
     print(f"📄 กำลังอัปโหลดและประมวลผลไฟล์: {pdf_path} ... (อาจใช้เวลาสักครู่)")
 
     # 1. สร้าง Client
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=_gemini_key())
 
     # 2. อัปโหลด PDF ขึ้นไปให้ Gemini
     pdf_file = client.files.upload(file=pdf_path)

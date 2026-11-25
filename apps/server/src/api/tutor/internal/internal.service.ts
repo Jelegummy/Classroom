@@ -1,113 +1,96 @@
+import { Context, assertOwnerOrAdmin, getUserFromContext } from '@app/common'
 import { PrismaService } from '@app/db'
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
+
 import { CreateTutorArgs } from './internal.dto'
-import { Context, getUserFromContext } from '@app/common'
+
+// Previously `host: true`, which returned the host's password hash.
+const hostSelect = {
+  select: {
+    id: true,
+    firstName: true,
+    lastName: true,
+    role: true,
+    discordId: true,
+  },
+} as const
 
 @Injectable()
 export class TutorInternalService {
-  constructor(private readonly db: PrismaService) { }
+  constructor(private readonly db: PrismaService) {}
 
   async createTutor(args: CreateTutorArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
 
-    if (!user) {
-      throw new UnauthorizedException('User not found')
+    // Students may host peer-tutoring sessions, but only in their own classrooms.
+    if (user.role !== 'ADMIN') {
+      const membership = await this.db.classroomOnUser.findUnique({
+        where: {
+          userId_classroomId: {
+            userId: user.id,
+            classroomId: args.classroomId,
+          },
+        },
+        select: { userId: true },
+      })
+      if (!membership) {
+        throw new NotFoundException('Classroom not found or access denied')
+      }
     }
 
-    const tutor = await this.db.tutor.create({
-      data: {
-        botLink: args.botLink,
-        startTime: args.startTime,
-        dataContent: args.dataContent || '',
-        discordChannelId: args.discordChannelId || '',
-        inviteLink: args.inviteLink || '',
-        name: args.name || '',
-        host: {
-          connect: { id: user.id },
+    return this.db.$transaction(async tx => {
+      const tutor = await tx.tutor.create({
+        data: {
+          botLink: args.botLink,
+          startTime: args.startTime,
+          dataContent: args.dataContent || '',
+          discordChannelId: args.discordChannelId || '',
+          inviteLink: args.inviteLink || '',
+          name: args.name || '',
+          host: { connect: { id: user.id } },
         },
-      },
-    })
+      })
 
-    await this.db.classroomOnTutor.create({
-      data: {
-        tutorId: tutor.id,
-        classroomId: args.classroomId,
-      },
-    })
+      await tx.classroomOnTutor.create({
+        data: { tutorId: tutor.id, classroomId: args.classroomId },
+      })
 
-    return tutor
+      return tutor
+    })
   }
 
   async getAllTutors(ctx: Context, classroomId?: string) {
     const user = getUserFromContext(ctx)
 
-    if (!user) {
-      throw new UnauthorizedException('User not found')
-    }
-
-    const tutors = await this.db.tutor.findMany({
+    return this.db.tutor.findMany({
       where: {
-        host: {
-          schoolId: user.schoolId,
-        },
-        classroomSessions: {
-          some: {
-            classroomId: classroomId,
-          },
-        },
+        host: { schoolId: user.schoolId },
+        classroomSessions: { some: classroomId ? { classroomId } : {} },
       },
       include: {
-        host: true,
+        host: hostSelect,
         classroomSessions: {
-          where: {
-            classroomId: classroomId,
-          },
-          include: {
-            classroom: true,
-          },
+          where: classroomId ? { classroomId } : {},
+          include: { classroom: true },
         },
-        voiceLogs: {
-          select: {
-            voiceChannelName: true,
-          },
-        },
+        voiceLogs: { select: { voiceChannelName: true } },
       },
+      orderBy: { createdAt: 'desc' },
     })
-
-    return tutors
   }
 
   async getTutorById(id: string, ctx: Context) {
     const user = getUserFromContext(ctx)
 
-    if (!user) {
-      throw new UnauthorizedException('User not found')
-    }
-
-    const tutor = await this.db.tutor.findUnique({
-      where: {
-        id,
-        host: {
-          schoolId: user.schoolId,
-        },
-      },
+    const tutor = await this.db.tutor.findFirst({
+      where: { id, host: { schoolId: user.schoolId } },
       include: {
-        host: true,
-        classroomSessions: {
-          include: {
-            classroom: true,
-          },
-        },
+        host: hostSelect,
+        classroomSessions: { include: { classroom: true } },
       },
     })
-
     if (!tutor) {
-      throw new UnauthorizedException('Tutor not found')
+      throw new NotFoundException('Tutor not found')
     }
 
     return tutor
@@ -116,79 +99,62 @@ export class TutorInternalService {
   async deleteTutor(id: string, ctx: Context) {
     const user = getUserFromContext(ctx)
 
-    if (!user) {
-      throw new UnauthorizedException('User not found')
+    const tutor = await this.db.tutor.findUnique({
+      where: { id },
+      select: { hostId: true },
+    })
+    if (!tutor) {
+      throw new NotFoundException('Tutor not found')
     }
+    // Previously any authenticated user could delete any session.
+    assertOwnerOrAdmin(
+      user,
+      tutor.hostId,
+      'Only the host can delete this session',
+    )
 
-    await this.db.classroomOnTutor.deleteMany({
-      where: {
-        tutorId: id,
-      },
-    })
-
-    await this.db.tutor.delete({
-      where: {
-        id,
-      },
-    })
+    await this.db.$transaction([
+      this.db.attendance.deleteMany({
+        where: { activeTutor: { tutorId: id } },
+      }),
+      this.db.classroomOnTutor.deleteMany({ where: { tutorId: id } }),
+      this.db.tutor.delete({ where: { id } }), // voice logs cascade
+    ])
   }
 
   async getTutorContentById(id: string, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (!user) {
-      throw new UnauthorizedException('User not found')
-    }
+    getUserFromContext(ctx)
 
     const tutorContent = await this.db.tutorVoiceLog.findMany({
-      where: {
-        tutorId: id,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      where: { tutorId: id },
+      orderBy: { createdAt: 'asc' },
     })
-
     if (tutorContent.length === 0) {
       throw new NotFoundException('Tutor content not found')
     }
 
     return tutorContent
-  } // get tutor content by tutor id
+  }
 
   async getTutorContentUserById(id: string, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (!user) {
-      throw new UnauthorizedException('User not found')
-    }
+    getUserFromContext(ctx)
 
     const activeTutorSession = await this.db.classroomOnTutor.findFirst({
       where: { tutorId: id },
+      select: { id: true },
     })
-
     if (!activeTutorSession) {
       throw new NotFoundException('ไม่พบเซสชันการสอนสำหรับ Tutor นี้')
     }
 
     const participants = await this.db.attendance.findMany({
-      where: {
-        activeTutorId: activeTutorSession.id,
-        scoreEarned: { gt: 0 },
-      },
+      where: { activeTutorId: activeTutorSession.id, scoreEarned: { gt: 0 } },
       include: {
         user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            points: true,
-          },
+          select: { id: true, firstName: true, lastName: true, points: true },
         },
       },
-      orderBy: {
-        scoreEarned: 'desc',
-      },
+      orderBy: { scoreEarned: 'desc' },
     })
 
     return participants.map(record => ({

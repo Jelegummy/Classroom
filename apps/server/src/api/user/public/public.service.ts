@@ -1,18 +1,26 @@
 import { AuthService } from '@app/auth'
+import { assertBotSecret } from '@app/common'
+import { env } from '@app/config'
 import { PrismaService } from '@app/db'
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
 } from '@nestjs/common'
 
+import { resolveSchoolId } from '../school.resolver'
 import {
   LoginArgs,
   LoginDiscordArgs,
   RegisterArgs,
   RegisterDiscordArgs,
 } from './public.dto'
+
+const splitFullName = (fullName: string) => {
+  const parts = fullName.trim().split(/\s+/)
+
+  return { firstName: parts[0] ?? '', lastName: parts.slice(1).join(' ') }
+}
 
 @Injectable()
 export class UserPublicService {
@@ -24,7 +32,10 @@ export class UserPublicService {
   async register(args: RegisterArgs) {
     const { email, password, schoolId, schoolName, ...rest } = args
 
-    const exist = await this.db.user.findUnique({ where: { email } })
+    const exist = await this.db.user.findUnique({
+      where: { email },
+      select: { id: true },
+    })
     if (exist) {
       throw new BadRequestException('User already exists.')
     }
@@ -32,26 +43,7 @@ export class UserPublicService {
     const hashedPassword = await this.authService.hashPassword(password)
 
     return this.db.$transaction(async tx => {
-      let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69' // hardcode now - will fix this later (wait mail to be sent to user before creating school and user)
-
-      // if (!finalSchoolId) {
-      //   if (!schoolName) {
-      //     throw new BadRequestException('School name is required')
-      //   }
-
-      //   let school = await tx.school.findFirst({
-      //     where: { name: schoolName },
-      //   })
-
-      //   if (!school) {
-      //     school = await tx.school.create({
-      //       data: { name: schoolName },
-      //     })
-      //   } // wait mail to be sent before creating user (and fix this api)
-
-      //   finalSchoolId = school.id
-      // }
-
+      const finalSchoolId = await resolveSchoolId(tx, { schoolId, schoolName })
       const user = await tx.user.create({
         data: {
           ...rest,
@@ -60,6 +52,7 @@ export class UserPublicService {
           role: 'STUDENT',
           schoolId: finalSchoolId,
         },
+        select: { id: true },
       })
 
       return { userId: user.id, schoolId: finalSchoolId }
@@ -69,40 +62,39 @@ export class UserPublicService {
   async login(args: LoginArgs) {
     const user = await this.db.user.findUnique({
       where: { email: args.email },
+      select: { id: true, password: true },
     })
-    if (!user) {
-      throw new BadRequestException('Invalid email or password.')
-    }
 
     const isPassword = await this.authService.verifyPassword(
       args.password,
-      user.password || '',
+      user?.password,
     )
-    // if (user.password) {
-    //   throw new BadRequestException('บัญชีนี้เชื่อมต่อกับ Discord ไว้ กรุณาเข้าสู่ระบบด้วย Discord')
-    // }
-    if (!isPassword) {
+    if (!user || !isPassword) {
       throw new BadRequestException('Invalid email or password.')
+    }
+
+    // Transparently upgrade legacy (fixed-salt) hashes on successful login.
+    if (user.password && this.authService.shouldRehash(user.password)) {
+      const password = await this.authService.hashPassword(args.password)
+      await this.db.user.update({ where: { id: user.id }, data: { password } })
     }
 
     return { accessToken: this.authService.generateToken(user.id) }
   }
 
-  async registerDiscord(args: RegisterDiscordArgs, botSecret: string) {
-    if (botSecret !== 'super-secret-bot-key') {
-      throw new UnauthorizedException('Invalid bot secret')
-    }
+  async registerDiscord(args: RegisterDiscordArgs, botSecret?: string) {
+    assertBotSecret(botSecret, env.BOT_API_SECRET)
 
-    const nameParts = args.realName.trim().split(/\s+/)
-    const firstName = nameParts[0] || ''
-    const lastName = nameParts.slice(1).join(' ') || ''
+    const { firstName, lastName } = splitFullName(args.realName)
 
     const user = await this.db.user.findFirst({
       where: {
-        discordId: args.discordId,
-        firstName: firstName,
-        ...(lastName ? { lastName: lastName } : {}),
+        firstName,
+        ...(lastName ? { lastName } : {}),
+        // Do not let a Discord account claim a user already linked elsewhere.
+        OR: [{ discordId: null }, { discordId: args.discordId }],
       },
+      select: { id: true },
     })
 
     if (!user) {
@@ -111,58 +103,47 @@ export class UserPublicService {
       )
     }
 
-    const updatedUser = await this.db.user.update({
+    return this.db.user.update({
       where: { id: user.id },
-      data: {
-        discordId: args.discordId,
-      },
+      data: { discordId: args.discordId },
+      select: { id: true, firstName: true, lastName: true, discordId: true },
     })
-
-    return updatedUser
   }
 
   async loginDiscord(args: LoginDiscordArgs) {
-    const { email, discordId, firstName, lastName, ...rest } = args
-
-    if (!email) {
-      throw new BadRequestException('Email is required.')
-    }
+    const { email, discordId, firstName, lastName, schoolId } = args
 
     let user = await this.db.user.findFirst({
-      where: {
-        OR: [{ discordId: discordId }, { email: email }],
-      },
+      where: { OR: [{ discordId }, { email }] },
+      select: { id: true, schoolId: true, discordId: true },
     })
 
     if (user && !user.discordId) {
       user = await this.db.user.update({
         where: { id: user.id },
-        data: { discordId: discordId },
+        data: { discordId },
+        select: { id: true, schoolId: true, discordId: true },
       })
     }
 
     if (!user) {
-      user = await this.db.$transaction(async tx => {
-        let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69' // hardcode now
-
-        return await tx.user.create({
+      user = await this.db.$transaction(async tx =>
+        tx.user.create({
           data: {
-            ...rest,
-            discordId: discordId,
-            email: email,
+            discordId,
+            email,
             firstName: firstName || 'Discord User',
             lastName: lastName || '',
-            schoolId: finalSchoolId,
+            schoolId: await resolveSchoolId(tx, { schoolId }),
             role: 'STUDENT',
           },
-        })
-      })
+          select: { id: true, schoolId: true, discordId: true },
+        }),
+      )
     }
 
-    const accessToken = await this.authService.generateToken(user.id)
-
     return {
-      accessToken,
+      accessToken: this.authService.generateToken(user.id),
       userId: user.id,
       schoolId: user.schoolId,
     }

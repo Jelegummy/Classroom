@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSession } from '../hooks/useSession'
 import CountdownTimer from './countdowntime'
 import SessionTextBox from './textbox'
@@ -28,6 +28,7 @@ export default function SessionView() {
         if (videoRef.current) videoRef.current.srcObject = stream
       })
       .catch(() => {})
+
     return () => streamRef.current?.getTracks().forEach(t => t.stop())
   }, [])
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { createUser, CreateUserArgs } from '@/services/user'
+import { CreateUserArgs, createUser } from '@/services/user'
 
 export default function CreateUser() {
   const [open, setOpen] = useState(false)
@@ -31,7 +31,7 @@ export default function CreateUser() {
         schoolName: '',
       })
     },
-    onError: (e: any) => {
+    onError: (e: Error) => {
       toast.error(e?.message || 'เกิดข้อผิดพลาดในการสร้างผู้ใช้')
     },
   })
@@ -45,11 +45,13 @@ export default function CreateUser() {
       !form.lastName.trim()
     ) {
       toast.error('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน')
+
       return
     }
 
     if (form.password.length < 8) {
       toast.error('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร')
+
       return
     }
 

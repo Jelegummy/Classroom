@@ -87,8 +87,7 @@ export default function DeleteClassroom({
 
             <p className="mb-4 text-sm text-gray-600">
               เพื่อยืนยันการลบ กรุณาพิมพ์{' '}
-              <span className="font-semibold text-gray-900">{name}</span>{' '}
-              ด้านล่าง
+              <span className="font-semibold text-gray-900">{name}</span> ด้านล่าง
             </p>
 
             <div className="mb-5 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">

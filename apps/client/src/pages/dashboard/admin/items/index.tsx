@@ -59,9 +59,7 @@ export default function Items() {
             {isLoading ? (
               <div className="flex min-h-[300px] flex-col items-center justify-center text-slate-400">
                 <FiLoader className="h-8 w-8 animate-spin" />
-                <p className="mt-4 text-sm font-medium">
-                  กำลังโหลดข้อมูลไอเทม...
-                </p>
+                <p className="mt-4 text-sm font-medium">กำลังโหลดข้อมูลไอเทม...</p>
               </div>
             ) : filteredItems.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -111,9 +109,7 @@ export default function Items() {
                 <p className="mt-4 text-base font-semibold text-slate-600">
                   ไม่พบไอเทม
                 </p>
-                <p className="text-sm">
-                  ลองค้นหาด้วยคำอื่น หรือเพิ่มไอเทมใหม่ดูสิ
-                </p>
+                <p className="text-sm">ลองค้นหาด้วยคำอื่น หรือเพิ่มไอเทมใหม่ดูสิ</p>
               </div>
             )}
           </div>

@@ -25,6 +25,7 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
       const gameId = res?.id
       if (!gameId) {
         toast.error('ไม่พบ game id')
+
         return
       }
       setCreatedGameId(gameId)
@@ -37,14 +38,17 @@ export default function CardGame({ classroomId, characterId }: CardGameProps) {
   const onSubmit = () => {
     if (!classroomId) {
       toast.error('ไม่พบข้อมูลห้องเรียน')
+
       return
     }
     if (!characterId) {
       toast.error('กรุณาเลือกตัวละครก่อนเริ่มเกม')
+
       return
     }
     if (!form.name.trim()) {
       toast.error('กรุณากรอกชื่อเกม')
+
       return
     }
 

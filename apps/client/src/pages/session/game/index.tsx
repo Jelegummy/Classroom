@@ -2,7 +2,7 @@ import CardCharacter from '../../../features/game/components/card-charecter'
 import CardGame from '../../../features/game/components/card-game'
 import CharacterScene from '../../../features/game/components/character-scene'
 import { useRouter } from 'next/router'
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getAllCharacters } from '@/services/charecter'
 import NavbarSession from '@/components/Navbar-Session'
@@ -24,6 +24,7 @@ export default function GameSession() {
 
   const selectedModelUrl = useMemo(() => {
     const character = characters?.find(c => c.id === selectedCharacterId)
+
     return character?.modelUrl || ''
   }, [characters, selectedCharacterId])
 

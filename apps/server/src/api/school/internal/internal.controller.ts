@@ -1,7 +1,8 @@
+import { Context } from '@app/common'
 import { Controller, Get, HttpStatus, Param, Req } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+
 import { SchoolInternalService } from './internal.service'
-import { Context } from '@app/common'
 
 @ApiTags('School')
 @Controller('school/internal')

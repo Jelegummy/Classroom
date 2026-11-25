@@ -1,23 +1,17 @@
 import os
 import json
 import logging
-from langchain_openai import ChatOpenAI
+from concurrent.futures import ThreadPoolExecutor
+
 from langchain_core.output_parsers import StrOutputParser
 
-from dotenv import load_dotenv
+from service.genquestion import MAX_CONTENT_CHARS
+from service.llm import get_llm
 
-load_dotenv()
-
-TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
 logger = logging.getLogger(__name__)
 
-llm = ChatOpenAI(
-    base_url="https://api.opentyphoon.ai/v1",
-    api_key=TYPHOON_API_KEY,
-    model='typhoon-v2.5-30b-a3b-instruct',
-    temperature=0.1,
-    max_tokens=8192,
-)
+# Answers are independent, so generate a few concurrently instead of one by one.
+ANSWER_CONCURRENCY = int(os.getenv("ANSWER_CONCURRENCY", "4"))
 
 ANSWER_DIR = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "data", "answers")
@@ -34,11 +28,12 @@ def run_genanswer(assignment_id: str, txt_path: str, questions: list[str]) -> li
         return []
 
     with open(txt_path, "r", encoding="utf-8") as f:
-        content = f.read()
+        content = f.read()[:MAX_CONTENT_CHARS]
 
-    answers_data = []
+    chain = get_llm(0.1) | StrOutputParser()
 
-    for i, question in enumerate(questions, start=1):
+    def answer(indexed):
+        i, question = indexed
         logger.info(f"[genanswer] Answering question {i}/{len(questions)}...")
 
         prompt = f"""
@@ -61,17 +56,16 @@ def run_genanswer(assignment_id: str, txt_path: str, questions: list[str]) -> li
         """
 
         try:
-            chain = llm | StrOutputParser()
             answer_text = chain.invoke(prompt).strip()
         except Exception as e:
             logger.error(f"[genanswer] Error answering question {i}: {e}")
             answer_text = f"(เกิดข้อผิดพลาดในการสร้างคำตอบ: {e})"
 
-        # เก็บเข้า List ในรูปแบบ Dictionary
-        answers_data.append({
-            "question": question,
-            "answer": answer_text
-        })
+        return {"question": question, "answer": answer_text}
+
+    # map() preserves question order.
+    with ThreadPoolExecutor(max_workers=ANSWER_CONCURRENCY) as pool:
+        answers_data = list(pool.map(answer, enumerate(questions, start=1)))
 
     # (ตัวเลือกเสริม) เซฟเป็นไฟล์ .json เก็บไว้ในเครื่องด้วย
     answer_file_path = os.path.join(ANSWER_DIR, f"{assignment_id}.json")

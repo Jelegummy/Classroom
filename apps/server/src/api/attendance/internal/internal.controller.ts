@@ -1,8 +1,9 @@
+import { Context } from '@app/common'
 import { Body, Controller, HttpStatus, Post, Req } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { AttendanceInternalService } from './internal.service'
+
 import { CreateGameAttendanceDto } from './internal.dto'
-import { Context } from '@app/common'
+import { AttendanceInternalService } from './internal.service'
 
 @ApiTags('Attendance - Internal')
 @Controller('attendance/internal')

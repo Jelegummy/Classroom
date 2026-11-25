@@ -1,6 +1,5 @@
 import { getUserPoint } from '@/services/user'
 import { useQuery } from '@tanstack/react-query'
-import { get } from 'http'
 import { signOut, useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { FaCoins } from 'react-icons/fa6'
@@ -19,6 +18,7 @@ export default function NavbarPayment({ UserId }: NavbarPaymentProps) {
     refetchInterval: 1000,
   })
   const [open, setOpen] = useState(false)
+
   return (
     <>
       <div className="hidden md:block">

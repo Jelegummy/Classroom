@@ -1,4 +1,8 @@
-const API_8000 = process.env.NEXT_PUBLIC_FAST_API_ENDPOINT ?? 'http://127.0.0.1:8000'
+// The assignment bot (FastAPI). NEXT_PUBLIC_API_8000 is what .env and useSession use.
+const API_8000 =
+  process.env.NEXT_PUBLIC_API_8000 ??
+  process.env.NEXT_PUBLIC_FAST_API_ENDPOINT ??
+  'http://127.0.0.1:8000'
 
 const API_4000 = process.env.NEXT_PUBLIC_ENDPOINT ?? 'http://127.0.0.1:4000'
 
@@ -50,6 +54,7 @@ export const api8000 = {
 export const api4000 = {
   get: <T>(url: string, params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : ''
+
     return request<T>(API_4000, url + query, { method: 'GET' })
   },
   post: <T>(url: string, body?: unknown) =>
@@ -59,6 +64,7 @@ export const api4000 = {
     }),
   delete: <T>(url: string, params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : ''
+
     return request<T>(API_4000, url + query, { method: 'DELETE' })
   },
 }

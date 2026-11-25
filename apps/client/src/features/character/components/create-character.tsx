@@ -33,10 +33,12 @@ export default function CreateCharacterPage() {
   const onSubmit = () => {
     if (!form.bossName.trim()) {
       toast.error('กรุณากรอกชื่อตัวละคร')
+
       return
     }
     if (!form.pointBoss || form.pointBoss <= 0) {
       toast.error('กรุณากรอกคะแนนสำหรับ Boss')
+
       return
     }
 

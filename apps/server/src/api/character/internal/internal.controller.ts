@@ -1,3 +1,4 @@
+import { Context } from '@app/common'
 import {
   Body,
   Controller,
@@ -5,14 +6,13 @@ import {
   Get,
   HttpStatus,
   Param,
-  Patch,
   Post,
   Req,
 } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { CharacterInternalService } from './internal.service'
+
 import { CreateCharacterDto } from './internal.dto'
-import { Context } from '@app/common'
+import { CharacterInternalService } from './internal.service'
 
 @ApiTags('character-internal')
 @Controller('character/internal')

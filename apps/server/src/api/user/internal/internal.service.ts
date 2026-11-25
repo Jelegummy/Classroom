@@ -1,13 +1,19 @@
 import { AuthService } from '@app/auth'
-import { Context, getUserFromContext } from '@app/common'
+import {
+  Context,
+  getUserFromContext,
+  requireRole,
+  requireStaff,
+} from '@app/common'
 import { PrismaService } from '@app/db'
 import {
   BadRequestException,
   ConflictException,
   Injectable,
-  UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common'
 
+import { resolveSchoolId } from '../school.resolver'
 import {
   ConnectDiscordArgs,
   CreateUserArgs,
@@ -24,11 +30,8 @@ export class UserInternalService {
 
   async getMe(ctx: Context) {
     const user = getUserFromContext(ctx)
-    if (!user) {
-      throw new Error('User not found')
-    }
 
-    const users = await this.db.user.findUnique({
+    const me = await this.db.user.findUnique({
       where: { id: user.id },
       select: {
         id: true,
@@ -42,61 +45,52 @@ export class UserInternalService {
         teacherId: true,
         major: true,
         role: true,
-
-        school: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        school: { select: { id: true, name: true } },
       },
     })
-    return users
+    if (!me) {
+      throw new NotFoundException('User not found')
+    }
+
+    return me
   }
 
   async updateUser(args: UpdateUserArgs, ctx: Context) {
     const user = getUserFromContext(ctx)
 
-    await this.db.user.update({
-      where: { id: user.id },
-      data: args,
-    })
+    await this.db.user.update({ where: { id: user.id }, data: args })
   }
 
   async updatePassword(args: UpdatePasswordArgs, ctx: Context) {
-    const _user = getUserFromContext(ctx)
+    const { id } = getUserFromContext(ctx)
     const { oldpassword, newPassword } = args
 
     const user = await this.db.user.findUnique({
-      where: { id: _user.id },
+      where: { id },
+      select: { password: true },
     })
     if (!user) {
-      throw new Error('User not found')
+      throw new NotFoundException('User not found')
     }
 
     const isPasswordValid = await this.authService.verifyPassword(
       oldpassword,
-      user.password || '',
+      user.password,
     )
     if (!isPasswordValid) {
-      throw new Error('Invalid password')
+      throw new BadRequestException('Invalid password')
     }
 
-    const newHashedPassword = await this.authService.hashPassword(newPassword)
     await this.db.user.update({
-      where: { id: _user.id },
-      data: { password: newHashedPassword },
+      where: { id },
+      data: { password: await this.authService.hashPassword(newPassword) },
     })
   }
 
   async getAllUsers(ctx: Context) {
-    const user = getUserFromContext(ctx)
+    requireRole(ctx, ['ADMIN'], 'access all users')
 
-    if (user.role !== 'ADMIN') {
-      throw new Error('Only admins can access all users')
-    }
-
-    const users = await this.db.user.findMany({
+    return this.db.user.findMany({
       select: {
         id: true,
         email: true,
@@ -110,77 +104,61 @@ export class UserInternalService {
         role: true,
         createdAt: true,
         updatedAt: true,
-        school: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        school: { select: { id: true, name: true } },
       },
+      orderBy: { createdAt: 'desc' },
     })
-
-    return users
   }
 
   async deleteUser(args: { id: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (user.role !== 'ADMIN') {
-      throw new Error('Only admins can delete users')
+    const admin = requireRole(ctx, ['ADMIN'], 'delete users')
+    if (admin.id === args.id) {
+      throw new BadRequestException('You cannot delete your own account')
     }
 
-    await this.db.user.delete({
-      where: { id: args.id },
-    })
+    // Prisma maps a remaining FK reference (P2003) to a 400 via the exception filter.
+    await this.db.user.delete({ where: { id: args.id } })
   }
 
   async getUserPoint(args: { id: string }, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-      throw new Error('Only admins can access user points')
-    }
+    requireStaff(ctx, 'access user points')
 
     const res = await this.db.user.findUnique({
       where: { id: args.id },
-      select: {
-        points: true,
-      },
+      select: { points: true },
     })
-
     if (!res) {
-      throw new Error('User not found')
+      throw new NotFoundException('User not found')
     }
 
     return res
   }
 
   async createUser(args: CreateUserArgs, ctx: Context) {
-    const user = getUserFromContext(ctx)
-
-    if (user.role !== 'ADMIN') {
-      throw new Error('Only admins can create users')
-    }
+    requireRole(ctx, ['ADMIN'], 'create users')
 
     const { email, password, schoolId, schoolName, ...rest } = args
 
-    const exist = await this.db.user.findUnique({ where: { email } })
+    const exist = await this.db.user.findUnique({
+      where: { email },
+      select: { id: true },
+    })
     if (exist) {
-      throw new Error('User already exists')
+      throw new ConflictException('User already exists')
     }
 
     const hashedPassword = await this.authService.hashPassword(password)
 
     return this.db.$transaction(async tx => {
-      let finalSchoolId = '6c18f70e-9457-4f2b-904c-29927997ad69'
+      const finalSchoolId = await resolveSchoolId(tx, { schoolId, schoolName })
       const user = await tx.user.create({
         data: {
-          ...rest,
+          ...rest, // includes the requested role (previously always STUDENT)
           email,
           password: hashedPassword,
-          role: 'STUDENT',
           schoolId: finalSchoolId,
         },
+        select: { id: true },
       })
 
       return { userId: user.id, schoolId: finalSchoolId }
@@ -189,37 +167,24 @@ export class UserInternalService {
 
   async connectDiscord(args: ConnectDiscordArgs, ctx: Context) {
     const loggedInUser = getUserFromContext(ctx)
-    if (!loggedInUser) {
-      throw new UnauthorizedException('User not found')
-    }
-
     const { discordId } = args
 
-    if (!discordId) {
-      throw new BadRequestException('Discord ID is required.')
-    }
-
     const existingDiscordUser = await this.db.user.findFirst({
-      where: { discordId: discordId },
+      where: { discordId },
+      select: { id: true },
     })
-
-    if (existingDiscordUser) {
-      if (existingDiscordUser.id !== loggedInUser.id) {
-        throw new ConflictException(
-          'Discord ID นี้ถูกเชื่อมต่อกับบัญชีอื่นไปแล้ว',
-        )
-      }
+    if (existingDiscordUser && existingDiscordUser.id !== loggedInUser.id) {
+      throw new ConflictException('Discord ID นี้ถูกเชื่อมต่อกับบัญชีอื่นไปแล้ว')
     }
 
     const updatedUser = await this.db.user.update({
       where: { id: loggedInUser.id },
-      data: { discordId: discordId },
+      data: { discordId },
+      select: { id: true, schoolId: true },
     })
 
-    const accessToken = await this.authService.generateToken(loggedInUser.id)
-
     return {
-      accessToken,
+      accessToken: this.authService.generateToken(loggedInUser.id),
       userId: updatedUser.id,
       schoolId: updatedUser.schoolId,
     }

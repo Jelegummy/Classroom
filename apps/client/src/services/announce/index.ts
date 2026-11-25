@@ -1,6 +1,6 @@
 import { getSession } from 'next-auth/react'
 import { Announce, CreateAnnounceArgs, UpdateAnnounceArgs } from './types'
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 export const createAnnounce = async (args: CreateAnnounceArgs) => {
   const session = await getSession()

@@ -1,6 +1,7 @@
 import {
   CallHandler,
   ExecutionContext,
+  HttpException,
   Injectable,
   Logger,
   NestInterceptor,
@@ -10,18 +11,28 @@ import { tap } from 'rxjs'
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private readonly logger = new Logger()
+  private readonly logger = new Logger('HTTP')
 
   intercept(ctx: ExecutionContext, next: CallHandler) {
-    const start = Date.now()
+    if (ctx.getType() !== 'http') {
+      return next.handle()
+    }
 
-    const { method, url } = ctx.switchToHttp().getRequest() as FastifyRequest
+    const start = Date.now()
+    const { method, url } = ctx.switchToHttp().getRequest<FastifyRequest>()
 
     return next.handle().pipe(
       tap({
         next: () => this.logger.log(`${method} ${url} ${Date.now() - start}ms`),
-        error: () =>
-          this.logger.error(`${method} ${url} ${Date.now() - start}ms`),
+        error: (err: unknown) => {
+          const status = err instanceof HttpException ? err.getStatus() : 500
+          const line = `${method} ${url} ${status} ${Date.now() - start}ms`
+          if (status >= 500) {
+            this.logger.error(line)
+          } else {
+            this.logger.warn(line)
+          }
+        },
       }),
     )
   }

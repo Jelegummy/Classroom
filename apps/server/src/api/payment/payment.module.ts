@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common'
 import { HttpModule } from '@nestjs/axios'
+import { Module } from '@nestjs/common'
+
 import { PaymentInternalController } from './internal/internal.controller'
 import { PaymentInternalService } from './internal/internal.service'
 

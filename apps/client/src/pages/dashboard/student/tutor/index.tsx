@@ -1,11 +1,11 @@
 import { getAllTutors } from '@/services/tutor'
 import { useQuery } from '@tanstack/react-query'
 import {
-  Video,
+  ArrowRight,
   CalendarClock,
   ExternalLink,
-  ArrowRight,
   MonitorPlay,
+  Video,
 } from 'lucide-react'
 import StateLink from '@/features/tutor/components/state-link'
 import { useState } from 'react'
@@ -23,9 +23,9 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
     queryFn: () => getAllTutors({ classroomId }),
     select: tutors => {
       return (
-        tutors?.filter((t: any) =>
+        tutors?.filter(t =>
           t.classroomSessions?.some(
-            (session: any) => session.classroomId === classroomId,
+            session => session.classroomId === classroomId,
           ),
         ) || []
       )
@@ -78,7 +78,7 @@ export default function TutorSession({ classroomId }: TutorSessionProps) {
   return (
     <div className="min-h-screen bg-gray-50/50 p-6 md:p-8">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {tutors?.map((tutor: any) => (
+        {tutors?.map(tutor => (
           <div
             key={tutor.id}
             className="group relative flex flex-col justify-between gap-5 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:border-primary/30 hover:shadow-md"

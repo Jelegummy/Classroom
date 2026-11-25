@@ -4,10 +4,9 @@ import {
   CreateGameResponse,
   Game,
   GameLeaderboardResponse,
-  Leader,
   UpdateGameArgs,
 } from './types'
-import { ENDPOINT, fetchers, HttpStatus } from '@/utils'
+import { ENDPOINT, HttpStatus, fetchers } from '@/utils'
 
 export const createGameSession = async (args: CreateGameArgs) => {
   const session = await getSession()

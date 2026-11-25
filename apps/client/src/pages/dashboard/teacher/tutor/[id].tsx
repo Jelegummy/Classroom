@@ -16,6 +16,7 @@ const formatTime = (seconds: number) => {
   const s = Math.floor(seconds % 60)
     .toString()
     .padStart(2, '0')
+
   return `${m}:${s}`
 }
 
@@ -84,7 +85,7 @@ export default function Content() {
             </button>
 
             <div className="mx-auto mt-10 flex max-w-4xl flex-col gap-6">
-              {currentContents?.map((content: any) => {
+              {currentContents?.map(content => {
                 const roles = content.dataContent?.roles
                 const sessionUsers: Array<{
                   fullName: string
@@ -167,7 +168,7 @@ export default function Content() {
                         {Array.isArray(content.dataContent?.transcript)
                           ? content.dataContent.transcript
                               .map(
-                                (item: any) =>
+                                item =>
                                   `[${formatTime(item.start)} - ${formatTime(item.end)}] ${item.speaker}: ${item.text}`,
                               )
                               .join('\n')

@@ -77,12 +77,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 export type SessionState =
-  | 'connecting'
-  | 'waiting'
-  | 'question'
-  | 'recording'
-  | 'analyzing'
-  | 'ended'
+  'connecting' | 'waiting' | 'question' | 'recording' | 'analyzing' | 'ended'
 
 export type SessionResult = {
   correct: number
@@ -153,6 +148,7 @@ export function useSession(sessionId: string | null) {
             const lastQ = [...updated]
               .reverse()
               .find(e => e.type === 'question')
+
             return [
               ...updated,
               {
